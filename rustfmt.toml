@@ -1,0 +1,13 @@
+imports_granularity = "Crate"
+reorder_impl_items = true
+use_field_init_shorthand = true
+wrap_comments = true
+normalize_comments = true
+normalize_doc_attributes = true
+condense_wildcard_suffixes = true
+group_imports = "StdExternalCrate"
+max_width = 100
+use_small_heuristics = "Default"
+format_macro_bodies = true
+format_macro_matchers = true
+format_strings = true

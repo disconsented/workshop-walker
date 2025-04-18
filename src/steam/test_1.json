@@ -1,0 +1,79 @@
+{
+  "response": {
+    "total": 42344,
+    "publishedfiledetails": [
+      {
+        "result": 1,
+        "publishedfileid": "3465175461",
+        "creator": "76561198189612919",
+        "creator_appid": 294100,
+        "consumer_appid": 294100,
+        "consumer_shortcutid": 0,
+        "filename": "",
+        "file_size": "1008135",
+        "preview_file_size": "1005290",
+        "preview_url": "https://images.steamusercontent.com/ugc/36700082994711082/E9ED7E38141E5F5C66C76DBD59FE1C5C7AC797BF/",
+        "url": "",
+        "hcontent_file": "3078650541592304519",
+        "hcontent_preview": "36700082994711082",
+        "title": "Weapon and Apparel Quality Indicators - FR - Indicateurs de qualité des armes et vêtements",
+        "file_description": "Traduction française du module « Weapon and Apparel Quality Indicators » de Carny Senpai par Dussolier, Traducteur Du Bordemonde (TDB). Ce module ne contient aucun fichier original. Le module principal est requis : Weapon and Apparel Quality Indicators Traductions du Bordemonde (Liste de modules compatibles entre eux, totalement en français !) : Traductions du Bordemonde Nous rejoindre : La Flotte Ambrée ",
+        "time_created": 1744845489,
+        "time_updated": 1744845489,
+        "visibility": 0,
+        "flags": 5632,
+        "workshop_file": false,
+        "workshop_accepted": false,
+        "show_subscribe_all": false,
+        "num_comments_public": 0,
+        "banned": false,
+        "ban_reason": "",
+        "banner": "76561197960265728",
+        "can_be_deleted": true,
+        "app_name": "RimWorld",
+        "file_type": 0,
+        "can_subscribe": true,
+        "subscriptions": 2,
+        "favorited": 0,
+        "followers": 0,
+        "lifetime_subscriptions": 2,
+        "lifetime_favorited": 0,
+        "lifetime_followers": 0,
+        "lifetime_playtime": "0",
+        "lifetime_playtime_sessions": "0",
+        "views": 14,
+        "num_children": 2,
+        "num_reports": 0,
+        "tags": [
+          {
+            "tag": "Translation",
+            "display_name": "Translation"
+          },
+          {
+            "tag": "1.5",
+            "display_name": "1.5"
+          }
+        ],
+        "children": [
+          {
+            "publishedfileid": "2009463077",
+            "sortorder": 1,
+            "file_type": 0
+          },
+          {
+            "publishedfileid": "2005333573",
+            "sortorder": 2,
+            "file_type": 0
+          }
+        ],
+        "language": 0,
+        "maybe_inappropriate_sex": false,
+        "maybe_inappropriate_violence": false,
+        "revision_change_number": "1",
+        "revision": 1,
+        "ban_text_check_result": 5
+      }
+    ],
+    "next_cursor": "AoJYqoeANHWazKJn"
+  }
+}

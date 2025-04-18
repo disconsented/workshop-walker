@@ -1,0 +1,31 @@
+[package]
+name = "workshop-walker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs"] }
+surrealdb = { version = "2.2", features = ["kv-rocksdb"] }
+reqwest = {version = "0.12", features = ["json"] }
+indicatif = "0.17.11"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_repr = "0.1"
+snafu = "0.8"
+salvo = {version = "0.78", features = ["oapi", "logging",  ]}
+config = "0.15"
+veil = "0.2"
+tracing-subscriber = "0.3.19"
+
+lingua = {version =  "1.7", features = ["english", "russian", "chinese"] }
+[lints.clippy]
+lint_groups_priority = { level = "allow", priority = 0 }
+suspicious = { level = "deny", priority = 1 }
+style = { level = "deny", priority = 2 }
+restriction = { level = "deny", priority = 3 }
+perf = { level = "deny", priority = 4 }
+pedantic = { level = "deny", priority = 5 }
+correctness = { level = "deny", priority = 6 }
+complexity = { level = "warn", priority = 7 }
+dbg_macro = { level = "deny", priority = 8 }
+allow-dbg-in-tests = { level = "allow", priority = 9 }
