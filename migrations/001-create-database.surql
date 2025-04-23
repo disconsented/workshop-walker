@@ -38,7 +38,7 @@ DEFINE TABLE tags TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
 DEFINE FIELD app_id ON tags TYPE int PERMISSIONS FULL;
 DEFINE FIELD display_name ON tags TYPE string PERMISSIONS FULL;
-DEFINE FIELD tag ON tags TYPE string PERMISSIONS FULL;
+DEFINE FIELD id ON tags TYPE string PERMISSIONS FULL;
 
 DEFINE INDEX field_app_id_tag ON tags FIELDS app_id, tag;
 
@@ -57,8 +57,12 @@ DEFINE TABLE workshop_item TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 DEFINE FIELD appid ON workshop_item TYPE int PERMISSIONS FULL;
 DEFINE FIELD preview_url ON workshop_items TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD id ON workshop_item TYPE string PERMISSIONS FULL;
-DEFINE FIELD tags ON workshop_item TYPE array<record<tag>> PERMISSIONS FULL;
-DEFINE FIELD tags[*] ON workshop_item TYPE record<tag> PERMISSIONS FULL;
+DEFINE FIELD language ON workshop_item TYPE string PERMISSIONS FULL;
+DEFINE FIELD author ON workshop_item TYPE string PERMISSIONS FULL;
+DEFINE FIELD language ON workshop_item TYPE string PERMISSIONS FULL;
+DEFINE FIELD last_updated ON workshop_item TYPE int PERMISSIONS FULL;
+DEFINE FIELD tags ON workshop_item TYPE set<record<tags>> PERMISSIONS FULL;
+DEFINE FIELD tags[*] ON workshop_item TYPE record<tags> PERMISSIONS FULL;
 DEFINE FIELD title ON workshop_item TYPE string PERMISSIONS FULL;
 
 
