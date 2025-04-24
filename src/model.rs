@@ -71,6 +71,7 @@ pub struct FullWorkshopItem {
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dependencies {
+    pub id: RecordId,
     #[serde(rename = "in")]
     pub this: RecordId,
     #[serde(rename = "out")]

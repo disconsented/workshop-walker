@@ -165,9 +165,17 @@ async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(),
             .children
             .into_iter()
             .map(|child| {
+                let dep_id = RecordId::from_table_key("workshop_items", child.publishedfileid);
                 to_value(Dependencies {
+                    id: RecordId::from_table_key(
+                        "item_dependencies",
+                        vec![
+                            id.clone().into(),
+                            dep_id.clone().into()
+                        ],
+                    ),
                     this: id.clone(),
-                    dependency: RecordId::from_table_key("workshop_items", child.publishedfileid),
+                    dependency: dep_id,
                 })
                 .unwrap()
             })
