@@ -1,26 +1,40 @@
-use std::{fmt::Write, sync::Arc};
-
+use std::{fmt::Write, path::PathBuf, sync::Arc};
+use bbscope::{BBCode, BBCodeTagConfig};
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use reqwest::Client;
+use salvo::__private::tracing::{error, info};
 use snafu::{Whatever, prelude::*};
 use surrealdb::{
     RecordId, Surreal,
     engine::local::{Db, RocksDb},
-    opt::auth::Root,
+    opt::{Table, auth::Root},
+    rpc::Method::Insert,
+    sql::{
+        Array, Data, Idiom, Value,
+        statements::{InsertStatement, UpdateStatement, UpsertStatement},
+        to_value,
+    },
+    syn::token::Keyword::{From, M},
 };
-use tokio::{fs::DirEntry, io::AsyncWriteExt, spawn, sync::Barrier};
+use tokio::{
+    fs::DirEntry,
+    io::AsyncWriteExt,
+    spawn,
+    sync::Barrier,
+    task::{JoinSet, spawn_blocking},
+};
 
 use crate::{
-    model::{Dependencies, WorkshopItem},
+    language::detect,
+    model::{Dependencies, Tag, WorkshopItem},
     steam::{GetPage, SteamRoot, Struct},
 };
-use crate::language::detect;
 
 mod app_config;
+mod language;
 mod model;
 mod steam;
 mod web;
-mod language;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = Whatever;
@@ -48,6 +62,7 @@ async fn main() -> Result<()> {
     .whatever_context("signing in to db")?;
 
     if !db_exists {
+        info!("creating db");
         db.query(include_str!("../migrations/001-create-database.surql"))
             .await
             .whatever_context("running creation")?;
@@ -69,13 +84,21 @@ async fn main() -> Result<()> {
             }
 
             if settings.read_from_cache {
-                let mut entries = tokio::fs::read_dir("data_cache").await.unwrap();
+                info!("reading data from cache");
+                let mut readdir = tokio::fs::read_dir("data_cache").await.unwrap();
                 let mut i = 0;
-                while let Ok(Some(entry)) = entries.next_entry().await {
-                    if let Err(e) = insert_data(&db, &mut i, entry).await {
-                        println!("Insert Data: {e:#?}")
+
+
+                let bbcode = BBCode::from_config(BBCodeTagConfig::extended(), None).unwrap();
+                // SurrealDB can't handle these queries in parallel, so serial for now
+                while let Ok(Some(entry)) = readdir.next_entry().await {
+                    if let Err(e) = insert_data(&db, entry.path(), &bbcode).await {
+                        println!("read failed: {e:#?}");
                     }
+                    i += 1;
+                    print!("Progress: {i}\r")
                 }
+                println!("\rfinished");
             }
         });
     }
@@ -83,8 +106,9 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn insert_data(db: &Surreal<Db>, i: &mut i32, entry: DirEntry) -> Result<(), Whatever> {
-    let raw_json = tokio::fs::read_to_string(entry.path())
+// Read all cached steam files and load them into the database
+async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(), Whatever> {
+    let raw_json = tokio::fs::read_to_string(path)
         .await
         .whatever_context("reading file")?;
     let data: Struct = serde_json::from_str(&raw_json).whatever_context("parsing from disk")?;
@@ -95,37 +119,92 @@ async fn insert_data(db: &Surreal<Db>, i: &mut i32, entry: DirEntry) -> Result<(
         appid: data.creator_appid.whatever_context("missing app id")?,
         author: data.creator.unwrap(),
         language: detect(&description),
-        description,
+        description: bb.parse(&description),
         id: id.clone(),
         title: data.title.whatever_context("Missing title")?,
         preview_url: data.preview_url,
         last_updated: data.time_updated.unwrap_or_default() as _,
+        tags: vec![],
     };
-    let _: Option<WorkshopItem<RecordId>> = db
-        .upsert(item.id.clone())
-        .content(item)
-        .await
-        .whatever_context("upserting item")?;
+    let tags = data
+        .tags
+        .iter()
+        .cloned()
+        .map(|tag| crate::model::Tag {
+            app_id: item.appid.clone() as _,
+            display_name: tag.display_name,
+            tag: tag.tag,
+        })
+        .collect::<Vec<_>>();
+    let insert_tags = {
+        let mut stmt = InsertStatement::default();
+        stmt.into = Some(Value::Table("tags".into()));
+        stmt.data = Data::SingleExpression(to_value(tags.clone()).unwrap());
+        stmt.ignore = true;
+        stmt
+    };
 
-    let _: Vec<Dependencies> = db
-        .insert("item_dependencies")
-        .relation(
-            data.children
-                .into_iter()
-                .map(|child| Dependencies {
+    let upsert_item = {
+        let mut stmt = InsertStatement::default();
+        stmt.data = Data::SingleExpression(to_value(item).unwrap());
+        stmt.into = Some(Value::Table("workshop_items".into()));
+        stmt.ignore = true;
+        stmt
+    };
+
+    let insert_item_deps = {
+        let mut stmt = InsertStatement::default();
+        stmt.relation = true;
+
+        stmt.into = Some(Value::Table("item_dependencies".into()));
+        if id.eq(&RecordId::from_table_key("workshop_items", "3121742525")) {
+            dbg!(&data.children);
+        }
+
+        let data = data
+            .children
+            .into_iter()
+            .map(|child| {
+                to_value(Dependencies {
                     this: id.clone(),
                     dependency: RecordId::from_table_key("workshop_items", child.publishedfileid),
                 })
-                .collect::<Vec<_>>(),
-        )
-        .await
-        .whatever_context("inserting dependencies")?;
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        stmt.data = Data::SingleExpression(Value::Array(data.into()));
+        stmt.ignore = true;
+        stmt
+    };
 
-    *i += 1;
-    print!("Progress: {i}\r");
+    let foo = db
+        .query("BEGIN TRANSACTION")
+        .query(insert_tags)
+        .query(upsert_item)
+        .query(insert_item_deps)
+        .query("UPDATE $id SET tags=$tags")
+        .bind(("id", id.clone()))
+        .bind((
+            "tags",
+            tags.iter()
+                .map(|tag| RecordId::from_table_key("tags", tag.tag.clone()))
+                .collect::<Vec<_>>(),
+        ))
+        .query("COMMIT");
+    let sql = format!("{foo:#?}");
+    let mut response = foo.await.whatever_context("big insert query")?;
+
+    let errors = response.take_errors();
+    if errors.len() > 0 {
+        error!("{sql}");
+        error!("{errors:#?}");
+        panic!("Errors: ")
+    }
+
     Ok(())
 }
 
+// Download _all_ items from the steam workshop (for a given app) and cache them on disk.
 async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
     let client = Client::new();
     let mut first_page = GetPage::default();
@@ -148,7 +227,7 @@ async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
         .progress_chars("#>-"),
     );
 
-    let barrier = Arc::new(Barrier::new(2));
+    let barrier = Arc::new(Barrier::new(1));
     {
         let barrier = barrier.clone();
         spawn(async move {
@@ -201,4 +280,20 @@ async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
     println!("finished downloading {downloaded}/{total}");
     barrier.wait().await;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use serde::Serialize;
+
+    #[test]
+    fn test_serialize_ordering() {
+        #[derive(Serialize)]
+        pub enum Ordering {
+            Random,
+            Order(Vec<bool>),
+        }
+
+        dbg!(serde_json::to_string(&Ordering::Order(vec![true])).unwrap());
+    }
 }

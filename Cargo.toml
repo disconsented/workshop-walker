@@ -6,18 +6,23 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs"] }
 surrealdb = { version = "2.2", features = ["kv-rocksdb"] }
-reqwest = {version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json"] }
 indicatif = "0.17.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.8"
-salvo = {version = "0.78", features = ["oapi", "logging",  ]}
+salvo = { version = "0.78", features = ["oapi", "logging", ] }
 config = "0.15"
 veil = "0.2"
 tracing-subscriber = "0.3.19"
+lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean"] }
+log = "0.4.27"
+itertools = "0.14"
+str-macro = "1"
+bbscope = "0.2"
+oauth2 = "5.0.0"
 
-lingua = {version =  "1.7", features = ["english", "russian", "chinese"] }
 [lints.clippy]
 lint_groups_priority = { level = "allow", priority = 0 }
 suspicious = { level = "deny", priority = 1 }

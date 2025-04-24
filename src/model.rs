@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use lingua::Language;
 use salvo::{
     oapi::{Components, RefOr, Schema},
@@ -7,12 +9,36 @@ use serde::{Deserialize, Serialize};
 use surrealdb::{RecordId, RecordIdKey};
 
 use crate::language::DetectedLanguage;
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
+pub enum OrderBy {
+    Alphabetical,
+    #[default]
+    LastUpdated,
+    Votes,
+}
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+impl OrderBy {
+    pub fn column_name(&self) -> &str {
+        match self{
+            OrderBy::Alphabetical => "title",
+            OrderBy::LastUpdated => "last_updated",
+            OrderBy::Votes => "votes"
+        }
+    }
+}
+
+impl Display for OrderBy {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct Tag {
-    app_id: u64,
-    display_name: String,
-    tag: String,
+    pub app_id: u64,
+    pub display_name: String,
+    #[serde(rename = "id")]
+    pub tag: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
@@ -26,6 +52,7 @@ pub struct WorkshopItem<ID> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
     pub title: String,
+    pub tags: Vec<Tag>,
 }
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FullWorkshopItem {
@@ -40,6 +67,7 @@ pub struct FullWorkshopItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
     pub title: String,
+    pub tags: Vec<Tag>,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dependencies {
@@ -49,6 +77,6 @@ pub struct Dependencies {
     pub dependency: RecordId,
 }
 
-pub fn into_string(key: &RecordIdKey) -> String{
+pub fn into_string(key: &RecordIdKey) -> String {
     key.to_string().replace("⟩", "").replace("⟨", "")
 }

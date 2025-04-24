@@ -7,7 +7,7 @@
 // https://steamcommunity.com/sharedfiles/filedetails/?id=3465175461&searchtext=
 // Item URL
 
-mod foo;
+mod model;
 
 use reqwest::{Client, Request};
 use serde::{Deserialize, Serialize};
@@ -77,6 +77,7 @@ pub(crate) struct GetPage {
     pub return_details: bool,
     pub return_metadata: bool,
     pub return_previews: bool,
+    pub return_short_description: bool,
     pub strip_description_bbcode: bool,
     pub admin_query: bool,
     pub cursor: String,
@@ -85,7 +86,7 @@ pub(crate) struct GetPage {
 impl Default for GetPage {
     fn default() -> Self {
         Self {
-            query_type: EPublishedFileQueryType::RankedByPublicationDate,
+            query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
             numperpage: 100,
             appid: 0,
             return_tags: true,
@@ -93,6 +94,7 @@ impl Default for GetPage {
             return_details: true,
             return_metadata: true,
             return_previews: true,
+            return_short_description: true,
             strip_description_bbcode: false,
             admin_query: true,
             cursor: "*".to_string(),
