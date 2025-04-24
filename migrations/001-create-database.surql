@@ -65,7 +65,8 @@ DEFINE FIELD tags ON workshop_item TYPE set<record<tags>> PERMISSIONS FULL;
 DEFINE FIELD tags[*] ON workshop_item TYPE record<tags> PERMISSIONS FULL;
 DEFINE FIELD title ON workshop_item TYPE string PERMISSIONS FULL;
 
-
+DEFINE INDEX item_updated ON tags FIELDS last_updated;
+DEFINE INDEX item_title ON tags FIELDS title;
 
 -- ------------------------------
 -- TABLE DATA: workshop_item
