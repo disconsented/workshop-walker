@@ -179,8 +179,12 @@ async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
             .await
             .unwrap();
         let txt = response.text().await.unwrap();
-        match serde_json::from_str(&txt) {
+        match serde_json::from_str::<SteamRoot>(&txt) {
             Ok(json) => {
+                if json.response.publishedfiledetails.is_empty() {
+                    info!("Got fewer than expected items; exiting early");
+                    break;
+                }
                 next = GetPage::try_from(&json)?;
                 downloaded += json.response.publishedfiledetails.len() as i64;
                 let _ = tx.send(json).unwrap();
@@ -194,7 +198,7 @@ async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
             }
         }
     }
-    println!("finished downloading {downloaded}/total");
+    println!("finished downloading {downloaded}/{total}");
     barrier.wait().await;
     Ok(())
 }
