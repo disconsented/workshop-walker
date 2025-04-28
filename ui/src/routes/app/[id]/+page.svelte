@@ -12,14 +12,15 @@
 		faLink,
 		faSearch
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language } from './store.svelte';
-	import { Pagination } from '@skeletonlabs/skeleton-svelte';
+	import { tags, orderBy, language, limit } from './store.svelte';
 
+	import { Pagination } from '@skeletonlabs/skeleton-svelte';
+	import TimeAgo from '$lib/timeAgo.svelte';
 
 	let { data }: { data: PageData } = $props();
 
-
 	console.log('Hello, wolrd!', data);
+	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
 	$inspect(tags, orderBy, language);
 	let viewMode = $state('grid');
 
@@ -27,28 +28,33 @@
 	let size = $state(10);
 	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
 </script>
+
 <div class="min-h-screen">
-	<div class="max-w-7xl mx-auto px-4 py-8">
+	<div class="mx-auto max-w-7xl px-4 py-8">
 		{@render SearchPanel()}
 
 		<div class="mt-6">
-			<div class="flex gap-2 mb-4">
+			<div class="mb-4 flex gap-2">
 				<button
-					class="btn {viewMode === 'table' ? 'preset-filled-primary-500' : 'preset-outlined-surface-500'} "
-					onclick={() => viewMode = 'table'}
+					class="btn {viewMode === 'table'
+						? 'preset-filled-primary-500'
+						: 'preset-outlined-surface-500'} "
+					onclick={() => (viewMode = 'table')}
 				>
 					Table View
 				</button>
 				<button
-					class="btn {viewMode === 'grid' ? 'preset-filled-primary-500' : 'preset-outlined-surface-500'}"
-					onclick={() => viewMode = 'grid'}
+					class="btn {viewMode === 'grid'
+						? 'preset-filled-primary-500'
+						: 'preset-outlined-surface-500'}"
+					onclick={() => (viewMode = 'grid')}
 				>
 					Grid View
 				</button>
 			</div>
 
 			<span>Results</span>
-			{#if viewMode === "table"}
+			{#if viewMode === 'table'}
 				{@render rTable()}
 			{:else}
 				{@render rgrid()}
@@ -57,225 +63,148 @@
 	</div>
 </div>
 
-{#snippet oldSearch()}
-	<div class="card w-full max-w-md preset-filled-surface-100-900 p-4 text-center">
-		<p>Filter Options</p>
-		<form class="flex flex-col">
-			<label class="label">
-				<span class="label-text">Language</span>
-				<select class="select" bind:value={language.v}>
-					<option value="Russian">Russian</option>
-					<option value="Chinese">Chinese</option>
-					<option value="English">English</option>
-				</select>
-			</label>
-
-			<label class="label">
-				<span class="label-text">Order By</span>
-				<select class="select" bind:value={orderBy.v}>
-					<option value="votes">Votes</option>
-					<option value="lastUpdated">Last Updated</option>
-					<option value="alphabetical">Alphabetical</option>
-				</select>
-			</label>
-
-			<label class="label">
-				<span class="label-text">Updated Since</span>
-				<input type="datetime-local">
-			</label>
-
-			<hr />
-			<label class="label">
-				<span class="label-text">Tags</span>
-				<div class="space-y-2">
-					{#each ["Mod",
-						"Translation",
-						"Scenario",
-						"0.14",
-						"0.15",
-						"0.16",
-						"0.17",
-						"0.18",
-						"0.19",
-						"1.0",
-						"1.1",
-						"1.2",
-						"1.3",
-						"1.4",
-						"1.5"] as tag}
-						<label class="flex items-center space-x-2">
-							<input name="tag" class="checkbox" type="checkbox" value="{tag}" bind:group={tags.v} />
-							<p>{tag}</p>
-						</label>
-					{/each}
-				</div>
-				<!--			<button class="btn preset-filled">Clear</button>-->
-			</label>
-			<hr />
-			<div class="input-group grid-cols-[auto_1fr_auto_auto]">
-				<div class="ig-cell preset-tonal">
-					<Icon data={faSearch} class="fa-fw"></Icon>
-				</div>
-				<input class="ig-input" type="search" placeholder="Search..." />
-			</div>
-			<div class="input-group grid-cols-[auto_auto]">
-				<button class="ig-btn preset-filled">Submit</button>
-				<button class="ig-btn preset-filled-warning-500" type="reset">Clear</button>
-			</div>
-
-		</form>
-	</div>
-{/snippet}
-
 {#snippet SearchPanel()}
-	<form class="card rounded-lg shadow p-6  preset-filled-surface-100-900 text-center">
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+	{@const tagGroup = tags.v}
+	<form class="card preset-filled-surface-100-900 rounded-lg p-6 text-center shadow">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 			<div>
-				<label class="block text-sm font-medium mb-2">Title:</label>
+				<label class="mb-2 block text-sm font-medium">Title:</label>
 				<input
 					type="text"
 					placeholder="Search by title"
-					class="border rounded-lg px-3 py-2 w-full input"
+					class="input w-full rounded-lg border px-3 py-2"
 				/>
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium mb-2">Updated Since:</label>
-				<input
-					type="datetime-local"
-					class="border rounded-lg px-3 py-2 w-full input"
-				/>
+				<label class="mb-2 block text-sm font-medium">Updated Since:</label>
+				<input type="datetime-local" class="input w-full rounded-lg border px-3 py-2" />
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium mb-2">Language:</label>
-				<select
-					class="border rounded-lg px-3 py-2 w-full select"
-					bind:value={language.v}
-				>
+				<label class="mb-2 block text-sm font-medium">Language:</label>
+				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
 					<option value="English">English</option>
 					<option value="Russian">Russian</option>
 					<option value="Chinese">Chinese</option>
+					<option value="Japanese">Japanese</option>
+					<option value="Korean">Korean</option>
 				</select>
 			</div>
 
 			<div>
-				<label class="block text-sm font-medium mb-2">Order By:</label>
-				<select
-					class="border rounded-lg px-3 py-2 w-full select"
-					bind:value={orderBy.v}
-				>
-					<option value="lastUpdated">Last Updated</option>
-					<option value="alphabetical">Alphabetical</option>
-					<option value="votes">Votes</option>
+				<label class="mb-2 block text-sm font-medium">Order By:</label>
+				<select class="select w-full rounded-lg border px-3 py-2" bind:value={orderBy.v}>
+					<option value="LastUpdated">Last Updated</option>
+					<option value="Alphabetical">Alphabetical</option>
+					<option value="Votes">Votes</option>
 				</select>
 			</div>
 
-			<div class="md:col-span-4 flex flex-wrap gap-2">
-				{#each ["Mod",
-					"Translation",
-					"Scenario",
-					"0.14",
-					"0.15",
-					"0.16",
-					"0.17",
-					"0.18",
-					"0.19",
-					"1.0",
-					"1.1",
-					"1.2",
-					"1.3",
-					"1.4",
-					"1.5"] as tag}
+			<div class="flex flex-wrap gap-2 md:col-span-4">
+				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5'] as tag}
 					<label class="flex items-center space-x-2">
-						<input name="tag" class="checkbox" type="checkbox" value="{tag}" />
+						<input
+							name="tag"
+							class="checkbox"
+							type="checkbox"
+							value={tag}
+							bind:group={storeTags.v}
+						/>
 						<p>{tag}</p>
 					</label>
 				{/each}
 			</div>
 
-			<div class="md:col-span-full flex gap-4">
-				<label class="block text-sm font-medium mb-2">Entries per page:</label>
+			<div class="flex gap-4 md:col-span-full">
+				<label class="mb-2 block text-sm font-medium">Limit:</label>
 				<input
 					type="number"
 					min="1"
 					max="100"
-					value={25}
-					class="border rounded-lg px-3 py-2 w-24 input"
+					value={limit.v}
+					class="input w-24 rounded-lg border px-3 py-2"
 				/>
 			</div>
 
-			<div class="md:col-span-full flex gap-4">
-				<button
-					type="submit"
-					class="ig-btn preset-filled"
-				>
-					Search
-				</button>
-				<button
-					type="reset"
-					class="ig-btn preset-filled-warning-500"
-				>
-					Reset
-				</button>
+			<div class="flex gap-4 md:col-span-full">
+				<button type="submit" class="ig-btn preset-filled"> Search </button>
+				<button type="reset" class="ig-btn preset-filled-warning-500"> Reset </button>
 			</div>
 		</div>
 	</form>
-
 {/snippet}
 
 {#snippet rTable()}
-	<div class="rounded-lg shadow overflow-hidden table-wrap">
+	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-			<tr>
-				<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Title</th>
-				<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Author</th>
-				<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Updated</th>
-				<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Description</th>
-			</tr>
-			</thead>
-			<tbody class="divide-y divide-gray-200 [&>tr]:hover:preset-tonal-primary">
-			{#each slicedSource(data.result) as item(item.id)}
-				<tr class="hover:bg-gray-50">
-					<td class="px-6 py-4 text-sm">
-						<a href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}" target="_blank"
-							 rel="noopener noreferrer"
-							 class="">
-							{item.title}
-						</a>
-						<br />
-						<span class="text-xs text-gray-500">Lookup: <a href="/item/{item.id}" target="_blank"
-																													 rel="noopener noreferrer"
-																													 class="btn text-xs">Details <Icon data={faLink}
-																																														 class="fa-fw"></Icon></a></span>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						{item.author}
-						<br />
-						<small class="text-gray-500">
-							<a href="/item/{item.id}" target="_blank"
-								 rel="noopener noreferrer"
-								 class="">Details
-								<Icon data={faLink}
-											class="fa-fw"></Icon>
-							</a>
-						</small>
-					</td>
-					<td class="px-6 py-4 text-sm">{item.last_updated}</td>
-					<td class="px-6 py-4 text-sm truncate">{item.description}</td>
-				</tr>
-			{:else}
 				<tr>
-					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+						>Last Updated</th
+					>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+						>Description</th
+					>
 				</tr>
-			{/each}
+			</thead>
+			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
+				{#each slicedSource(data.result) as item (item.id)}
+					<tr class="hover:bg-gray-50">
+						<td class="px-6 py-4 text-sm">
+							<a
+								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class=""
+							>
+								{item.title}
+							</a>
+							<br />
+							<span class="text-xs text-gray-500"
+								>Lookup: <a
+									href="/item/{item.id}"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+								></span
+							>
+						</td>
+						<td class="px-6 py-4 text-sm">
+							<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
+								<Icon data={faSteamSymbol} class="fa-fw"></Icon> Author
+							</a>
+							<br />
+							<small class="text-gray-500">
+								<a href="/item/{item.id}" target="_blank" rel="noopener noreferrer" class=""
+									>Details
+									<Icon data={faLink} class="fa-fw"></Icon>
+								</a>
+							</small>
+						</td>
+						<td class="px-6 py-4 text-sm">
+							<TimeAgo date={item.last_updated}></TimeAgo>
+						</td>
+						<td class="truncate px-6 py-4 text-sm">{item.description}</td>
+					</tr>
+				{:else}
+					<tr>
+						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+					</tr>
+				{/each}
 			</tbody>
 		</table>
 
 		<footer class="flex justify-between">
-			<select name="size" id="size" class="select max-w-[150px]" value={size}
-							onchange={(e) => (size = Number(e.currentTarget.value))}>
+			<select
+				name="size"
+				id="size"
+				class="select max-w-[150px]"
+				value={size}
+				onchange={(e) => (size = Number(e.currentTarget.value))}
+			>
 				{#each [5, 10, 15, 30] as v}
 					<option value={v}>Items {v}</option>
 				{/each}
@@ -308,42 +237,55 @@
 			</Pagination>
 		</footer>
 	</div>
-
 {/snippet}
 
 {#snippet rgrid()}
-	<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-		{#each slicedSource(data.result) as item(item.id)}
+	<div class="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+		{#each slicedSource(data.result) as item (item.id)}
 			<div
-				class="card preset-filled-surface-100-900 border-[1px] border-surface-200-800 card-hover divide-surface-200-800 block max-w-md divide-y overflow-hidden">
+				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block max-w-md divide-y overflow-hidden border-[1px]"
+			>
 				<header>
 					<img
-						src={item.preview_url || 'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-						class="w-full h-48 object-cover w-full" alt="banner" class:hue-rotate-90={!item.preview_url}
-						class:grayscale={!item.preview_url} />
+						src={item.preview_url ||
+							'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
+						class="h-48 w-full w-full object-cover"
+						alt="banner"
+						class:hue-rotate-90={!item.preview_url}
+						class:grayscale={!item.preview_url}
+					/>
 				</header>
 				<article class="space-y-4 p-4">
 					<h6 class="h6">
-						<a href="/item/{item.id}" target="_blank"
-							 rel="noopener noreferrer"
-							 class="">
+						<a
+							href="/item/{item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="hover:anchor"
+						>
 							{item.title}
 							<Icon data={faLink} class="fa-fw"></Icon>
 						</a>
 					</h6>
-					<div class="flex justify-between items-center mb-2">
-						<span class="text-sm text-gray-500">by {item.author}</span>
+					<div class="mb-2 flex items-center justify-between">
+						<span class="text-sm text-gray-500"
+							>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
+						>
 						<small class="text-xs text-gray-500">
-							<a href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}" target="_blank"
-								 rel="noopener noreferrer" class="hover:text-gray-700">Steam
+							<a
+								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="anchor hover:text-gray-700"
+								>Steam
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 							</a>
 						</small>
 					</div>
-					<p class="text-sm text-gray-600 truncate mb-2">{item.description}</p>
+					<p class="mb-2 truncate text-sm text-gray-600">{item.description}</p>
 				</article>
-				<footer class="flex gap-1 m-2 flex-wrap">
-					{#each item.tags as tag(tag.id)}
+				<footer class="m-2 flex flex-wrap gap-1">
+					{#each item.tags as tag (tag.id)}
 						<button type="button" class="chip preset-filled">{tag.display_name}</button>
 					{:else}
 						<button type="button" class="chip preset-filled">-</button>
@@ -351,16 +293,18 @@
 				</footer>
 			</div>
 		{:else}
-			<div class="text-center text-gray-500 py-8">
-				No results found
-			</div>
+			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}
 	</div>
 
-
 	<footer class="flex justify-between">
-		<select name="size" id="size" class="select max-w-[150px]" value={size}
-						onchange={(e) => (size = Number(e.currentTarget.value))}>
+		<select
+			name="size"
+			id="size"
+			class="select max-w-[150px]"
+			value={size}
+			onchange={(e) => (size = Number(e.currentTarget.value))}
+		>
 			{#each [5, 10, 15, 30] as v}
 				<option value={v}>Items {v}</option>
 			{/each}
