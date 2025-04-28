@@ -180,5 +180,5 @@ Temporary Items
 
 # Project Specific Ignores
 data_cache
-config.toml
+config/config.toml
 workshopdb
