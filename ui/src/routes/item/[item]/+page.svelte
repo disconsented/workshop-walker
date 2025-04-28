@@ -1,7 +1,5 @@
 <script lang="ts">
 	import Icon from 'svelte-awesome';
-
-	export const ssr = false;
 	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import { faArrowLeft, faLink } from '@fortawesome/free-solid-svg-icons';

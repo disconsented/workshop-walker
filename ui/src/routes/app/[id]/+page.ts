@@ -1,6 +1,6 @@
 import { language, tags } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
-
+export const prerender = false;
 export const load: PageLoad = async ({ fetch, params }) => {
 	// const url = new URL();
 
