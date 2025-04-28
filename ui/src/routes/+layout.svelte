@@ -20,14 +20,14 @@
 	<!-- Grid Columns -->
 	<div class="grid grid-cols-1 md:grid-cols-[auto_1fr]">
 		<!-- Left Sidebar. -->
-		<aside class="">
-		</aside>
+		<aside class=""></aside>
 		<!-- Main Content -->
 		<main class="space-y-4 p-4">
 			{@render children()}
 		</main>
 	</div>
 	<!-- Footer -->
-	<footer class="p-4">Workshop Walker by Disconsented - Made with love using Rust, SurrealDB, Svelte & Skeleton.dev
+	<footer class="p-4">
+		Workshop Walker by Disconsented - Made with love using Rust, SurrealDB, Svelte & Skeleton.dev
 	</footer>
 </div>
