@@ -95,12 +95,12 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
             .query(
                 r#"SELECT in.appid as appid, in.description as description, in.id as id, in.title
                  as title, in.author as author, in.language as language, in.last_updated as
-                 last_updated, in.tags.map(|$a| {"id": <string> $a.id, "app_id": $a.app_id, "display_name":$a.display_name} ) as tags FROM $id<-item_dependencies.*;"#,
+                 last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, display_name} as tags FROM $id<-item_dependencies.*;"#,
             )
             .query(
                 r#"SELECT out.appid as appid, out.description as description, out.id as id,
                  out.author as author, out.language as language, out.last_updated as
-                 last_updated, out.title as title, out.tags.map(|$a| {"id": <string> $a.id, "app_id": $a.app_id, "display_name":$a.display_name} ) as tags
+                 last_updated, out.title as title, out.score as score, out.tags.{id: id.to_string(), app_id, display_name} as tags
                  FROM $id->item_dependencies.*;"#,
             )
             .bind(("id", id.clone()))
