@@ -10,7 +10,7 @@ pub enum OrderBy {
     Alphabetical,
     #[default]
     LastUpdated,
-    Votes,
+    Score,
 }
 
 impl OrderBy {
@@ -18,7 +18,7 @@ impl OrderBy {
         match self{
             OrderBy::Alphabetical => "title",
             OrderBy::LastUpdated => "last_updated",
-            OrderBy::Votes => "votes"
+            OrderBy::Score => "score"
         }
     }
 }
@@ -49,6 +49,7 @@ pub struct WorkshopItem<ID> {
     pub preview_url: Option<String>,
     pub title: String,
     pub tags: Vec<Tag>,
+    pub score: f32,
 }
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FullWorkshopItem {
@@ -64,6 +65,7 @@ pub struct FullWorkshopItem {
     pub preview_url: Option<String>,
     pub title: String,
     pub tags: Vec<Tag>,
+    pub score: f32,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dependencies {

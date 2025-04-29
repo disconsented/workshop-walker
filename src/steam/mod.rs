@@ -68,6 +68,8 @@ enum EPublishedFileInfoMatchingFileType {
     MatchingFileType_WorkshopShowcase = 19,
     MatchingFileType_GameManagedItems = 20,
 }
+
+#[allow(dead_code)]
 pub(crate) struct GetPage {
     pub query_type: EPublishedFileQueryType,
     pub numperpage: u32,
@@ -77,6 +79,7 @@ pub(crate) struct GetPage {
     pub return_details: bool,
     pub return_metadata: bool,
     pub return_previews: bool,
+    pub return_vote_data: bool,
     pub return_short_description: bool,
     pub strip_description_bbcode: bool,
     pub admin_query: bool,
@@ -94,6 +97,7 @@ impl Default for GetPage {
             return_details: true,
             return_metadata: true,
             return_previews: true,
+            return_vote_data: true,
             return_short_description: true,
             strip_description_bbcode: false,
             admin_query: true,
@@ -112,6 +116,7 @@ impl GetPage {
                 ("numperpage", &self.numperpage.to_string()),
                 ("appid", &self.appid.to_string()),
                 ("return_tags", &self.return_tags.to_string()),
+                ("return_vote_data", &self.return_vote_data.to_string()),
                 ("return_children", &self.return_children.to_string()),
                 ("return_details", &self.return_details.to_string()),
                 (
@@ -178,7 +183,7 @@ pub struct Struct {
     #[serde(default)]
     pub can_be_deleted: bool,
     pub app_name: Option<String>,
-    pub file_type: Option<EPublishedFileInfoMatchingFileType>,
+    file_type: Option<EPublishedFileInfoMatchingFileType>,
     #[serde(default)]
     pub can_subscribe: bool,
     pub subscriptions: Option<i64>,
@@ -205,6 +210,7 @@ pub struct Struct {
     pub revision: Option<i64>,
     pub ban_text_check_result: Option<i64>,
     pub content_descriptorids: Option<Vec<i64>>,
+    pub vote_data: Option<VoteData>
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Response {
@@ -217,6 +223,13 @@ pub struct Response {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SteamRoot {
     pub response: Response,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct VoteData {
+    pub score: f32,
+    pub votes_up: usize,
+    pub votes_down: usize,
 }
 
 #[cfg(test)]

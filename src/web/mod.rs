@@ -141,6 +141,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                     preview_url: e.preview_url,
                     last_updated: e.last_updated,
                     tags: e.tags,
+                    score: e.score,
                 })
                 .collect(),
 
@@ -156,9 +157,11 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                     preview_url: e.preview_url,
                     last_updated: e.last_updated,
                     tags: e.tags,
+                    score: e.score,
                 })
                 .collect(),
             tags: result.tags,
+            score: result.score,
         })
     }
     let results = query(id, db).await?;
@@ -281,7 +284,7 @@ async fn list(
                     Expression::new(
                         sql::Value::Idiom("title".into()),
                         Operator::Like,
-                        sql::Value::Idiom(title_query.into()),
+                        sql::Value::Strand(title_query.into()),
                     )
                 }),
             ]
@@ -375,6 +378,7 @@ async fn list(
                 preview_url: res.preview_url,
                 last_updated: res.last_updated,
                 tags: res.tags,
+                score: res.score,
             })
             .collect())
     }
