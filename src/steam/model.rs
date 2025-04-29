@@ -13,6 +13,7 @@ struct Struct1 {
     pub display_name: String,
 }
 
+#[allow(clippy::missing_docs_in_private_items)]
 #[derive(Serialize, Deserialize)]
 struct Struct {
     pub result: i64,

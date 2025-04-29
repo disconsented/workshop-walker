@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs"] }
-surrealdb = { version = "2.2", features = ["kv-rocksdb"] }
+tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
+surrealdb = { version = "2.2", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls"] }
 reqwest = { version = "0.12", features = ["json"] }
 indicatif = "0.17.11"
 serde = { version = "1.0", features = ["derive"] }
@@ -15,9 +15,8 @@ snafu = "0.8"
 salvo = { version = "0.78", features = ["oapi", "logging", "serve-static"] }
 config = "0.15"
 veil = "0.2"
-tracing-subscriber = "0.3.19"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean"] }
-log = "0.4.27"
 itertools = "0.14"
 str-macro = "1"
 bbscope = "0.2"
@@ -43,3 +42,4 @@ correctness = { level = "deny", priority = 6 }
 complexity = { level = "warn", priority = 7 }
 dbg_macro = { level = "deny", priority = 8 }
 allow-dbg-in-tests = { level = "allow", priority = 9 }
+pub_with_shorthand = { level = "allow", priority = 10 }

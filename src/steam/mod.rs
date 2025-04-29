@@ -16,7 +16,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use snafu::Whatever;
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
-enum EPublishedFileQueryType {
+pub enum EPublishedFileQueryType {
     #[default]
     RankedByVote = 0,
     RankedByPublicationDate = 1,
@@ -42,6 +42,7 @@ enum EPublishedFileQueryType {
     RankedByLastUpdatedDate = 21,
 }
 
+#[allow(non_camel_case_types)] // Can't control the _ and steam requires it
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone)]
 #[repr(u8)]
 enum EPublishedFileInfoMatchingFileType {
@@ -67,7 +68,6 @@ enum EPublishedFileInfoMatchingFileType {
     MatchingFileType_WorkshopShowcase = 19,
     MatchingFileType_GameManagedItems = 20,
 }
-struct GetFilesCount {}
 pub(crate) struct GetPage {
     pub query_type: EPublishedFileQueryType,
     pub numperpage: u32,
@@ -107,7 +107,7 @@ impl GetPage {
         client
             .get("https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/")
             .query(&[
-                ("access_token", access_token),
+                ("key", access_token),
                 ("cursor", &self.cursor),
                 ("numperpage", &self.numperpage.to_string()),
                 ("appid", &self.appid.to_string()),

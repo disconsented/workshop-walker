@@ -1,10 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use lingua::Language;
-use salvo::{
-    oapi::{Components, RefOr, Schema},
-    prelude::ToSchema,
-};
+use salvo::prelude::ToSchema;
 use serde::{Deserialize, Serialize};
 use surrealdb::{RecordId, RecordIdKey};
 

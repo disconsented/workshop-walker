@@ -1,9 +1,8 @@
-use std::{collections::HashMap, mem::take, str::FromStr};
+use std::str::FromStr;
 
 use itertools::Itertools;
-use lingua::Language;
 use salvo::{
-    __private::tracing::{debug, info},
+    __private::tracing::info,
     Router,
     oapi::{
         Components, Operation,
@@ -15,24 +14,20 @@ use serde_json::Map;
 use snafu::{OptionExt, ResultExt, Whatever};
 use str_macro::str;
 use surrealdb::{
-    RecordId, Surreal, Value,
+    RecordId, Surreal,
     engine::local::Db,
-    rpc::{Method::Select, format::json::req},
     sql,
     sql::{
-        Cond, Expression, Field, Fields, Ident, Idiom, Limit, Operator, Order,
-        Value::{Closure, Strand},
-        parse,
-        statements::SelectStatement,
-        to_value,
+        Cond, Expression, Field, Operator, statements::SelectStatement, to_value,
     },
-    syn::{idiom, parse_with_capabilities},
+    syn::idiom,
 };
 use tokio::sync::OnceCell;
+use tracing::{Instrument, info_span, instrument};
 
 use crate::{
     language::{DetectedLanguage, detect},
-    model::{FullWorkshopItem, OrderBy, Tag, WorkshopItem, into_string},
+    model::{FullWorkshopItem, OrderBy, WorkshopItem, into_string},
 };
 
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
@@ -41,7 +36,7 @@ pub async fn start(db: Surreal<Db>) {
     let router = Router::new()
         .push(Router::with_path("api/list").get(list))
         .push(Router::with_path("api/item/{id}").get(get));
-    let doc = OpenApi::new("test api", "0.0.1").merge_router(&router);
+    let doc = OpenApi::new("workshop-walker", "0.0.1").merge_router(&router);
     let router = router
         .push(doc.into_router("/api-doc/openapi.json"))
         .push(SwaggerUi::new("/api-doc/openapi.json").into_router("swagger-ui"));
@@ -58,7 +53,7 @@ pub async fn start(db: Surreal<Db>) {
 
     let service = Service::new(router).hoop(Logger::new());
 
-    let acceptor = TcpListener::new("127.0.0.1:5800").bind().await;
+    let acceptor = TcpListener::new("0.0.0.0:5800").bind().await;
     Server::new(acceptor).serve(service).await;
 }
 
@@ -85,13 +80,14 @@ impl EndpointOutRegister for Error {
 
 #[async_trait]
 impl Writer for Error {
-    async fn write(mut self, _req: &mut Request, depot: &mut Depot, res: &mut Response) {
+    async fn write(mut self, _req: &mut Request, _: &mut Depot, res: &mut Response) {
         res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
         res.render(Text::Plain(format!("Error: {:#?}", self.0)));
     }
 }
 
 #[endpoint]
+#[instrument]
 async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
     let id = id.0;
     let db: &Surreal<Db> = DB_POOL.get().expect("DB not initialised");
@@ -172,10 +168,10 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
     info!("Language is: {:?}", detect(&results.description));
     Ok(Json(results))
 }
-
+#[instrument(skip_all)]
 #[endpoint]
 async fn list(
-    req: &mut Request,
+    _req: &mut Request,
     page: QueryParam<u64, false>,
     limit: QueryParam<u64, false>,
     language: QueryParam<DetectedLanguage, false>,
@@ -186,14 +182,14 @@ async fn list(
 ) -> Result<Json<Vec<WorkshopItem<String>>>> {
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
-    let db: &Surreal<Db> = DB_POOL.get().unwrap();
-
+    let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
+    #[instrument(skip_all)]
     async fn query(
         page: u64,
         limit: u64,
         language: Option<DetectedLanguage>,
         tags: Vec<String>,
-        title: Option<String>,
+        _title: Option<String>,
         updated: Option<u64>,
         order_by: Option<OrderBy>,
         db: &Surreal<Db>,
@@ -204,7 +200,7 @@ async fn list(
 
             {
                 stmt.expr.0.push(Field::Single {
-                    expr: idiom(r#"tags.{id: id.to_string(), app_id, display_name}"#)
+                    expr: idiom("tags.{id: id.to_string(), app_id, display_name}")
                         .unwrap()
                         .into(),
                     alias: Some("tags".into()),
@@ -282,7 +278,6 @@ async fn list(
                             sql::Value::Bool(true),
                         )
                     }
-
                 }),
             ]
             .into_iter()
@@ -296,9 +291,11 @@ async fn list(
                     let c2 = condition.next();
                     match (values, c1, c2) {
                         (sql::Value::None, Some(expr1), Some(expr2)) => {
-                            values = sql::Value::Expression(Box::from(
-                                (sql::Expression::new(expr1.into(), Operator::And, expr2.into())),
-                            ));
+                            values = sql::Value::Expression(Box::from(sql::Expression::new(
+                                expr1.into(),
+                                Operator::And,
+                                expr2.into(),
+                            )));
                         }
                         (sql::Value::None, Some(expr1), None) => {
                             values = sql::Value::Expression(Box::from(expr1));
@@ -307,13 +304,11 @@ async fn list(
                             values = sql::Value::Expression(Box::from(sql::Expression::new(
                                 sql::Value::Expression(old),
                                 Operator::And,
-                                sql::Value::Expression(Box::from(
-                                    (sql::Expression::new(
-                                        expr1.into(),
-                                        Operator::And,
-                                        expr2.into(),
-                                    )),
-                                )),
+                                sql::Value::Expression(Box::from(sql::Expression::new(
+                                    expr1.into(),
+                                    Operator::And,
+                                    expr2.into(),
+                                ))),
                             )));
                         }
                         (sql::Value::Expression(old), Some(expr1), None) => {
@@ -388,6 +383,7 @@ async fn list(
         order_by.take(),
         db,
     )
+    .instrument(info_span!("query list").or_current())
     .await?;
 
     Ok(Json(results))
