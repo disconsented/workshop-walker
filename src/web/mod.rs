@@ -45,6 +45,17 @@ pub async fn start(db: Surreal<Db>) {
     let router = router
         .push(doc.into_router("/api-doc/openapi.json"))
         .push(SwaggerUi::new("/api-doc/openapi.json").into_router("swagger-ui"));
+
+    let router = router.push(
+        Router::with_path("{**path}").get(
+            StaticDir::new(["ui/build/"])
+                .include_dot_files(false)
+                .auto_list(true)
+                .defaults("index.html")
+                .fallback("index.html"),
+        ),
+    );
+
     let service = Service::new(router).hoop(Logger::new());
 
     let acceptor = TcpListener::new("127.0.0.1:5800").bind().await;
