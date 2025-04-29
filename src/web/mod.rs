@@ -17,9 +17,7 @@ use surrealdb::{
     RecordId, Surreal,
     engine::local::Db,
     sql,
-    sql::{
-        Cond, Expression, Field, Operator, statements::SelectStatement, to_value,
-    },
+    sql::{Cond, Expression, Field, Operator, statements::SelectStatement, to_value},
     syn::idiom,
 };
 use tokio::sync::OnceCell;
@@ -189,7 +187,7 @@ async fn list(
         limit: u64,
         language: Option<DetectedLanguage>,
         tags: Vec<String>,
-        _title: Option<String>,
+        title: Option<String>,
         updated: Option<u64>,
         order_by: Option<OrderBy>,
         db: &Surreal<Db>,
@@ -278,6 +276,13 @@ async fn list(
                             sql::Value::Bool(true),
                         )
                     }
+                }),
+                title.map(|title_query| {
+                    Expression::new(
+                        sql::Value::Idiom("title".into()),
+                        Operator::Like,
+                        sql::Value::Idiom(title_query.into()),
+                    )
                 }),
             ]
             .into_iter()
