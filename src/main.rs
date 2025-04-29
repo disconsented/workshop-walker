@@ -1,33 +1,33 @@
-use std::{fmt::Write, path::PathBuf, sync::Arc};
+use std::{
+    env,
+    fmt::Write,
+    ops::Add,
+    path::PathBuf,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
+
 use bbscope::{BBCode, BBCodeTagConfig};
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use reqwest::Client;
-use salvo::__private::tracing::{error, info};
+use salvo::__private::tracing::{debug, error, info};
 use snafu::{Whatever, prelude::*};
 use surrealdb::{
     RecordId, Surreal,
     engine::local::{Db, RocksDb},
-    opt::{Table, auth::Root},
-    rpc::Method::Insert,
-    sql::{
-        Array, Data, Idiom, Value,
-        statements::{InsertStatement, UpdateStatement, UpsertStatement},
-        to_value,
-    },
-    syn::token::Keyword::{From, M},
+    opt::auth::Root,
+    sql::{Data, Value, statements::InsertStatement, to_value},
 };
 use tokio::{
-    fs::DirEntry,
     io::AsyncWriteExt,
     spawn,
-    sync::Barrier,
-    task::{JoinSet, spawn_blocking},
+    sync::mpsc::UnboundedSender,
+    time::{Instant, sleep, sleep_until},
 };
 
 use crate::{
     language::detect,
-    model::{Dependencies, Tag, WorkshopItem},
-    steam::{GetPage, SteamRoot, Struct},
+    model::{Dependencies, WorkshopItem},
+    steam::{EPublishedFileQueryType, GetPage, SteamRoot, Struct},
 };
 
 mod app_config;
@@ -40,9 +40,11 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = Whatever;
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt().init();
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(env::var("RUST_LOG").unwrap_or_default())
+        .try_init();
     let settings: app_config::Config = config::Config::builder()
-        .add_source(config::File::with_name("config"))
+        .add_source(config::File::with_name("config/config.toml"))
         .build()
         .whatever_context("finding config")?
         .try_deserialize()
@@ -53,6 +55,25 @@ async fn main() -> Result<()> {
         .await
         .whatever_context("connecting to db")?;
 
+    // Select a specific namespace / database
+    db.use_ns("workshop")
+        .use_db("workshop")
+        .await
+        .whatever_context("using ns/db")?;
+
+    if !db_exists {
+        info!("creating db");
+        db.query(format!(
+            "DEFINE USER {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, FOR SESSION \
+             NONE;",
+            settings.database.user, settings.database.password
+        ))
+        .await
+        .whatever_context("creating root user")?;
+        db.query(include_str!("../migrations/001-create-database.surql"))
+            .await
+            .whatever_context("running creation")?;
+    }
     // Signin as a namespace, database, or root user
     db.signin(Root {
         username: &settings.database.user,
@@ -61,24 +82,12 @@ async fn main() -> Result<()> {
     .await
     .whatever_context("signing in to db")?;
 
-    if !db_exists {
-        info!("creating db");
-        db.query(include_str!("../migrations/001-create-database.surql"))
-            .await
-            .whatever_context("running creation")?;
-    }
-
-    // Select a specific namespace / database
-    db.use_ns("workshop")
-        .use_db("workshop")
-        .await
-        .whatever_context("using ns/db")?;
-
     {
         let db = db.clone();
+        let token = settings.steam.api_token.clone();
         spawn(async move {
             if settings.download_workshop {
-                download(&settings.steam.api_token.clone(), settings.steam.appid)
+                download_to_disk(&token, settings.steam.appid, GetPage::default())
                     .await
                     .unwrap();
             }
@@ -88,11 +97,10 @@ async fn main() -> Result<()> {
                 let mut readdir = tokio::fs::read_dir("data_cache").await.unwrap();
                 let mut i = 0;
 
-
                 let bbcode = BBCode::from_config(BBCodeTagConfig::extended(), None).unwrap();
                 // SurrealDB can't handle these queries in parallel, so serial for now
                 while let Ok(Some(entry)) = readdir.next_entry().await {
-                    if let Err(e) = insert_data(&db, entry.path(), &bbcode).await {
+                    if let Err(e) = read_and_insert_data(&db, entry.path(), &bbcode).await {
                         println!("read failed: {e:#?}");
                     }
                     i += 1;
@@ -102,17 +110,87 @@ async fn main() -> Result<()> {
             }
         });
     }
+    if settings.updater {
+        let db = db.clone();
+        let token = settings.steam.api_token.clone();
+        spawn(async move {
+            let token = token;
+            let timestamp: Option<u64> = db
+                .query("SELECT last_updated FROM workshop_items ORDER BY last_updated DESC LIMIT 1")
+                .await
+                .unwrap()
+                .take((0, "last_updated"))
+                .unwrap();
+            let timestamp = timestamp.unwrap_or(0);
+            let time_since = SystemTime::now()
+                .duration_since(UNIX_EPOCH.add(Duration::from_secs(timestamp)))
+                .unwrap();
+            let h12 = Duration::from_secs(60 * 60 * 12);
+            if time_since < h12 {
+                let awake_in = h12 - time_since;
+                info!(
+                    "last_update from under 12 hours ago, sleeping for: {}",
+                    humantime::Duration::from(awake_in)
+                );
+                sleep(awake_in).await;
+            } else {
+                info!("last_updated: {}", humantime::Duration::from(time_since))
+            }
+            loop {
+                info!("Starting update");
+                let next_run = Instant::now() + Duration::from_secs(60 * 60 * 12); // 12 hours later
+                let mut first_page = GetPage::default();
+                first_page.query_type = EPublishedFileQueryType::RankedByLastUpdatedDate;
+                let bbcode = BBCode::from_config(BBCodeTagConfig::extended(), None).unwrap();
+                let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<SteamRoot>();
+                let to_database = {
+                    let db = db.clone();
+                    tokio::spawn(async move {
+                        let mut i = 0;
+                        while let Some(steam_root) = rx.recv().await {
+                            for item in steam_root.response.publishedfiledetails {
+                                match serde_json::from_value(item) {
+                                    Ok(item) => {
+                                        if let Err(e) = insert_data(&db, &bbcode, item).await {
+                                            error!("Inserting updated data with err: {e:?}")
+                                        }
+                                        i += 1;
+                                    }
+                                    Err(e) => error!("Parsing item: {e:?}"),
+                                };
+                            }
+                            debug!("Insert progress: {i}");
+                        }
+                    })
+                };
+                if let Err(e) = download(&token, settings.steam.appid, first_page, tx).await {
+                    error!("Periodic downloads failed with error: {e:?}")
+                }
+                let _ = to_database.await;
+                info!("Finished updating");
+                sleep_until(next_run).await;
+            }
+        });
+    }
     web::start(db).await;
     Ok(())
 }
 
 // Read all cached steam files and load them into the database
-async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(), Whatever> {
+async fn read_and_insert_data(
+    db: &Surreal<Db>,
+    path: PathBuf,
+    bb: &BBCode,
+) -> Result<(), Whatever> {
     let raw_json = tokio::fs::read_to_string(path)
         .await
         .whatever_context("reading file")?;
-    let data: Struct = serde_json::from_str(&raw_json).whatever_context("parsing from disk")?;
+    let data: Struct = serde_json::from_str(&raw_json).whatever_context("parsing from text")?;
 
+    insert_data(db, bb, data).await
+}
+
+async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), Whatever> {
     let id = RecordId::from_table_key("workshop_items", data.publishedfileid);
     let description = data.file_description.unwrap_or_default();
     let item: WorkshopItem<RecordId> = WorkshopItem {
@@ -157,10 +235,6 @@ async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(),
         stmt.relation = true;
 
         stmt.into = Some(Value::Table("item_dependencies".into()));
-        if id.eq(&RecordId::from_table_key("workshop_items", "3121742525")) {
-            dbg!(&data.children);
-        }
-
         let data = data
             .children
             .into_iter()
@@ -169,10 +243,7 @@ async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(),
                 to_value(Dependencies {
                     id: RecordId::from_table_key(
                         "item_dependencies",
-                        vec![
-                            id.clone().into(),
-                            dep_id.clone().into()
-                        ],
+                        vec![id.clone().into(), dep_id.clone().into()],
                     ),
                     this: id.clone(),
                     dependency: dep_id,
@@ -185,7 +256,7 @@ async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(),
         stmt
     };
 
-    let foo = db
+    let query = db
         .query("BEGIN TRANSACTION")
         .query(insert_tags)
         .query(upsert_item)
@@ -199,8 +270,8 @@ async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(),
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");
-    let sql = format!("{foo:#?}");
-    let mut response = foo.await.whatever_context("big insert query")?;
+    let sql = format!("{query:#?}");
+    let mut response = query.await.whatever_context("big insert query")?;
 
     let errors = response.take_errors();
     if errors.len() > 0 {
@@ -212,32 +283,11 @@ async fn insert_data(db: &Surreal<Db>, path: PathBuf, bb: &BBCode) -> Result<(),
     Ok(())
 }
 
-// Download _all_ items from the steam workshop (for a given app) and cache them on disk.
-async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
-    let client = Client::new();
-    let mut first_page = GetPage::default();
-    first_page.appid = appid;
-    let first = first_page.into_request(&client, token).unwrap();
-    let first_resp = client.execute(first).await.unwrap();
+// Download _all_ items from the steam workshop (for a given app) and cache them
+// on disk.
+async fn download_to_disk(token: &str, appid: u32, first_page: GetPage) -> Result<(), Whatever> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<SteamRoot>();
-    let first_root: SteamRoot = serde_json::from_str(&first_resp.text().await.unwrap()).unwrap();
-    let total = first_root.response.total;
-    let pb = ProgressBar::new(total as u64);
-    pb.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {human_pos}/{human_len} \
-             ({eta})",
-        )
-        .unwrap()
-        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
-            write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
-        })
-        .progress_chars("#>-"),
-    );
-
-    let barrier = Arc::new(Barrier::new(1));
     {
-        let barrier = barrier.clone();
         spawn(async move {
             println!("running writer");
             let mut total = 0;
@@ -252,10 +302,40 @@ async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
                     total += 1;
                 }
             }
-            barrier.wait().await;
             println!("Writer finished! Wrote {total} files");
         });
     }
+
+    download(token, appid, first_page, tx).await
+}
+// Downloads all items from the workshop, forwarding them to another worker.
+async fn download(
+    token: &str,
+    appid: u32,
+    mut first_page: GetPage,
+    tx: UnboundedSender<SteamRoot>,
+) -> Result<(), Whatever> {
+    let client = Client::new();
+    first_page.appid = appid;
+    let first = first_page.into_request(&client, token).unwrap();
+    let first_resp = client.execute(first).await.unwrap();
+    if !first_resp.status().is_success() {
+        whatever!("Got error on first response: {first_resp:?}")
+    }
+    let first_root: SteamRoot = serde_json::from_str(&first_resp.text().await.unwrap()).unwrap();
+    let total = first_root.response.total;
+    let pb = ProgressBar::new(total as u64);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {human_pos}/{human_len} \
+             ({eta})",
+        )
+        .unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
+            write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
+        })
+        .progress_chars("#>-"),
+    );
     let mut downloaded = 0;
     let mut next = GetPage::try_from(&first_root)?;
     tx.send(first_root).unwrap();
@@ -286,7 +366,6 @@ async fn download(token: &str, appid: u32) -> Result<(), Whatever> {
         }
     }
     println!("finished downloading {downloaded}/{total}");
-    barrier.wait().await;
     Ok(())
 }
 

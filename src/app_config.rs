@@ -8,6 +8,7 @@ pub struct Config {
     pub database: Database,
     pub read_from_cache: bool,
     pub download_workshop: bool,
+    pub updater: bool,
 }
 #[derive(Serialize, Deserialize, Redact)]
 pub struct Steam {

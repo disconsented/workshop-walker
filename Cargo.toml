@@ -21,7 +21,10 @@ log = "0.4.27"
 itertools = "0.14"
 str-macro = "1"
 bbscope = "0.2"
-oauth2 = "5.0.0"
+humantime = "2.2"
+tracing = "0.1"
+
+
 [profile.release]
 lto = true
 strip = true
