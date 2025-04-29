@@ -189,45 +189,13 @@ async fn list(
     ) -> Result<Vec<WorkshopItem<String>>, Whatever> {
         let mut stmt = SelectStatement::default();
         {
-            use surrealdb::sql::Value::Idiom;
-            stmt.expr.0.append(&mut vec![
-                Field::Single {
-                    expr: Idiom("appid".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("author".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("description".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("id".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("language".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("preview_url".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("title".into()),
-                    alias: None,
-                },
-                Field::Single {
-                    expr: Idiom("last_updated".into()),
-                    alias: None,
-                },
-            ]);
+            stmt.expr.0.append(&mut vec![Field::All]);
 
             {
                 stmt.expr.0.push(Field::Single {
-                    expr: idiom(r#"tags.map(|$a| {"id": <string> $a.id, "app_id": $a.app_id, "display_name":$a.display_name} )"#).unwrap().into(),
+                    expr: idiom(r#"tags.{id: id.to_string(), app_id, display_name}"#)
+                        .unwrap()
+                        .into(),
                     alias: Some("tags".into()),
                 });
             }
@@ -265,28 +233,26 @@ async fn list(
                     )
                 }),
                 (!tags.is_empty()).then(|| {
-                    if (true){ // All
-                        let tagsArray = tags
-                            .iter()
-                            .map(|tag| {
-                                format!(
-                                    r#"{{id: {}}}"#,
-                                    RecordId::from_str(&tag)
-                                        .unwrap_or(RecordId::from_table_key("tags", tag))
-                                )
-                            })
-                            .join(",");
+                    if true {
+                        // All
                         sql::Expression::new(
-                            sql::Value::Idiom(
-                                idiom(&format!(
-                                    r#"tags.map(|$var|{{id: $var.id}}).intersect([{tagsArray}]).len()"#,
-                                ))
-                                    .unwrap(),
+                            sql::Value::Idiom("tags".into()),
+                            Operator::ContainAll,
+                            sql::Value::Array(
+                                tags.iter()
+                                    .map(|tag| {
+                                        to_value(
+                                            RecordId::from_str(&tag)
+                                                .unwrap_or(RecordId::from_table_key("tags", tag)),
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .into(),
                             ),
-                            Operator::Equal,
-                            sql::Value::Number(tags.len().into()),
                         )
-                    } else { // Either (unsupported for now)
+                    } else {
+                        // Either (unsupported for now)
                         sql::Expression::new(
                             sql::Value::Idiom(
                                 idiom(&format!(
@@ -299,7 +265,7 @@ async fn list(
                                         ))
                                         .join(" OR ")
                                 ))
-                                    .unwrap(),
+                                .unwrap(),
                             ),
                             Operator::Equal,
                             sql::Value::Bool(true),
@@ -377,6 +343,8 @@ async fn list(
             )])))
             .unwrap()
         });
+
+        stmt.parallel = true;
 
         info!("{stmt}");
         let mut results = db.query(stmt).await.whatever_context("querying")?;
