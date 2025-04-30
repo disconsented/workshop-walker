@@ -1,4 +1,4 @@
-import { orderBy, language, tags, limit } from './store.svelte';
+import { orderBy, language, tags, limit, title } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
 export const prerender = false;
 export const load: PageLoad = async ({ fetch, params }) => {
@@ -19,9 +19,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
 		paramList.push(['limit', limit.v]);
 	}
 
+	if (title.v) {
+		paramList.push(['title', title.v]);
+	}
+
 	const searchParams = new URLSearchParams(paramList);
 
-	const res = await fetch(`/api/list?` + searchParams.toString());
-	const item = await res.json();
-	return { result: item };
+
+	return { req: fetch(`/api/list?` + searchParams.toString()).then(res => res.json()), id: params.id };
 };

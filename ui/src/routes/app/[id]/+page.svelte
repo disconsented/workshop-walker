@@ -12,14 +12,16 @@
 		faLink,
 		faSearch
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit } from './store.svelte';
+	import { tags, orderBy, language, limit, title } from './store.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
+	import { Shadow } from 'svelte-loading-spinners';
+	import { invalidate } from '$app/navigation';
 
 	let { data }: { data: PageData } = $props();
 
-	console.log('Hello, wolrd!', data);
+	console.log(data);
 	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
 	$inspect(tags, orderBy, language);
 	let viewMode = $state('grid');
@@ -27,41 +29,63 @@
 	let page = $state(1);
 	let size = $state(10);
 	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
+
+	function runSearch(e) {
+		e.preventDefault();
+		invalidate((url) => {
+			return url.pathname === '/api/list';
+		});
+	}
+
+
 </script>
 
-<div class="min-h-screen">
-	<div class="mx-auto max-w-7xl px-4 py-8">
-		{@render SearchPanel()}
+{#await data.req}
+	<div class="flex w-full h-full  place-content-center ">
+		<Shadow></Shadow>
+	</div>
+{:then value}
+	{@debug value}
+	<div class="min-h-screen">
+		<div class="mx-auto max-w-7xl px-4 py-8">
+			{@render SearchPanel()}
 
-		<div class="mt-6">
-			<div class="mb-4 flex gap-2">
-				<button
-					class="btn {viewMode === 'table'
+			<div class="mt-6">
+				<div class="mb-4 flex gap-2">
+					<button
+						class="btn {viewMode === 'table'
 						? 'preset-filled-primary-500'
 						: 'preset-outlined-surface-500'} "
-					onclick={() => (viewMode = 'table')}
-				>
-					Table View
-				</button>
-				<button
-					class="btn {viewMode === 'grid'
+						onclick={() => (viewMode = 'table')}
+					>
+						Table View
+					</button>
+					<button
+						class="btn {viewMode === 'grid'
 						? 'preset-filled-primary-500'
 						: 'preset-outlined-surface-500'}"
-					onclick={() => (viewMode = 'grid')}
-				>
-					Grid View
-				</button>
-			</div>
+						onclick={() => (viewMode = 'grid')}
+					>
+						Grid View
+					</button>
+				</div>
 
-			<span>Results</span>
-			{#if viewMode === 'table'}
-				{@render rTable()}
-			{:else}
-				{@render rgrid()}
-			{/if}
+				<span>Results</span>
+				{#if viewMode === 'table'}
+					{@render rTable(value)}
+				{:else}
+					{@render rgrid(value)}
+				{/if}
+			</div>
 		</div>
 	</div>
-</div>
+	<!--	&lt;!&ndash; promise was fulfilled or not a Promise &ndash;&gt;-->
+	<!--	<p>The value is {value}</p>-->
+{:catch error}
+	<!-- promise was rejected -->
+	<p>Something went wrong: {error.message}</p>
+{/await}
+
 
 {#snippet SearchPanel()}
 	{@const tagGroup = tags.v}
@@ -73,6 +97,7 @@
 					type="text"
 					placeholder="Search by title"
 					class="input w-full rounded-lg border px-3 py-2"
+					bind:value={title.v}
 				/>
 			</div>
 
@@ -97,7 +122,7 @@
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={orderBy.v}>
 					<option value="LastUpdated">Last Updated</option>
 					<option value="Alphabetical">Alphabetical</option>
-					<option value="Votes">Votes</option>
+					<option value="Score">Score</option>
 				</select>
 			</div>
 
@@ -128,72 +153,75 @@
 			</div>
 
 			<div class="flex gap-4 md:col-span-full">
-				<button type="submit" class="ig-btn preset-filled"> Search </button>
-				<button type="reset" class="ig-btn preset-filled-warning-500"> Reset </button>
+				<button type="submit" class="ig-btn preset-filled" onclick={runSearch}> Search</button>
+				<button type="reset" class="ig-btn preset-filled-warning-500"> Reset</button>
 			</div>
 		</div>
 	</form>
 {/snippet}
 
-{#snippet rTable()}
+{#snippet rTable(data)}
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-				<tr>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-						>Last Updated</th
-					>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-						>Description</th
-					>
-				</tr>
+			<tr>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+				>Last Updated
+				</th
+				>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+				>Description
+				</th
+				>
+			</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
-				{#each slicedSource(data.result) as item (item.id)}
-					<tr class="hover:bg-gray-50">
-						<td class="px-6 py-4 text-sm">
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class=""
-							>
-								{item.title}
+			{#each slicedSource(data) as item (item.id)}
+				<tr class="hover:bg-gray-50">
+					<td class="px-6 py-4 text-sm">
+						<a
+							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class=""
+						>
+							{item.title}
+						</a>
+						<br />
+						<span class="text-xs text-gray-500"
+						>Lookup: <a
+							href="/item/{item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+						></span
+						>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
+							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+							Author
+						</a>
+						<br />
+						<small class="text-gray-500">
+							<a href="/item/{item.id}" target="_blank" rel="noopener noreferrer" class=""
+							>Details
+								<Icon data={faLink} class="fa-fw"></Icon>
 							</a>
-							<br />
-							<span class="text-xs text-gray-500"
-								>Lookup: <a
-									href="/item/{item.id}"
-									target="_blank"
-									rel="noopener noreferrer"
-									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-								></span
-							>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
-								<Icon data={faSteamSymbol} class="fa-fw"></Icon> Author
-							</a>
-							<br />
-							<small class="text-gray-500">
-								<a href="/item/{item.id}" target="_blank" rel="noopener noreferrer" class=""
-									>Details
-									<Icon data={faLink} class="fa-fw"></Icon>
-								</a>
-							</small>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<TimeAgo date={item.last_updated}></TimeAgo>
-						</td>
-						<td class="truncate px-6 py-4 text-sm">{item.description}</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
-					</tr>
-				{/each}
+						</small>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<TimeAgo date={item.last_updated}></TimeAgo>
+					</td>
+					<td class="truncate px-6 py-4 text-sm">{item.description}</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+				</tr>
+			{/each}
 			</tbody>
 		</table>
 
@@ -208,11 +236,11 @@
 				{#each [5, 10, 15, 30] as v}
 					<option value={v}>Items {v}</option>
 				{/each}
-				<option value={data.result.length}>Show All</option>
+				<option value={data.length}>Show All</option>
 			</select>
 			<!-- Pagination -->
 			<Pagination
-				data={data.result}
+				data={data}
 				{page}
 				onPageChange={(e) => (page = e.page)}
 				pageSize={size}
@@ -239,9 +267,9 @@
 	</div>
 {/snippet}
 
-{#snippet rgrid()}
+{#snippet rgrid(data)}
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-		{#each slicedSource(data.result) as item (item.id)}
+		{#each slicedSource(data) as item (item.id)}
 			<div
 				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block max-w-md divide-y overflow-hidden border-[1px]"
 			>
@@ -269,7 +297,7 @@
 					</h6>
 					<div class="mb-2 flex items-center justify-between">
 						<span class="text-sm text-gray-500"
-							>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
+						>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
 						>
 						<small class="text-xs text-gray-500">
 							<a
@@ -277,7 +305,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="anchor hover:text-gray-700"
-								>Steam
+							>Steam
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 							</a>
 						</small>
@@ -308,11 +336,11 @@
 			{#each [5, 10, 15, 30] as v}
 				<option value={v}>Items {v}</option>
 			{/each}
-			<option value={data.result.length}>Show All</option>
+			<option value={data.length}>Show All</option>
 		</select>
 		<!-- Pagination -->
 		<Pagination
-			data={data.result}
+			data={data}
 			{page}
 			onPageChange={(e) => (page = e.page)}
 			pageSize={size}
