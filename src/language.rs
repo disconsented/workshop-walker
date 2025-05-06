@@ -6,18 +6,19 @@ use lingua::{
     LanguageDetectorBuilder,
 };
 use salvo::prelude::ToSchema;
-use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::language::DetectedLanguage::Unknown;
 
-#[derive(Debug, Default, ToSchema, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, ToSchema, Copy, Clone, Serialize_repr, Deserialize_repr,)]
+#[repr(u8)]
 pub enum DetectedLanguage {
     #[default]
-    English,
-    Russian,
-    Chinese,
-    Japanese,
-    Korean,
-    Unknown
+    English = 1,
+    Russian = 2,
+    Chinese = 3,
+    Japanese = 4,
+    Korean = 5,
+    Unknown = 0,
 }
 
 impl fmt::Display for DetectedLanguage {
@@ -46,4 +47,16 @@ pub fn detect(text: &str) -> DetectedLanguage {
         .detect_language_of(text)
         .map(Into::into)
         .unwrap_or_default()
+}
+
+
+#[cfg(test)]
+mod test{
+    use crate::language::DetectedLanguage;
+
+    #[test]
+    fn test_lang_encode(){
+        // ensures that language is always encoded into an int, catches a surreal performance limitation
+        assert_eq!(serde_json::to_string(&DetectedLanguage::English).unwrap(), "1")
+    }
 }

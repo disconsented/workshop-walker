@@ -230,7 +230,7 @@ async fn list(
                     sql::Expression::new(
                         sql::Value::Idiom("language".into()),
                         Operator::Equal,
-                        sql::Value::Strand(lang.to_string().into()),
+                        sql::Value::Number((lang as u8).into()),
                     )
                 }),
                 updated.map(|updated| {

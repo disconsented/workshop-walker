@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
-surrealdb = { version = "2.2", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls"] }
+surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls"] }
 reqwest = { version = "0.12", features = ["json"] }
 indicatif = "0.17.11"
 serde = { version = "1.0", features = ["derive"] }
