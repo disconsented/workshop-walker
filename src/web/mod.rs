@@ -112,7 +112,11 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
             response.take(1).whatever_context("no dependencies found")?;
 
         let result = {
-            let mut res = db.query(r#"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags FROM $id"#).bind(("id", id))
+            let mut res = db
+                .query(
+                    r#"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags FROM $id"#,
+                )
+                .bind(("id", id))
                 .await
                 .whatever_context("getting item")?;
             let result: Option<WorkshopItem<RecordId>> =
@@ -178,7 +182,7 @@ async fn list(
     language: QueryParam<DetectedLanguage, false>,
     mut tags: QueryParam<Vec<String>, false>,
     mut title: QueryParam<String, false>,
-    updated: QueryParam<u64, false>,
+    last_updated: QueryParam<u64, false>,
     mut order_by: QueryParam<OrderBy, false>,
 ) -> Result<Json<Vec<WorkshopItem<String>>>> {
     let page = page.unwrap_or(0);
@@ -191,7 +195,7 @@ async fn list(
         language: Option<DetectedLanguage>,
         tags: Vec<String>,
         title: Option<String>,
-        updated: Option<u64>,
+        last_updated: Option<u64>,
         order_by: Option<OrderBy>,
         db: &Surreal<Db>,
     ) -> Result<Vec<WorkshopItem<String>>, Whatever> {
@@ -235,7 +239,7 @@ async fn list(
                         ),
                     )
                 }),
-                updated.map(|updated| {
+                last_updated.map(|updated| {
                     sql::Expression::new(
                         sql::Value::Idiom("last_updated".into()),
                         Operator::MoreThanOrEqual,
@@ -390,7 +394,7 @@ async fn list(
         *language,
         tags.take().unwrap_or_default(),
         title.take(),
-        *updated,
+        *last_updated,
         order_by.take(),
         db,
     )
