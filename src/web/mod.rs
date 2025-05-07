@@ -229,8 +229,10 @@ async fn list(
                 language.map(|lang| {
                     sql::Expression::new(
                         sql::Value::Idiom("language".into()),
-                        Operator::Equal,
-                        sql::Value::Number((lang as u8).into()),
+                        Operator::ContainAny,
+                        sql::Value::Array(
+                            vec![(lang as u8).into(), sql::Value::Number(0.into())].into(),
+                        ),
                     )
                 }),
                 updated.map(|updated| {
