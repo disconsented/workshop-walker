@@ -51,7 +51,12 @@ async fn main() -> Result<()> {
         .whatever_context("deserializing config")?;
 
     let db_exists = tokio::fs::metadata("./workshopdb").await.is_ok()
-        && std::fs::read_dir("./workshopdb").iter().count() > 1;
+        && 
+            std::fs::read_dir("./workshopdb")
+                .whatever_context("checking members of dbdir")?
+                .into_iter().filter(Result::is_ok)
+                .count()
+        > 1;
 
     let db = Surreal::new::<RocksDb>("./workshopdb")
         .await
