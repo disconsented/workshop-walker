@@ -128,7 +128,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
             preview_url: result.preview_url,
             language: result.language,
             author: result.author,
-            last_updated: 0,
+            last_updated: result.last_updated,
             dependencies: dependencies
                 .into_iter()
                 .map(|e| WorkshopItem {
