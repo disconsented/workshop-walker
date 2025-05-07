@@ -72,9 +72,15 @@ async fn main() -> Result<()> {
         ))
         .await
         .whatever_context("creating root user")?;
-        db.query(include_str!("../migrations/001-create-database.surql"))
+        let errors = db
+            .query(include_str!("../migrations/001-create-database.surql"))
             .await
-            .whatever_context("running creation")?;
+            .whatever_context("running creation")?
+            .take_errors();
+        ensure_whatever!(
+            errors.is_empty(),
+            "Running migrations got error: {errors:?}"
+        );
     }
     // Signin as a namespace, database, or root user
     db.signin(Root {
@@ -205,7 +211,7 @@ async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), 
         preview_url: data.preview_url,
         last_updated: data.time_updated.unwrap_or_default() as _,
         tags: vec![],
-        score: data.vote_data.map(|votes|votes.score).unwrap_or_default()
+        score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
     };
     let tags = data
         .tags
