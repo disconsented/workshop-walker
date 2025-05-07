@@ -232,11 +232,11 @@ async fn list(
             let conditions = vec![
                 language.map(|lang| {
                     sql::Expression::new(
-                        sql::Value::Idiom("language".into()),
-                        Operator::ContainAny,
                         sql::Value::Array(
                             vec![(lang as u8).into(), sql::Value::Number(0.into())].into(),
                         ),
+                        Operator::Contain,
+                        sql::Value::Idiom("language".into()),
                     )
                 }),
                 last_updated.map(|updated| {
