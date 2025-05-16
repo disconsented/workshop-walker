@@ -109,11 +109,11 @@
 			<div>
 				<label class="mb-2 block text-sm font-medium">Language:</label>
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
-					<option value="English">English</option>
-					<option value="Russian">Russian</option>
-					<option value="Chinese">Chinese</option>
-					<option value="Japanese">Japanese</option>
-					<option value="Korean">Korean</option>
+					<option value="1">English</option>
+					<option value="2">Russian</option>
+					<option value="3">Chinese</option>
+					<option value="4">Japanese</option>
+					<option value="5">Korean</option>
 				</select>
 			</div>
 

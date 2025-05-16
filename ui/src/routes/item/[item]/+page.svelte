@@ -7,6 +7,23 @@
 	let { data }: { data: PageData } = $props();
 	console.log('Hello, wolrd!', data);
 	let item = data;
+
+	function whichLang(lang: Number): String {
+		switch (lang) {
+			case 1:
+				return 'English';
+			case 2:
+				return 'Russian';
+			case 3:
+				return 'Chinese';
+			case 4:
+				return 'Japanese';
+			case 5:
+				return 'Korean';
+			default:
+				return 'Unknown';
+		}
+	}
 </script>
 
 <div class="min-h-screen p-8 text-white">
@@ -149,7 +166,7 @@
 				</div>
 				<div>
 					<dt class="text-sm text-gray-400">Language</dt>
-					<dd class="text-lg">{item.language}</dd>
+					<dd class="text-lg">{whichLang(item.language)}</dd>
 				</div>
 			</dl>
 		</div>
