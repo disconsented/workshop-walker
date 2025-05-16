@@ -10,6 +10,7 @@ keywords = []
 name = "workshop-walker"
 version = "0.1.0"
 edition = "2024"
+license = "MPL-2"
 
 [dependencies]
 tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
