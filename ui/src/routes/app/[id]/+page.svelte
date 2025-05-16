@@ -87,7 +87,7 @@
 	<form class="card preset-filled-surface-100-900 rounded-lg p-6 text-center shadow">
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 			<div>
-				<label class="mb-2 block text-sm font-medium">Title:</label>
+				<span class="mb-2 block text-sm font-medium">Title:</span>
 				<input
 					type="text"
 					placeholder="Search by title"
@@ -102,7 +102,7 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium">Language:</label>
+				<span class="mb-2 block text-sm font-medium">Language:</span>
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
 					<option value="1">English</option>
 					<option value="2">Russian</option>
@@ -113,7 +113,7 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium">Order By:</label>
+				<span class="mb-2 block text-sm font-medium">Order By:</span>
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={orderBy.v}>
 					<option value="LastUpdated">Last Updated</option>
 					<option value="Alphabetical">Alphabetical</option>
@@ -124,7 +124,7 @@
 			<div class="flex flex-wrap gap-2 md:col-span-4">
 				<!--ToDo: Load tags from backend-->
 				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5'] as tag}
-					<label class="flex items-center space-x-2">
+					<span class="flex items-center space-x-2">
 						<input
 							name="tag"
 							class="checkbox"
@@ -133,12 +133,12 @@
 							bind:group={storeTags.v}
 						/>
 						<p>{tag}</p>
-					</label>
+					</span>
 				{/each}
 			</div>
 
 			<div class="flex gap-4 md:col-span-full">
-				<label class="mb-2 block text-sm font-medium">Limit:</label>
+				<span class="mb-2 block text-sm font-medium">Limit:</span>
 				<input
 					type="number"
 					min="1"
