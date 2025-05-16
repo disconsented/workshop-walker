@@ -62,7 +62,7 @@
 						<span class="text-xl">by</span>
 						<a
 							href="https://steamcommunity.com/profiles/{item.author}"
-							target="_blank"
+							target="_self"
 							rel=""
 							class="btn preset-tonal-primary"
 						>
@@ -268,7 +268,7 @@
 			</a>
 			<a
 				href="/item/{item.id}"
-				target="_blank"
+				target="_self"
 				rel="noopener noreferrer"
 				class="btn preset-tonal-primary flex items-center gap-2 truncate whitespace-normal"
 			>

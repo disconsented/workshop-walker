@@ -193,7 +193,7 @@
 						<span class="text-xs text-gray-500"
 						>Lookup: <a
 							href="/item/{item.id}"
-							target="_blank"
+							target="_self"
 							rel="noopener noreferrer"
 							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
 						></span
@@ -206,7 +206,7 @@
 						</a>
 						<br />
 						<small class="text-gray-500">
-							<a href="/item/{item.id}" target="_blank" rel="noopener noreferrer" class=""
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
 							>Details
 								<Icon data={faLink} class="fa-fw"></Icon>
 							</a>
@@ -287,7 +287,7 @@
 					<h6 class="h6">
 						<a
 							href="/item/{item.id}"
-							target="_blank"
+							target="_self"
 							rel="noopener noreferrer"
 							class="hover:anchor"
 						>
