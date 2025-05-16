@@ -1,0 +1,14 @@
+[package]
+name = "classification"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rust-bert = { version = "0.23", features = ["download-libtorch"] }
+serde = { version = "1.0.219", features = ["derive"] }
+
+[dev-dependencies]
+surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls"] }
+tokio = {version = "1.45", features = ["macros"]}
+indicatif = "0.17.11"
+humantime = "2.2"
