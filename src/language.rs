@@ -23,7 +23,7 @@ pub enum DetectedLanguage {
 
 impl fmt::Display for DetectedLanguage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 impl From<Language> for DetectedLanguage {
@@ -57,6 +57,6 @@ mod test{
     #[test]
     fn test_lang_encode(){
         // ensures that language is always encoded into an int, catches a surreal performance limitation
-        assert_eq!(serde_json::to_string(&DetectedLanguage::English).unwrap(), "1")
+        assert_eq!(serde_json::to_string(&DetectedLanguage::English).unwrap(), "1");
     }
 }

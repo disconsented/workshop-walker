@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test {
     use std::{
-        collections::HashMap, default, env, env::current_dir, fmt::Write, fs::read_to_string,
+        collections::HashMap, env, env::current_dir, fmt::Write, fs::read_to_string,
         ops::RangeInclusive,
     };
     use std::cmp::Ordering;
@@ -15,7 +15,7 @@ mod test {
     };
     use serde::Deserialize;
     use surrealdb::{Surreal, engine::local::RocksDb};
-    use tokio::select;
+    
 
     #[test]
     fn test_thing() {
@@ -133,7 +133,7 @@ mod test {
                 )
                 .unwrap()
                 .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
-                    write!(w, "{}", humantime::format_duration(state.eta()).to_string()).unwrap()
+                    write!(w, "{}", humantime::format_duration(state.eta())).unwrap()
                 })
                 .progress_chars("#>-"),
             );

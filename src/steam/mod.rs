@@ -15,6 +15,10 @@ use serde_json::Value;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use snafu::Whatever;
 
+#[expect(
+    clippy::arbitrary_source_item_ordering,
+    clippy::missing_docs_in_private_items
+)]
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub enum EPublishedFileQueryType {
     #[default]
@@ -42,7 +46,11 @@ pub enum EPublishedFileQueryType {
     RankedByLastUpdatedDate = 21,
 }
 
-#[allow(non_camel_case_types)] // Can't control the _ and steam requires it
+#[expect(
+    non_camel_case_types,
+    clippy::arbitrary_source_item_ordering,
+    clippy::missing_docs_in_private_items
+)] // Can't control the _ and steam requires it
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone)]
 #[repr(u8)]
 enum EPublishedFileInfoMatchingFileType {
@@ -69,7 +77,8 @@ enum EPublishedFileInfoMatchingFileType {
     MatchingFileType_GameManagedItems = 20,
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
+#[expect(clippy::missing_docs_in_private_items)]
 pub(crate) struct GetPage {
     pub query_type: EPublishedFileQueryType,
     pub numperpage: u32,
@@ -107,6 +116,7 @@ impl Default for GetPage {
 }
 
 impl GetPage {
+    /// Builds the `GetPage` request
     pub fn into_request(self, client: &Client, access_token: &str) -> reqwest::Result<Request> {
         client
             .get("https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/")
@@ -132,85 +142,91 @@ impl TryFrom<&SteamRoot> for GetPage {
     type Error = Whatever;
 
     fn try_from(value: &SteamRoot) -> Result<Self, Self::Error> {
-        let mut s = Self::default();
-        s.cursor = value.response.next_cursor.clone();
-        Ok(s)
+        Ok(GetPage {
+            cursor: value.response.next_cursor.clone(),
+            ..Default::default()
+        })
     }
 }
+#[expect(clippy::missing_docs_in_private_items)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Child {
     pub publishedfileid: String,
     pub sortorder: i64,
     pub file_type: i64,
 }
+#[expect(clippy::missing_docs_in_private_items)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Tag {
     pub tag: String,
     pub display_name: String,
 }
+
+#[expect(
+    clippy::missing_docs_in_private_items,
+    reason = "Largely unused, exists for serde's sake"
+)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Struct {
-    pub result: i64,
-    pub publishedfileid: String,
-    pub creator: Option<String>,
-    pub creator_appid: Option<i64>,
-    pub consumer_appid: Option<i64>,
-    pub consumer_shortcutid: Option<i64>,
-    pub filename: Option<String>,
-    pub file_size: Option<String>,
-    pub preview_file_size: Option<String>,
-    pub preview_url: Option<String>,
-    pub url: Option<String>,
-    pub hcontent_file: Option<String>,
-    pub hcontent_preview: Option<String>,
-    pub title: Option<String>,
-    pub file_description: Option<String>,
-    pub time_created: Option<i64>,
-    pub time_updated: Option<i64>,
-    pub visibility: Option<i64>,
-    pub flags: Option<i64>,
-    #[serde(default)]
-    pub workshop_file: bool,
-    #[serde(default)]
-    pub workshop_accepted: bool,
-    #[serde(default)]
-    pub show_subscribe_all: bool,
-    pub num_comments_public: Option<i64>,
+    pub file_type: Option<EPublishedFileInfoMatchingFileType>,
+    pub app_name: Option<String>,
+    pub ban_reason: Option<String>,
+    pub ban_text_check_result: Option<i64>,
     #[serde(default)]
     pub banned: bool,
-    pub ban_reason: Option<String>,
     pub banner: Option<String>,
     #[serde(default)]
     pub can_be_deleted: bool,
-    pub app_name: Option<String>,
-    file_type: Option<EPublishedFileInfoMatchingFileType>,
     #[serde(default)]
     pub can_subscribe: bool,
-    pub subscriptions: Option<i64>,
+    pub children: Vec<Child>,
+    pub consumer_appid: Option<i64>,
+    pub consumer_shortcutid: Option<i64>,
+    pub content_descriptorids: Option<Vec<i64>>,
+    pub creator: Option<String>,
+    pub creator_appid: Option<i64>,
     pub favorited: Option<i64>,
+    pub file_description: Option<String>,
+    pub file_size: Option<String>,
+    pub filename: Option<String>,
+    pub flags: Option<i64>,
     pub followers: Option<i64>,
-    pub lifetime_subscriptions: Option<i64>,
+    pub hcontent_file: Option<String>,
+    pub hcontent_preview: Option<String>,
+    pub language: Option<i64>,
     pub lifetime_favorited: Option<i64>,
     pub lifetime_followers: Option<i64>,
     pub lifetime_playtime: Option<String>,
     pub lifetime_playtime_sessions: Option<String>,
-    pub views: Option<i64>,
-    pub num_children: Option<i64>,
-    pub num_reports: Option<i64>,
-    #[serde(default)]
-    pub tags: Vec<Tag>,
-    #[serde(default)]
-    pub children: Vec<Child>,
-    pub language: Option<i64>,
+    pub lifetime_subscriptions: Option<i64>,
     #[serde(default)]
     pub maybe_inappropriate_sex: bool,
     #[serde(default)]
     pub maybe_inappropriate_violence: bool,
-    pub revision_change_number: Option<String>,
+    pub num_children: Option<i64>,
+    pub num_comments_public: Option<i64>,
+    pub num_reports: Option<i64>,
+    pub preview_file_size: Option<String>,
+    pub preview_url: Option<String>,
+    pub publishedfileid: String,
+    pub result: i64,
     pub revision: Option<i64>,
-    pub ban_text_check_result: Option<i64>,
-    pub content_descriptorids: Option<Vec<i64>>,
-    pub vote_data: Option<VoteData>
+    pub revision_change_number: Option<String>,
+    #[serde(default)]
+    pub show_subscribe_all: bool,
+    pub subscriptions: Option<i64>,
+    pub tags: Vec<Tag>,
+    pub time_created: Option<i64>,
+    pub time_updated: Option<i64>,
+    pub title: Option<String>,
+    pub url: Option<String>,
+    pub views: Option<i64>,
+    pub visibility: Option<i64>,
+    pub vote_data: Option<VoteData>,
+    #[serde(default)]
+    pub workshop_accepted: bool,
+    #[serde(default)]
+    pub workshop_file: bool,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Response {
@@ -219,12 +235,10 @@ pub struct Response {
     pub publishedfiledetails: Vec<Value>,
     pub next_cursor: String,
 }
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SteamRoot {
     pub response: Response,
 }
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VoteData {
     pub score: f32,

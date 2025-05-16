@@ -50,12 +50,11 @@ async fn main() -> Result<()> {
         .whatever_context("deserializing config")?;
 
     let db_exists = tokio::fs::metadata("./workshopdb").await.is_ok()
-        && 
-            std::fs::read_dir("./workshopdb")
-                .whatever_context("checking members of dbdir")?
-                .into_iter().filter(Result::is_ok)
-                .count()
-        > 1;
+        && std::fs::read_dir("./workshopdb")
+            .whatever_context("checking members of dbdir")?
+            .flatten()
+            .count()
+            > 1;
 
     let db = Surreal::new::<RocksDb>("./workshopdb")
         .await
@@ -116,7 +115,7 @@ async fn main() -> Result<()> {
                         println!("read failed: {e:#?}");
                     }
                     i += 1;
-                    print!("Progress: {i}\r")
+                    print!("Progress: {i}\r");
                 }
                 println!("\rfinished");
             }
@@ -146,13 +145,12 @@ async fn main() -> Result<()> {
                 );
                 sleep(awake_in).await;
             } else {
-                info!("last_updated: {}", humantime::Duration::from(time_since))
+                info!("last_updated: {}", humantime::Duration::from(time_since));
             }
             loop {
                 info!("Starting update");
                 let next_run = Instant::now() + Duration::from_secs(60 * 60 * 12); // 12 hours later
-                let mut first_page = GetPage::default();
-                first_page.query_type = EPublishedFileQueryType::RankedByLastUpdatedDate;
+                let first_page = GetPage{ query_type: EPublishedFileQueryType::RankedByLastUpdatedDate, ..Default::default() };
                 let bbcode = BBCode::from_config(BBCodeTagConfig::extended(), None).unwrap();
                 let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<SteamRoot>();
                 let to_database = {
@@ -164,19 +162,19 @@ async fn main() -> Result<()> {
                                 match serde_json::from_value(item) {
                                     Ok(item) => {
                                         if let Err(e) = insert_data(&db, &bbcode, item).await {
-                                            error!("Inserting updated data with err: {e:?}")
+                                            error!("Inserting updated data with err: {e:?}");
                                         }
                                         i += 1;
                                     }
                                     Err(e) => error!("Parsing item: {e:?}"),
-                                };
+                                }
                             }
                             debug!("Insert progress: {i}");
                         }
                     })
                 };
                 if let Err(e) = download(&token, settings.steam.appid, first_page, tx).await {
-                    error!("Periodic downloads failed with error: {e:?}")
+                    error!("Periodic downloads failed with error: {e:?}");
                 }
                 let _ = to_database.await;
                 info!("Finished updating");
@@ -188,7 +186,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-// Read all cached steam files and load them into the database
+/// Read all cached steam files and load them into the database
 async fn read_and_insert_data(
     db: &Surreal<Db>,
     path: PathBuf,
@@ -202,6 +200,8 @@ async fn read_and_insert_data(
     insert_data(db, bb, data).await
 }
 
+/// Inserts data from either the disk cache (for development) or from stream directly.
+/// Also converts BB code into markdown.
 async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), Whatever> {
     let id = RecordId::from_table_key("workshop_items", data.publishedfileid);
     let description = data.file_description.unwrap_or_default();
@@ -222,7 +222,7 @@ async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), 
         .iter()
         .cloned()
         .map(|tag| crate::model::Tag {
-            app_id: item.appid.clone() as _,
+            app_id: item.appid as _,
             display_name: tag.display_name,
             tag: tag.tag,
         })
@@ -287,7 +287,7 @@ async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), 
     let mut response = query.await.whatever_context("big insert query")?;
 
     let errors = response.take_errors();
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         error!("{sql}");
         error!("{errors:#?}");
         panic!("Errors: ")
@@ -296,8 +296,8 @@ async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), 
     Ok(())
 }
 
-// Download _all_ items from the steam workshop (for a given app) and cache them
-// on disk.
+/// Download _all_ items from the steam workshop (for a given app) and cache
+/// them on disk.
 async fn download_to_disk(token: &str, appid: u32, first_page: GetPage) -> Result<(), Whatever> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<SteamRoot>();
     {
@@ -321,7 +321,7 @@ async fn download_to_disk(token: &str, appid: u32, first_page: GetPage) -> Resul
 
     download(token, appid, first_page, tx).await
 }
-// Downloads all items from the workshop, forwarding them to another worker.
+/// Downloads all items from the workshop, forwarding them to another worker.
 async fn download(
     token: &str,
     appid: u32,
@@ -345,7 +345,7 @@ async fn download(
         )
         .unwrap()
         .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
-            write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
+            write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap();
         })
         .progress_chars("#>-"),
     );
@@ -367,7 +367,7 @@ async fn download(
                 }
                 next = GetPage::try_from(&json)?;
                 downloaded += json.response.publishedfiledetails.len() as i64;
-                let _ = tx.send(json).unwrap();
+                let () = tx.send(json).unwrap();
                 pb.set_position(downloaded as u64);
             }
             Err(e) => {

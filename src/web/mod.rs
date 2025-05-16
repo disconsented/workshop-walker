@@ -28,7 +28,9 @@ use crate::{
     model::{FullWorkshopItem, OrderBy, WorkshopItem, into_string},
 };
 
+/// Global
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
+///  Start the webserver returning once it exists
 pub async fn start(db: Surreal<Db>) {
     DB_POOL.get_or_init(|| async { db }).await;
     let router = Router::new()
@@ -55,7 +57,9 @@ pub async fn start(db: Surreal<Db>) {
     Server::new(acceptor).serve(service).await;
 }
 
+/// Type alias for our Error type
 pub type Result<T, E = Error> = std::result::Result<T, E>;
+/// Wrapper on a Whatever struct for Salvo
 pub struct Error(Box<Whatever>);
 
 unsafe impl Send for Error {}
@@ -72,7 +76,7 @@ impl EndpointOutRegister for Error {
         operation.responses.insert(
             code.as_str(),
             salvo::oapi::Response::new(code.canonical_reason().unwrap_or_default()),
-        )
+        );
     }
 }
 
@@ -93,15 +97,15 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
         let id = RecordId::from_table_key("workshop_items", &id);
         let mut response = db
             .query(
-                r#"SELECT in.appid as appid, in.description as description, in.id as id, in.title
+                "SELECT in.appid as appid, in.description as description, in.id as id, in.title
                  as title, in.author as author, in.language as language, in.last_updated as
-                 last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, display_name} as tags FROM $id<-item_dependencies.*;"#,
+                 last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, display_name} as tags FROM $id<-item_dependencies.*;",
             )
             .query(
-                r#"SELECT out.appid as appid, out.description as description, out.id as id,
+                "SELECT out.appid as appid, out.description as description, out.id as id,
                  out.author as author, out.language as language, out.last_updated as
                  last_updated, out.title as title, out.score as score, out.tags.{id: id.to_string(), app_id, display_name} as tags
-                 FROM $id->item_dependencies.*;"#,
+                 FROM $id->item_dependencies.*;",
             )
             .bind(("id", id.clone()))
             .await
@@ -114,7 +118,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
         let result = {
             let mut res = db
                 .query(
-                    r#"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags FROM $id"#,
+                    r"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags FROM $id",
                 )
                 .bind(("id", id))
                 .await
@@ -206,7 +210,7 @@ async fn list(
             {
                 stmt.expr.0.push(Field::Single {
                     expr: idiom("tags.{id: id.to_string(), app_id, display_name}")
-                        .unwrap()
+                        .expect("expanding tags idiom")
                         .into(),
                     alias: Some("tags".into()),
                 });
@@ -256,7 +260,7 @@ async fn list(
                                 tags.iter()
                                     .map(|tag| {
                                         to_value(
-                                            RecordId::from_str(&tag)
+                                            RecordId::from_str(tag)
                                                 .unwrap_or(RecordId::from_table_key("tags", tag)),
                                         )
                                         .unwrap()
@@ -295,10 +299,12 @@ async fn list(
                 }),
             ]
             .into_iter()
-            .filter_map(|e| e)
+            .flatten()
             .collect::<Vec<Expression>>();
 
-            if !conditions.is_empty() {
+            if conditions.is_empty() {
+                None
+            } else {
                 let mut values = sql::Value::None;
                 for mut condition in &conditions.into_iter().chunks(2) {
                     let c1 = condition.next();
@@ -340,8 +346,6 @@ async fn list(
                 let mut cond = Cond::default();
                 cond.0 = to_value(values).unwrap();
                 Some(cond)
-            } else {
-                None
             }
         };
 

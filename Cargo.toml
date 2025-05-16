@@ -48,7 +48,7 @@ codegen-units = 1
 lint_groups_priority = { level = "allow", priority = 0 }
 suspicious = { level = "deny", priority = 1 }
 style = { level = "deny", priority = 2 }
-restriction = { level = "deny", priority = 3 }
+#restriction = { level = "deny", priority = 3 }
 perf = { level = "deny", priority = 4 }
 pedantic = { level = "deny", priority = 5 }
 correctness = { level = "deny", priority = 6 }
