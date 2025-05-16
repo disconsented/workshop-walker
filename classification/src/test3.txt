@@ -1,0 +1,97 @@
+
+
+More modifications for DMS automatroids.
+
+Mod Cover Source: [Artwork from the "Additional Upgrades" mod]https://steamcommunity.com/sharedfiles/filedetails/?id=3310569544
+
+Mech Overdrive: Advanced Upgrade Modules
+*"When your Centipedes can’t haul enough shells for 10-wave raids, you build better war machines."*
+
+Add 14 new implantable upgrades to transform your mechanoids into hyper-specialized workhorses or battlefield terrors. Perfect for colonies drowning in late-game raids or industrial overhauls!
+
+Key Features
+Four Specialization Paths: Load Capacity | Mobility | Cooling | Core Output
+
+Stackable Upgrades: Compact designs allow multiple implants (at ruinous material costs)
+
+CE/Biotech Compatible: Integrates with Combat Extended, Biotech, and Additional Upgrades
+
+Brutal Tradeoffs: Every enhancement comes with calculated downsides (toxic waste, energy drain, mobility loss)
+
+🔧 Upgrade Catalog
+LOAD SYSTEMS
+◈ Medium Load Frame
++50 Carry | -5% Speed
+Reinforced compartments for balanced logistics
+3 Components, 50 Plasteel, 60 Hyperweave
+
+◈ Heavy Load Frame
++90 Carry | -10% Speed
+Neural-computed load balancing (CE/Biotech-ready)
+2 Adv.Components, 5 Components, 1 NeuroCalc, 80 Plasteel, 100 Hyperweave, 4 Gold
+
+◈ Ultra-Heavy Load Frame
++150 Carry | -15% Speed
+Tungsten-alloy skeleton for pure hauling beasts
+4 Adv.Components, 10 Components, 1 NeuroCalc, 120 Plasteel, 150 Hyperweave, 10 Gold
+
+HYBRID SYSTEMS (CE Optimized)
+◈ Compact Load Booster
+CE CarryWeight +50 | +50 Load
+1.1x Power | Toxic Waste/Recharge
+3 Adv.Components, 15 Components, 50 Plasteel, 60 Hyperweave, 80 SynthMuscle
+
+◈ Enhanced Load Expander
+CE CarryWeight +90 (Stackable)
+1.2x Power | -10% Breathing | 2x Waste
+5 Adv.Components, 25 Components, 160 SynthMuscle, 80 Plasteel/Hyperweave
+
+◈ Overpressure Load System
+MAXIMUM OVERCARRY
+Severe Heat/Vibration | 4x Waste | Pair with Cooling!
+8 Adv.Components, 40 Components, 1 NeuroCalc, 260 SynthMuscle, 120 Plasteel/Hyperweave
+
+PERFORMANCE MODULES
+◈ Enhanced Cooling Circuits
++10% Consciousness/Move | +70% Breathing
+The enabler for "just one more upgrade" builds
+8 Adv.Components, 45 Components, 150 Plasteel/Hyperweave
+
+◈ Core Output Mk.I-III
+Speed +10% → +40%
+Scaling Toxic Waste (1→4 packs/charge)
+Mk.III: 2 AI Cores, 8 Adv.Components, 40 Components
+
+SPECIALIZED WARGEAR
+◈ Bilateral Power Cells
+0.75x Power Draw | 95% Move
+Essential for energy-hungry artillery platforms
+
+◈ Thermal/Night Optics
+150% Sight | +2 CE Accuracy | 0.85 Aim Delay
+Nightmare fuel for raiders
+
+◈ Heavy Auto Reloader
+ReloadSpeed 0.60 | 85% Move | 1.2x Power
+For when "overkill" isn’t a word in your colony’s vocabulary
+
+Design Notes
+Anti-Cheese: High-tier upgrades demand late-game resources (Plasteel/Hyperweave sinks)
+
+Synergy Focus: Combine Cooling + Power Cells to mitigate downsides
+
+CE Meta: Load systems respect CarryWeight scaling; Optics boost CE accuracy
+
+*"Tested in 500-day megacolonies – your mechanoids will finally feel like $50,000 silver war machines."*
+
+Recommended Builds:
+
+Logistics God: Ultra-Frame + Cooling Circuits
+
+Blitzkrieg Assault: Core Mk.III + Bilateral Cells
+
+Siege Monster: Auto Reloader + Thermal Optics
+
+and.....ALL OF THEM !!
+
+Turn your mechs from clunky tools to precision instruments of destruction!

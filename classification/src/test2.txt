@@ -1,0 +1,64 @@
+Description
+
+
+
+
+
+
+Vanilla Cooking Expanded - Haute Module is a new addition to the Vanilla Cooking Expanded arsenal, utilising the various mechanics added by Vanilla Cooking Expanded mod. In Haute Meals, players will gain access to a brand new cooking station called electric haute section that will be utilised in creating the most exquisite of dishes, eclipsing even gourmet meals.
+
+"Haute Meal" or "Haute Cuisine" is a perfect tier above Gourmet, fitting naturally into a hierarchy of meal quality. "Haute" comes from haute cuisine, which refers to the pinnacle of refined, meticulously prepared, and artistically presented food—often associated with Michelin-star restaurants, aristocratic dining, or even futuristic culinary innovations.
+
+It conveys extreme attention to detail, rare ingredients, and a level of craftsmanship beyond mere "gourmet."
+
+Haute meals take extremely long to make - they are the artworks of culinary arts. They often take a better part of the day to cook, and can only really be cooked efficiently by the real culinary masters - level 20 cooks.
+
+Haute meals are the biggest waste of resources. They not only waste the time, but they also waste the nutrition in a never-seen-before ways. Realistically, only the most advanced and luxurious colonies will be cooking the haute meals.
+
+Haute meals share a lot of similarities with art - they have quality, and depending on the quality, they will have different effects. They also have art descriptions - except it’s a dish description. These descriptions will generate to talk in detail about ingredients used and the flavor profiles they create, as well as what methods were used to achieve such a dish.
+
+Haute meals provide the strongest mood buff when eaten - and the best part is, the mood thought is a unique mood thought for the individual dish, and eating several of these dishes will add up as individual mood thoughts. This means that a colonist might have three different mood thoughts from three different haute dishes they ate.
+
+Additionally, haute dishes also create positive memories for other colonists who were there for the experience.
+
+It’s probably not a meal you want to feed your entire colony with, but it’s something you can aspire to make for those special moments around your colony!
+
+
+Mod mechanics:
+
+
+
+
+
+
+
+
+Q: All my meals are produced as "Manufactured Slop" and the ingredients are not being grabbed correctly!
+A: This has been reported to be an incompatibility with RIMMSqol: Go to the in-game Mod option > QoL > Recipes > cook haute meal > Disable "Allow Mixing of Ingredients"
+
+Please use our Google form to submit bug reports.
+
+
+
+
+Q: I can’t seem to be able to cook these meals. I have rice and muffalo meat!
+A: Unlike in the base game, we ensured that you actually need two separate sources of vegetarian nutrition, and 2 separate condiments. You can’t use the same ingredient twice in the same meal.
+
+Q: Is there a vegetarian Haute dish?
+A: Sorry, there is not.
+
+Q: Is this mod save game compatible?
+A: Yes
+
+Q: It takes far too long to cook a haute dish!
+A: Consider using your best chef, and constructing a larger haute cooking section (as they provide a stacking work speed buff to each other).
+
+Q: CE compatible?
+A: Probably!
+
+
+Graphics created by Oskar Potocki.
+Coded by Sarg Bjornson.
+With help from Erdelf.
+Rimworld is owned by Tynan Sylvester.
+(CC BY-NC-ND 4.0)
