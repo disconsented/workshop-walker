@@ -102,8 +102,7 @@
 			</div>
 
 			<div>
-				<label class="mb-2 block text-sm font-medium">Updated Since:</label>
-				<input type="datetime-local" class="input w-full rounded-lg border px-3 py-2" />
+				<span class="mb-2 block text-sm font-medium">Updated Since:</span>
 				<input type="date" class="input w-full rounded-lg border px-3 py-2" bind:value={lastUpdated.v} />
 			</div>
 
@@ -148,7 +147,7 @@
 					type="number"
 					min="1"
 					max="100"
-					value={limit.v}
+					bind:value={limit.v}
 					class="input w-24 rounded-lg border px-3 py-2"
 				/>
 			</div>
