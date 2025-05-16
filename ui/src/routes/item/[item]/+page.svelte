@@ -102,9 +102,9 @@
 					<h2 class="mb-4 text-xl font-bold">Tags</h2>
 					<div class="flex flex-wrap gap-2">
 						{#each item.tags as tag (tag.id)}
-							<button type="button" class="chip preset-filled-primary-500">
+							<span class="badge preset-filled-primary-500">
 								{tag.display_name}
-							</button>
+							</span>
 						{:else}
 							<span class="text-gray-400">No tags</span>
 						{/each}

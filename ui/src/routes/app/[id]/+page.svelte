@@ -12,7 +12,7 @@
 		faLink,
 		faSearch
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit, title } from './store.svelte';
+	import { tags, orderBy, language, limit, title, lastUpdated } from './store.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
@@ -314,9 +314,9 @@
 				</article>
 				<footer class="m-2 flex flex-wrap gap-1">
 					{#each item.tags as tag (tag.id)}
-						<button type="button" class="chip preset-filled">{tag.display_name}</button>
+						<span class="badge preset-filled">{tag.display_name}</span>
 					{:else}
-						<button type="button" class="chip preset-filled">-</button>
+						<span class="badge preset-filled">-</span>
 					{/each}
 				</footer>
 			</div>
