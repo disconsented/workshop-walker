@@ -45,11 +45,9 @@
 		<Shadow></Shadow>
 	</div>
 {:then value}
-	{@debug value}
 	<div class="min-h-screen">
 		<div class="mx-auto max-w-7xl px-4 py-8">
 			{@render SearchPanel()}
-
 			<div class="mt-6">
 				<div class="mb-4 flex gap-2">
 					<button
@@ -79,10 +77,7 @@
 			</div>
 		</div>
 	</div>
-	<!--	&lt;!&ndash; promise was fulfilled or not a Promise &ndash;&gt;-->
-	<!--	<p>The value is {value}</p>-->
 {:catch error}
-	<!-- promise was rejected -->
 	<p>Something went wrong: {error.message}</p>
 {/await}
 
@@ -127,6 +122,7 @@
 			</div>
 
 			<div class="flex flex-wrap gap-2 md:col-span-4">
+				<!--ToDo: Load tags from backend-->
 				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5'] as tag}
 					<label class="flex items-center space-x-2">
 						<input
