@@ -181,7 +181,8 @@
 				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="btn preset-tonal-primary flex items-center gap-2 truncate whitespace-normal">
+				class="btn preset-tonal-primary flex items-center gap-2 truncate whitespace-normal"
+			>
 				<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 				Workshop
 			</a>

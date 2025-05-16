@@ -37,7 +37,8 @@
 	</div>
 	<!-- Footer -->
 	<footer class="p-4">
-		<a href="https://github.com/disconsented/workshop-walker" class="anchor">Workshop Walker</a> by <a href="https://disconsented.com" class="anchor">Disconsented</a>
+		<a href="https://github.com/disconsented/workshop-walker" class="anchor">Workshop Walker</a> by
+		<a href="https://disconsented.com" class="anchor">Disconsented</a>
 		- Made with love using Rust, SurrealDB, Svelte & Skeleton.dev
 	</footer>
 </div>

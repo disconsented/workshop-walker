@@ -23,11 +23,13 @@ export const load: PageLoad = async ({ fetch, params }) => {
 		paramList.push(['title', title.v]);
 	}
 
-	if(lastUpdated.v) {
-		paramList.push(['last_updated', Date.parse(lastUpdated.v)/1000]);
+	if (lastUpdated.v) {
+		paramList.push(['last_updated', Date.parse(lastUpdated.v) / 1000]);
 	}
 	const searchParams = new URLSearchParams(paramList);
 
-
-	return { req: fetch(`/api/list?` + searchParams.toString()).then(res => res.json()), id: params.id };
+	return {
+		req: fetch(`/api/list?` + searchParams.toString()).then((res) => res.json()),
+		id: params.id
+	};
 };
