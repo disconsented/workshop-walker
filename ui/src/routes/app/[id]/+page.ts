@@ -1,4 +1,4 @@
-import { orderBy, language, tags, limit, title } from './store.svelte';
+import { orderBy, language, tags, limit, title, lastUpdated } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
 export const prerender = false;
 export const load: PageLoad = async ({ fetch, params }) => {
@@ -23,6 +23,9 @@ export const load: PageLoad = async ({ fetch, params }) => {
 		paramList.push(['title', title.v]);
 	}
 
+	if(lastUpdated.v) {
+		paramList.push(['last_updated', Date.parse(lastUpdated.v)/1000]);
+	}
 	const searchParams = new URLSearchParams(paramList);
 
 

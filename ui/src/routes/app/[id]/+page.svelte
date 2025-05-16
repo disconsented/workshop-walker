@@ -104,6 +104,7 @@
 			<div>
 				<label class="mb-2 block text-sm font-medium">Updated Since:</label>
 				<input type="datetime-local" class="input w-full rounded-lg border px-3 py-2" />
+				<input type="date" class="input w-full rounded-lg border px-3 py-2" bind:value={lastUpdated.v} />
 			</div>
 
 			<div>
