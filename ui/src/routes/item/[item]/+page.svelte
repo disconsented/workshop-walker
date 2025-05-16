@@ -3,6 +3,7 @@
 	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import { faArrowLeft, faLink } from '@fortawesome/free-solid-svg-icons';
+	import TimeAgo from '$lib/timeAgo.svelte';
 
 	let { data }: { data: PageData } = $props();
 	console.log('Hello, wolrd!', data);
@@ -161,7 +162,7 @@
 				<div>
 					<dt class="text-sm text-gray-400">Last Updated</dt>
 					<dd class="text-lg">
-						{item.last_updated}
+						<TimeAgo date={item.last_updated}></TimeAgo>
 					</dd>
 				</div>
 				<div>
