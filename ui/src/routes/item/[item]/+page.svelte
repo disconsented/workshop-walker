@@ -166,8 +166,14 @@
 					</dd>
 				</div>
 				<div>
-					<dt class="text-sm text-gray-400">Language</dt>
-					<dd class="text-lg">{whichLang(item.language)}</dd>
+					<dt class="text-sm text-gray-400">Languages</dt>
+					<dd class="text-lg">
+						{#each item.languages as lang}
+							<span class="badge preset-outlined-primary-500">{whichLang(lang)}</span>
+						{:else}
+							<span class="badge preset-outlined-warning-500">Unknown</span>
+						{/each}
+					</dd>
 				</div>
 			</dl>
 		</div>

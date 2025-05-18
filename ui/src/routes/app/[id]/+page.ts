@@ -4,7 +4,7 @@ export const prerender = false;
 export const load: PageLoad = async ({ fetch, params }) => {
 	let paramList = [];
 	if (language.v) {
-		paramList.push(['language', language.v]);
+		paramList.push(['languages', language.v]);
 	}
 	if (tags.v) {
 		tags.v.forEach((tag) => {

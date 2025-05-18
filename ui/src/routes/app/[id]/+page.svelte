@@ -23,7 +23,6 @@
 
 	console.log(data);
 	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
-	$inspect(tags, orderBy, language);
 	let viewMode = $state('grid');
 
 	let page = $state(1);
@@ -105,6 +104,7 @@
 			<div>
 				<span class="mb-2 block text-sm font-medium">Language:</span>
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
+					<option>None</option>
 					<option value="1">English</option>
 					<option value="2">Russian</option>
 					<option value="3">Chinese</option>
