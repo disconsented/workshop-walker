@@ -4,8 +4,9 @@ RUN apt-get update && apt-get install -y npm libclang-dev
 WORKDIR /usr/src/workshop-walker
 COPY src/ /usr/src/workshop-walker/src/
 COPY migrations/ /usr/src/workshop-walker/migrations/
+COPY classification/ /usr/src/workshop-walker/classification/
 COPY Cargo.lock Cargo.toml /usr/src/workshop-walker/
-RUN cargo build --release
+RUN cargo build --release --all
 
 FROM node:23 AS build-node
 COPY ui/ /usr/src/workshop-walker/ui/
