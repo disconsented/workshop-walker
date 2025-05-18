@@ -24,7 +24,7 @@ use tokio::sync::OnceCell;
 use tracing::{Instrument, info_span, instrument};
 
 use crate::{
-    language::{DetectedLanguage, detect},
+    language::DetectedLanguage,
     model::{FullWorkshopItem, OrderBy, WorkshopItem, into_string},
 };
 
@@ -98,13 +98,15 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
         let mut response = db
             .query(
                 "SELECT in.appid as appid, in.description as description, in.id as id, in.title
-                 as title, in.author as author, in.language as language, in.last_updated as
-                 last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, display_name} as tags FROM $id<-item_dependencies.*;",
+                 as title, in.author as author, in.languages as languages, in.last_updated as
+                 last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, \
+                 display_name} as tags FROM $id<-item_dependencies.*;",
             )
             .query(
                 "SELECT out.appid as appid, out.description as description, out.id as id,
-                 out.author as author, out.language as language, out.last_updated as
-                 last_updated, out.title as title, out.score as score, out.tags.{id: id.to_string(), app_id, display_name} as tags
+                 out.author as author, out.languages as languages, out.last_updated as
+                 last_updated, out.title as title, out.score as score, out.tags.{id: \
+                 id.to_string(), app_id, display_name} as tags
                  FROM $id->item_dependencies.*;",
             )
             .bind(("id", id.clone()))
@@ -134,7 +136,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
             id: into_string(result.id.key()),
             title: result.title,
             preview_url: result.preview_url,
-            language: result.language,
+            languages: result.languages,
             author: result.author,
             last_updated: result.last_updated,
             dependencies: dependencies
@@ -144,7 +146,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                     author: e.author,
                     description: e.description,
                     id: into_string(e.id.key()),
-                    language: e.language,
+                    languages: e.languages,
                     title: e.title,
                     preview_url: e.preview_url,
                     last_updated: e.last_updated,
@@ -160,7 +162,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                     author: e.author,
                     description: e.description,
                     id: into_string(e.id.key()),
-                    language: e.language,
+                    languages: e.languages,
                     title: e.title,
                     preview_url: e.preview_url,
                     last_updated: e.last_updated,
@@ -174,7 +176,6 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
     }
     let results = query(id, db).await?;
 
-    info!("Language is: {:?}", detect(&results.description));
     Ok(Json(results))
 }
 #[instrument(skip_all)]
@@ -183,7 +184,7 @@ async fn list(
     _req: &mut Request,
     page: QueryParam<u64, false>,
     limit: QueryParam<u64, false>,
-    language: QueryParam<DetectedLanguage, false>,
+    languages: QueryParam<DetectedLanguage, false>,
     mut tags: QueryParam<Vec<String>, false>,
     mut title: QueryParam<String, false>,
     last_updated: QueryParam<u64, false>,
@@ -196,7 +197,7 @@ async fn list(
     async fn query(
         page: u64,
         limit: u64,
-        language: Option<DetectedLanguage>,
+        languages: Option<DetectedLanguage>,
         tags: Vec<String>,
         title: Option<String>,
         last_updated: Option<u64>,
@@ -234,13 +235,13 @@ async fn list(
             .push(surrealdb::sql::Value::Table("workshop_items".into()));
         stmt.cond = {
             let conditions = vec![
-                language.map(|lang| {
+                languages.map(|lang| {
                     sql::Expression::new(
                         sql::Value::Array(
                             vec![(lang as u8).into(), sql::Value::Number(0.into())].into(),
                         ),
-                        Operator::Contain,
-                        sql::Value::Idiom("language".into()),
+                        Operator::ContainAny,
+                        sql::Value::Idiom("languages".into()),
                     )
                 }),
                 last_updated.map(|updated| {
@@ -383,7 +384,7 @@ async fn list(
                 author: res.author,
                 description: res.description,
                 id: res.id.key().to_string().replace("⟩", "").replace("⟨", ""),
-                language: res.language,
+                languages: res.languages,
                 title: res.title,
                 preview_url: res.preview_url,
                 last_updated: res.last_updated,
@@ -395,7 +396,7 @@ async fn list(
     let results = query(
         page,
         limit,
-        *language,
+        *languages,
         tags.take().unwrap_or_default(),
         title.take(),
         *last_updated,

@@ -150,7 +150,10 @@ async fn main() -> Result<()> {
             loop {
                 info!("Starting update");
                 let next_run = Instant::now() + Duration::from_secs(60 * 60 * 12); // 12 hours later
-                let first_page = GetPage{ query_type: EPublishedFileQueryType::RankedByLastUpdatedDate, ..Default::default() };
+                let first_page = GetPage {
+                    query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
+                    ..Default::default()
+                };
                 let bbcode = BBCode::from_config(BBCodeTagConfig::extended(), None).unwrap();
                 let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<SteamRoot>();
                 let to_database = {
@@ -200,15 +203,15 @@ async fn read_and_insert_data(
     insert_data(db, bb, data).await
 }
 
-/// Inserts data from either the disk cache (for development) or from stream directly.
-/// Also converts BB code into markdown.
+/// Inserts data from either the disk cache (for development) or from stream
+/// directly. Also converts BB code into markdown.
 async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), Whatever> {
     let id = RecordId::from_table_key("workshop_items", data.publishedfileid);
     let description = data.file_description.unwrap_or_default();
     let item: WorkshopItem<RecordId> = WorkshopItem {
         appid: data.creator_appid.whatever_context("missing app id")?,
         author: data.creator.unwrap(),
-        language: detect(&description),
+        languages: detect(&description),
         description: bb.parse(&description),
         id: id.clone(),
         title: data.title.whatever_context("Missing title")?,

@@ -1,11 +1,15 @@
 #[cfg(test)]
 mod test {
     use std::{
-        collections::HashMap, env, env::current_dir, fmt::Write, fs::read_to_string,
+        cmp::Ordering,
+        collections::HashMap,
+        env,
+        env::current_dir,
+        fmt::Write,
+        fs::{File, read_to_string},
         ops::RangeInclusive,
     };
-    use std::cmp::Ordering;
-    use std::fs::File;
+
     use indicatif::{ProgressBar, ProgressIterator, ProgressState, ProgressStyle};
     use rust_bert::pipelines::{
         keywords_extraction::{Keyword, KeywordExtractionModel},
@@ -15,7 +19,6 @@ mod test {
     };
     use serde::Deserialize;
     use surrealdb::{Surreal, engine::local::RocksDb};
-    
 
     #[test]
     fn test_thing() {
@@ -157,10 +160,11 @@ mod test {
                     .and_modify(|vec: &mut Vec<_>| vec.push(score))
                     .or_insert_with(|| vec![score]);
             }
-            let mut summed = map.into_iter()
+            let mut summed = map
+                .into_iter()
                 .map(|(key, vals)| (key, vals.iter().sum::<f32>() / vals.len() as f32))
                 .collect::<Vec<_>>();
-            summed.sort_unstable_by(|a,b|a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
+            summed.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
 
             let mut file = File::create("/tmp/foo.txt").unwrap();
             for (word, score) in &summed {

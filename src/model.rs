@@ -15,10 +15,10 @@ pub enum OrderBy {
 
 impl OrderBy {
     pub fn column_name(&self) -> &str {
-        match self{
+        match self {
             OrderBy::Alphabetical => "title",
             OrderBy::LastUpdated => "last_updated",
-            OrderBy::Score => "score"
+            OrderBy::Score => "score",
         }
     }
 }
@@ -43,7 +43,7 @@ pub struct WorkshopItem<ID> {
     pub author: String,
     pub description: String,
     pub id: ID,
-    pub language: DetectedLanguage,
+    pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
@@ -59,7 +59,7 @@ pub struct FullWorkshopItem {
     pub dependencies: Vec<WorkshopItem<String>>,
     pub description: String,
     pub id: String,
-    pub language: DetectedLanguage,
+    pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,

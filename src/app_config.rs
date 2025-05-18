@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 use veil::Redact;
 
