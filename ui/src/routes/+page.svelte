@@ -2,6 +2,10 @@
 	import AppCard from '$lib/app_card.svelte';
 </script>
 
+<svelte:head>
+	<title>Workshop Walker - Steam Items</title>
+</svelte:head>
+
 <div class="flex gap-4">
 	<AppCard
 		appid="294100"

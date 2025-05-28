@@ -27,6 +27,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{item.title ? 'Workshop Walker - ' + item.title : 'Workshop Walker - Loading'}</title>
+</svelte:head>
+
 <div class="min-h-screen p-8 text-white">
 	<div class="mx-auto max-w-9/10">
 		<!-- Navigation Buttons -->

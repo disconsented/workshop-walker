@@ -37,6 +37,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Workshop Walker - Search</title>
+</svelte:head>
+
 {#await data.req}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
