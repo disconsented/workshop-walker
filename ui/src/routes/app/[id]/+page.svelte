@@ -46,6 +46,7 @@
 		<Shadow></Shadow>
 	</div>
 {:then value}
+	{@debug value}
 	<div class="min-h-screen">
 		<div class="mx-auto max-w-7xl px-4 py-8">
 			{@render SearchPanel()}
@@ -69,7 +70,11 @@
 					</button>
 				</div>
 
-				<span>Results</span>
+				<div class="flex flex-row place-content-between">
+					<span>{value.length} Result(s)</span>
+					<div>{@render pagination({ data: value })}</div>
+				</div>
+
 				{#if viewMode === 'table'}
 					{@render rTable(value)}
 				{:else}
@@ -165,62 +170,62 @@
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-				<tr>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-						>Last Updated
-					</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-						>Description
-					</th>
-				</tr>
+			<tr>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+				>Last Updated
+				</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+				>Description
+				</th>
+			</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
-				{#each slicedSource(data) as item (item.id)}
-					<tr class="hover:bg-gray-50">
-						<td class="px-6 py-4 text-sm">
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class=""
-							>
-								{item.title}
+			{#each slicedSource(data) as item (item.id)}
+				<tr class="hover:bg-gray-50">
+					<td class="px-6 py-4 text-sm">
+						<a
+							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class=""
+						>
+							{item.title}
+						</a>
+						<br />
+						<span class="text-xs text-gray-500"
+						>Lookup: <a
+							href="/item/{item.id}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+						></span
+						>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
+							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+							Author
+						</a>
+						<br />
+						<small class="text-gray-500">
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
+							>Details
+								<Icon data={faLink} class="fa-fw"></Icon>
 							</a>
-							<br />
-							<span class="text-xs text-gray-500"
-								>Lookup: <a
-									href="/item/{item.id}"
-									target="_self"
-									rel="noopener noreferrer"
-									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-								></span
-							>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
-								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-								Author
-							</a>
-							<br />
-							<small class="text-gray-500">
-								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
-									>Details
-									<Icon data={faLink} class="fa-fw"></Icon>
-								</a>
-							</small>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<TimeAgo date={item.last_updated}></TimeAgo>
-						</td>
-						<td class="truncate px-6 py-4 text-sm">{item.description}</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
-					</tr>
-				{/each}
+						</small>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<TimeAgo date={item.last_updated}></TimeAgo>
+					</td>
+					<td class="truncate px-6 py-4 text-sm">{item.description}</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+				</tr>
+			{/each}
 			</tbody>
 		</table>
 
@@ -237,31 +242,7 @@
 				{/each}
 				<option value={data.length}>Show All</option>
 			</select>
-			<!-- Pagination -->
-			<Pagination
-				{data}
-				{page}
-				onPageChange={(e) => (page = e.page)}
-				pageSize={size}
-				onPageSizeChange={(e) => (size = e.pageSize)}
-				siblingCount={4}
-			>
-				{#snippet labelEllipsis()}
-					<Icon data={faEllipsis} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelNext()}
-					<Icon data={faArrowRight} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelPrevious()}
-					<Icon data={faArrowLeft} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelFirst()}
-					<Icon data={fa1} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelLast()}
-					<Icon data={faCross} class="fa-fw"></Icon>
-				{/snippet}
-			</Pagination>
+			{@render pagination({ data: data })}
 		</footer>
 	</div>
 {/snippet}
@@ -291,7 +272,7 @@
 					</h6>
 					<div class="mb-2 flex items-center justify-between">
 						<span class="text-sm text-gray-500"
-							>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
+						>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
 						>
 						<small class="text-xs text-gray-500">
 							<a
@@ -299,7 +280,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="anchor hover:text-gray-700"
-								>Steam
+							>Steam
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 							</a>
 						</small>
@@ -332,30 +313,34 @@
 			{/each}
 			<option value={data.length}>Show All</option>
 		</select>
-		<!-- Pagination -->
-		<Pagination
-			{data}
-			{page}
-			onPageChange={(e) => (page = e.page)}
-			pageSize={size}
-			onPageSizeChange={(e) => (size = e.pageSize)}
-			siblingCount={4}
-		>
-			{#snippet labelEllipsis()}
-				<Icon data={faEllipsis} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelNext()}
-				<Icon data={faArrowRight} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelPrevious()}
-				<Icon data={faArrowLeft} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelFirst()}
-				<Icon data={fa1} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelLast()}
-				<Icon data={faCross} class="fa-fw"></Icon>
-			{/snippet}
-		</Pagination>
+		{@render pagination({ data: data })}
 	</footer>
+{/snippet}
+
+{#snippet pagination(obj)}
+	<!-- Pagination -->
+	<Pagination
+		data={obj.data}
+		page={page}
+		onPageChange={(e) => (page = e.page)}
+		pageSize={size}
+		onPageSizeChange={(e) => (size = e.pageSize)}
+		siblingCount={4}
+	>
+		{#snippet labelEllipsis()}
+			<Icon data={faEllipsis} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelNext()}
+			<Icon data={faArrowRight} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelPrevious()}
+			<Icon data={faArrowLeft} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelFirst()}
+			<Icon data={fa1} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelLast()}
+			<Icon data={faCross} class="fa-fw"></Icon>
+		{/snippet}
+	</Pagination>
 {/snippet}
