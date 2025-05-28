@@ -2,8 +2,9 @@
 	import Icon from 'svelte-awesome';
 	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
-	import { faArrowLeft, faLink } from '@fortawesome/free-solid-svg-icons';
+	import { faArrowLeft, faLink, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
+	import { Shadow } from 'svelte-loading-spinners';
 
 	let { data }: { data: PageData } = $props();
 	console.log('Hello, wolrd!', data);
@@ -31,158 +32,169 @@
 	<title>{item.title ? 'Workshop Walker - ' + item.title : 'Workshop Walker - Loading'}</title>
 </svelte:head>
 
-<div class="min-h-screen p-8 text-white">
-	<div class="mx-auto max-w-9/10">
-		<!-- Navigation Buttons -->
-		<div class="mb-8 flex gap-4">
-			<a href="/app/{item.appid}" class="btn preset-tonal-primary flex items-center gap-2">
-				<Icon data={faArrowLeft} class="fa-fw"></Icon>
-				Back to Search
-			</a>
-			<a href="/item/{item.id}" class="btn preset-filled-secondary-500">
-				<Icon data={faLink} class="fa-fw"></Icon>
-				Permalink
-			</a>
+{#await data}
+	<div class="flex h-full w-full place-content-center">
+		<Shadow></Shadow>
+	</div>
+{:then item}
+	{@debug item}
+	{#if item.status}
+		{@render errorCard(item)}
+	{:else}
+		<div class="min-h-screen p-8 text-white">
+			<div class="mx-auto max-w-9/10">
+				<!-- Navigation Buttons -->
+				<div class="mb-8 flex gap-4">
+					<a href="/app/{item.appid}" class="btn preset-tonal-primary flex items-center gap-2">
+						<Icon data={faArrowLeft} class="fa-fw"></Icon>
+						Back to Search
+					</a>
+					<a href="/item/{item.id}" class="btn preset-filled-secondary-500">
+						<Icon data={faLink} class="fa-fw"></Icon>
+						Permalink
+					</a>
 
-			<a
-				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="btn preset-tonal-success flex items-center gap-2"
-			>
-				<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-				View on Steam Workshop
-			</a>
-		</div>
+					<a
+						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn preset-tonal-success flex items-center gap-2"
+					>
+						<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+						View on Steam Workshop
+					</a>
+				</div>
 
-		<div class="grid grid-cols-1 gap-8 md:grid-cols-3">
-			<!-- Main Info Column -->
-			<div class="space-y-6 md:col-span-2">
-				<!-- Title and Author -->
-				<div
-					class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 rounded-lg border-[1px] p-6"
-				>
-					<h1 class="mb-4 text-4xl font-bold">{item.title}</h1>
-					<div class="flex items-center gap-3">
-						<span class="text-xl">by</span>
-						<a
-							href="https://steamcommunity.com/profiles/{item.author}"
-							target="_self"
-							rel=""
-							class="btn preset-tonal-primary"
+				<div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+					<!-- Main Info Column -->
+					<div class="space-y-6 md:col-span-2">
+						<!-- Title and Author -->
+						<div
+							class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 rounded-lg border-[1px] p-6"
 						>
-							Unknown Name
-							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-						</a>
-					</div>
-				</div>
+							<h1 class="mb-4 text-4xl font-bold">{item.title}</h1>
+							<div class="flex items-center gap-3">
+								<span class="text-xl">by</span>
+								<a
+									href="https://steamcommunity.com/profiles/{item.author}"
+									target="_self"
+									rel=""
+									class="btn preset-tonal-primary"
+								>
+									Unknown Name
+									<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+								</a>
+							</div>
+						</div>
 
-				<!-- Preview Image -->
-				{#if item.preview_url}
-					<div
-						class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
-					>
-						<img src={item.preview_url} alt={item.title} class="h-auto max-w-full rounded-lg" />
-					</div>
-				{:else}
-					<div
-						class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6 text-center"
-					>
-						No preview image available
-					</div>
-				{/if}
+						<!-- Preview Image -->
+						{#if item.preview_url}
+							<div
+								class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+							>
+								<img src={item.preview_url} alt={item.title} class="h-auto max-w-full rounded-lg" />
+							</div>
+						{:else}
+							<div
+								class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6 text-center"
+							>
+								No preview image available
+							</div>
+						{/if}
 
-				<!-- Description -->
-				<div
-					class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
-				>
-					<h2 class="mb-4 text-xl font-bold">Description</h2>
-					<p class="whitespace-pre-wrap text-gray-300">{@html data.description}</p>
-				</div>
+						<!-- Description -->
+						<div
+							class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+						>
+							<h2 class="mb-4 text-xl font-bold">Description</h2>
+							<p class="whitespace-pre-wrap text-gray-300">{@html data.description}</p>
+						</div>
 
-				<!-- Tags -->
-				<div
-					class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
-				>
-					<h2 class="mb-4 text-xl font-bold">Tags</h2>
-					<div class="flex flex-wrap gap-2">
-						{#each item.tags as tag (tag.id)}
+						<!-- Tags -->
+						<div
+							class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+						>
+							<h2 class="mb-4 text-xl font-bold">Tags</h2>
+							<div class="flex flex-wrap gap-2">
+								{#each item.tags as tag (tag.id)}
 							<span class="badge preset-filled-primary-500">
 								{tag.display_name}
 							</span>
-						{:else}
-							<span class="text-gray-400">No tags</span>
-						{/each}
+								{:else}
+									<span class="text-gray-400">No tags</span>
+								{/each}
+							</div>
+						</div>
+					</div>
+
+					<!-- Dependencies Column -->
+					<div class="space-y-6">
+						<!-- Dependencies -->
+						<div
+							class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+						>
+							<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
+							{#if item.dependencies.length > 0}
+								<ul class="space-y-3">
+									{#each item.dependencies as dependency (dependency.id)}
+										{@render linkSet(dependency)}
+									{/each}
+								</ul>
+							{:else}
+								<p class="text-gray-400">No dependencies</p>
+							{/if}
+						</div>
+
+						<!-- Dependents -->
+						<div
+							class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+						>
+							<h2 class="mb-4 text-xl font-bold">Dependents</h2>
+							{#if item.dependants.length > 0}
+								<ul class="space-y-3">
+									{#each item.dependants as dependent (dependent.id)}
+										{@render linkSet(dependent)}
+									{/each}
+								</ul>
+							{:else}
+								<p class="text-gray-400">No dependents</p>
+							{/if}
+						</div>
 					</div>
 				</div>
-			</div>
 
-			<!-- Dependencies Column -->
-			<div class="space-y-6">
-				<!-- Dependencies -->
+				<!-- Additional Info -->
 				<div
-					class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+					class="card preset-filled-surface-100-900 border-surface-200-800 card-hover mt-8 rounded-lg border-[1px] p-6"
 				>
-					<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
-					{#if item.dependencies.length > 0}
-						<ul class="space-y-3">
-							{#each item.dependencies as dependency (dependency.id)}
-								{@render linkSet(dependency)}
-							{/each}
-						</ul>
-					{:else}
-						<p class="text-gray-400">No dependencies</p>
-					{/if}
-				</div>
-
-				<!-- Dependents -->
-				<div
-					class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
-				>
-					<h2 class="mb-4 text-xl font-bold">Dependents</h2>
-					{#if item.dependants.length > 0}
-						<ul class="space-y-3">
-							{#each item.dependants as dependent (dependent.id)}
-								{@render linkSet(dependent)}
-							{/each}
-						</ul>
-					{:else}
-						<p class="text-gray-400">No dependents</p>
-					{/if}
+					<h2 class="mb-4 text-xl font-bold">Additional Information</h2>
+					<dl class="grid grid-cols-1 gap-x-8 md:grid-cols-2">
+						<div>
+							<dt class="text-sm text-gray-400">App ID</dt>
+							<dd class="text-lg">{item.appid}</dd>
+						</div>
+						<div>
+							<dt class="text-sm text-gray-400">Last Updated</dt>
+							<dd class="text-lg">
+								<TimeAgo date={item.last_updated}></TimeAgo>
+							</dd>
+						</div>
+						<div>
+							<dt class="text-sm text-gray-400">Languages</dt>
+							<dd class="text-lg">
+								{#each item.languages as lang}
+									<span class="badge preset-outlined-primary-500">{whichLang(lang)}</span>
+								{:else}
+									<span class="badge preset-outlined-warning-500">Unknown</span>
+								{/each}
+							</dd>
+						</div>
+					</dl>
 				</div>
 			</div>
 		</div>
-
-		<!-- Additional Info -->
-		<div
-			class="card preset-filled-surface-100-900 border-surface-200-800 card-hover mt-8 rounded-lg border-[1px] p-6"
-		>
-			<h2 class="mb-4 text-xl font-bold">Additional Information</h2>
-			<dl class="grid grid-cols-1 gap-x-8 md:grid-cols-2">
-				<div>
-					<dt class="text-sm text-gray-400">App ID</dt>
-					<dd class="text-lg">{item.appid}</dd>
-				</div>
-				<div>
-					<dt class="text-sm text-gray-400">Last Updated</dt>
-					<dd class="text-lg">
-						<TimeAgo date={item.last_updated}></TimeAgo>
-					</dd>
-				</div>
-				<div>
-					<dt class="text-sm text-gray-400">Languages</dt>
-					<dd class="text-lg">
-						{#each item.languages as lang}
-							<span class="badge preset-outlined-primary-500">{whichLang(lang)}</span>
-						{:else}
-							<span class="badge preset-outlined-warning-500">Unknown</span>
-						{/each}
-					</dd>
-				</div>
-			</dl>
-		</div>
-	</div>
-</div>
+	{/if}
+{/await}
 
 {#snippet linkSet(item)}
 	<li class="flex flex-col">
@@ -210,4 +222,29 @@
 			<div class="ig-cell preset-tonal">{item.title}</div>
 		</div>
 	</li>
+{/snippet}
+
+
+{#snippet errorCard(value)}
+	<div
+		class="card preset-outlined-error-500 grid grid-cols-1 items-center gap-4 p-4 lg:grid-cols-[auto_1fr_auto]"
+	>
+		<Icon data={faTriangleExclamation} class="fa-fw"></Icon>
+		<div>
+			{#if value.status}
+				<p class="font-bold">Error Code: {value.status}</p>
+			{/if}
+			{#if value.statusText}
+				<p class="text-xs opacity-60">{value.statusText}</p>
+			{/if}
+
+			{#if value.body}
+				<pre class="text-xs opacity-60">{value.body}</pre>
+			{/if}
+
+			{#if value.message}
+				<p class="text-xs opacity-60">{value.message}</p>
+			{/if}
+		</div>
+	</div>
 {/snippet}
