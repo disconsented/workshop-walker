@@ -10,7 +10,8 @@
 		faCross,
 		faEllipsis,
 		faLink,
-		faSearch
+		faSearch,
+		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
 	import { tags, orderBy, language, limit, title, lastUpdated } from './store.svelte';
 
@@ -46,45 +47,48 @@
 		<Shadow></Shadow>
 	</div>
 {:then value}
-	{@debug value}
-	<div class="min-h-screen">
-		<div class="mx-auto max-w-7xl px-4 py-8">
-			{@render SearchPanel()}
-			<div class="mt-6">
-				<div class="mb-4 flex gap-2">
-					<button
-						class="btn {viewMode === 'table'
-							? 'preset-filled-primary-500'
-							: 'preset-outlined-surface-500'} "
-						onclick={() => (viewMode = 'table')}
-					>
-						Table View
-					</button>
-					<button
-						class="btn {viewMode === 'grid'
-							? 'preset-filled-primary-500'
-							: 'preset-outlined-surface-500'}"
-						onclick={() => (viewMode = 'grid')}
-					>
-						Grid View
-					</button>
-				</div>
+	{#if value.status}
+		{@render errorCard(value)}
+	{:else}
+		<div class="min-h-screen">
+			<div class="mx-auto max-w-7xl px-4 py-8">
+				{@render SearchPanel()}
+				<div class="mt-6">
+					<div class="mb-4 flex gap-2">
+						<button
+							class="btn {viewMode === 'table'
+								? 'preset-filled-primary-500'
+								: 'preset-outlined-surface-500'} "
+							onclick={() => (viewMode = 'table')}
+						>
+							Table View
+						</button>
+						<button
+							class="btn {viewMode === 'grid'
+								? 'preset-filled-primary-500'
+								: 'preset-outlined-surface-500'}"
+							onclick={() => (viewMode = 'grid')}
+						>
+							Grid View
+						</button>
+					</div>
 
-				<div class="flex flex-row place-content-between">
-					<span>{value.length} Result(s)</span>
-					<div>{@render pagination({ data: value })}</div>
-				</div>
+					<div class="flex flex-row place-content-between">
+						<span>{value.length} Result(s)</span>
+						<div>{@render pagination({ data: value })}</div>
+					</div>
 
-				{#if viewMode === 'table'}
-					{@render rTable(value)}
-				{:else}
-					{@render rgrid(value)}
-				{/if}
+					{#if viewMode === 'table'}
+						{@render rTable(value)}
+					{:else}
+						{@render rgrid(value)}
+					{/if}
+				</div>
 			</div>
 		</div>
-	</div>
+	{/if}
 {:catch error}
-	<p>Something went wrong: {error.message}</p>
+	{@render errorCard(error)}
 {/await}
 
 {#snippet SearchPanel()}
@@ -170,62 +174,62 @@
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-			<tr>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-				>Last Updated
-				</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-				>Description
-				</th>
-			</tr>
+				<tr>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+						>Last Updated
+					</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+						>Description
+					</th>
+				</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
-			{#each slicedSource(data) as item (item.id)}
-				<tr class="hover:bg-gray-50">
-					<td class="px-6 py-4 text-sm">
-						<a
-							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-							target="_blank"
-							rel="noopener noreferrer"
-							class=""
-						>
-							{item.title}
-						</a>
-						<br />
-						<span class="text-xs text-gray-500"
-						>Lookup: <a
-							href="/item/{item.id}"
-							target="_self"
-							rel="noopener noreferrer"
-							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-						></span
-						>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
-							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-							Author
-						</a>
-						<br />
-						<small class="text-gray-500">
-							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
-							>Details
-								<Icon data={faLink} class="fa-fw"></Icon>
+				{#each slicedSource(data) as item (item.id)}
+					<tr class="hover:bg-gray-50">
+						<td class="px-6 py-4 text-sm">
+							<a
+								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class=""
+							>
+								{item.title}
 							</a>
-						</small>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						<TimeAgo date={item.last_updated}></TimeAgo>
-					</td>
-					<td class="truncate px-6 py-4 text-sm">{item.description}</td>
-				</tr>
-			{:else}
-				<tr>
-					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
-				</tr>
-			{/each}
+							<br />
+							<span class="text-xs text-gray-500"
+								>Lookup: <a
+									href="/item/{item.id}"
+									target="_self"
+									rel="noopener noreferrer"
+									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+								></span
+							>
+						</td>
+						<td class="px-6 py-4 text-sm">
+							<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
+								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+								Author
+							</a>
+							<br />
+							<small class="text-gray-500">
+								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
+									>Details
+									<Icon data={faLink} class="fa-fw"></Icon>
+								</a>
+							</small>
+						</td>
+						<td class="px-6 py-4 text-sm">
+							<TimeAgo date={item.last_updated}></TimeAgo>
+						</td>
+						<td class="truncate px-6 py-4 text-sm">{item.description}</td>
+					</tr>
+				{:else}
+					<tr>
+						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+					</tr>
+				{/each}
 			</tbody>
 		</table>
 
@@ -272,7 +276,7 @@
 					</h6>
 					<div class="mb-2 flex items-center justify-between">
 						<span class="text-sm text-gray-500"
-						>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
+							>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
 						>
 						<small class="text-xs text-gray-500">
 							<a
@@ -280,7 +284,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="anchor hover:text-gray-700"
-							>Steam
+								>Steam
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 							</a>
 						</small>
@@ -321,7 +325,7 @@
 	<!-- Pagination -->
 	<Pagination
 		data={obj.data}
-		page={page}
+		{page}
 		onPageChange={(e) => (page = e.page)}
 		pageSize={size}
 		onPageSizeChange={(e) => (size = e.pageSize)}
@@ -343,4 +347,28 @@
 			<Icon data={faCross} class="fa-fw"></Icon>
 		{/snippet}
 	</Pagination>
+{/snippet}
+
+{#snippet errorCard(value)}
+	<div
+		class="card preset-outlined-error-500 grid grid-cols-1 items-center gap-4 p-4 lg:grid-cols-[auto_1fr_auto]"
+	>
+		<Icon data={faTriangleExclamation} class="fa-fw"></Icon>
+		<div>
+			{#if value.status}
+				<p class="font-bold">Error Code: {value.status}</p>
+			{/if}
+			{#if value.statusText}
+				<p class="text-xs opacity-60">{value.statusText}</p>
+			{/if}
+
+			{#if value.body}
+				<pre class="text-xs opacity-60">{value.body}</pre>
+			{/if}
+
+			{#if value.message}
+				<p class="text-xs opacity-60">{value.message}</p>
+			{/if}
+		</div>
+	</div>
 {/snippet}

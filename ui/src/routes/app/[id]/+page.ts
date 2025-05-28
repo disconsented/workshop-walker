@@ -1,5 +1,6 @@
 import { orderBy, language, tags, limit, title, lastUpdated } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
+
 export const prerender = false;
 export const load: PageLoad = async ({ fetch, params }) => {
 	let paramList = [];
@@ -29,7 +30,21 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	const searchParams = new URLSearchParams(paramList);
 
 	return {
-		req: fetch(`/api/list?` + searchParams.toString()).then((res) => res.json()),
+		req: fetch(`/api/list?` + searchParams.toString()).then((res) => {
+			console.log('api/list Result', res);
+			if (res.ok) {
+				return res.json();
+			}
+			const status = res.status;
+			const statusText = res.statusText;
+			return res.text().then((text) => {
+				return {
+					statusText: statusText,
+					status: status,
+					body: text
+				};
+			});
+		}),
 		id: params.id
 	};
 };
