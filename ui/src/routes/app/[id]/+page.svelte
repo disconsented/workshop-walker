@@ -123,6 +123,8 @@
 					<option value="3">Chinese</option>
 					<option value="4">Japanese</option>
 					<option value="5">Korean</option>
+					<option value="6">Spanish</option>
+					<option value="7">Portuguese</option>
 				</select>
 			</div>
 

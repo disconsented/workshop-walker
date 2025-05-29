@@ -22,6 +22,10 @@
 				return 'Japanese';
 			case 5:
 				return 'Korean';
+			case 6:
+				return 'Spanish';
+			case 7:
+				return 'Portuguese';
 			default:
 				return 'Unknown';
 		}
