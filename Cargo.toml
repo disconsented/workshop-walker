@@ -34,8 +34,6 @@ tracing = "0.1"
 
 
 [patch.crates-io]
-rust-bert = { path = "./classification/rust-bert" }
-
 
 [profile.release]
 lto = true
