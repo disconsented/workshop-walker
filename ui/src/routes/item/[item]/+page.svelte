@@ -117,9 +117,9 @@
 							<h2 class="mb-4 text-xl font-bold">Tags</h2>
 							<div class="flex flex-wrap gap-2">
 								{#each item.tags as tag (tag.id)}
-							<span class="badge preset-filled-primary-500">
-								{tag.display_name}
-							</span>
+									<span class="badge preset-filled-primary-500">
+										{tag.display_name}
+									</span>
 								{:else}
 									<span class="text-gray-400">No tags</span>
 								{/each}
@@ -223,7 +223,6 @@
 		</div>
 	</li>
 {/snippet}
-
 
 {#snippet errorCard(value)}
 	<div
