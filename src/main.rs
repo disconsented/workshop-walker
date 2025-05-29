@@ -17,6 +17,7 @@ use surrealdb::{
     opt::auth::Root,
     sql::{Data, Value, statements::InsertStatement, to_value},
 };
+use surrealdb_migrations::MigrationRunner;
 use tokio::{
     io::AsyncWriteExt,
     spawn,
@@ -65,33 +66,28 @@ async fn main() -> Result<()> {
         .use_db("workshop")
         .await
         .whatever_context("using ns/db")?;
-
-    if !db_exists {
-        info!("creating db");
         db.query(format!(
-            "DEFINE USER {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, FOR SESSION \
+            "DEFINE USER IF NOT EXISTS {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, FOR SESSION \
              NONE;",
             settings.database.user, settings.database.password
         ))
-        .await
-        .whatever_context("creating root user")?;
-        let errors = db
-            .query(include_str!("../migrations/001-create-database.surql"))
             .await
-            .whatever_context("running creation")?
-            .take_errors();
-        ensure_whatever!(
-            errors.is_empty(),
-            "Running migrations got error: {errors:?}"
-        );
-    }
-    // Signin as a namespace, database, or root user
+            .whatever_context("creating root user")?;
+    
+    // Signin as db user (root)
     db.signin(Root {
         username: &settings.database.user,
         password: &settings.database.password,
     })
     .await
     .whatever_context("signing in to db")?;
+
+    // Run migrations
+    MigrationRunner::new(&db)
+        .up()
+        .await
+        .whatever_context("Failed to apply migrations")?;
+
 
     {
         let db = db.clone();
