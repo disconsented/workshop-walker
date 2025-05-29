@@ -66,14 +66,14 @@ async fn main() -> Result<()> {
         .use_db("workshop")
         .await
         .whatever_context("using ns/db")?;
-        db.query(format!(
-            "DEFINE USER IF NOT EXISTS {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, FOR SESSION \
-             NONE;",
-            settings.database.user, settings.database.password
-        ))
-            .await
-            .whatever_context("creating root user")?;
-    
+    db.query(format!(
+        "DEFINE USER IF NOT EXISTS {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, \
+         FOR SESSION NONE;",
+        settings.database.user, settings.database.password
+    ))
+    .await
+    .whatever_context("creating root user")?;
+
     // Signin as db user (root)
     db.signin(Root {
         username: &settings.database.user,
@@ -87,7 +87,6 @@ async fn main() -> Result<()> {
         .up()
         .await
         .whatever_context("Failed to apply migrations")?;
-
 
     {
         let db = db.clone();

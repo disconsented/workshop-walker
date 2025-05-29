@@ -5,17 +5,19 @@ extern crate intel_mkl_src;
 extern crate accelerate_src;
 
 use anyhow::{Error as E, Result};
-use clap::Parser;
-
-use candle_transformers::models::mistral::{Config, Model as Mistral};
-use candle_transformers::models::quantized_mistral::Model as QMistral;
-
 use candle_core::{DType, Device, Module, Tensor};
 use candle_examples::token_output_stream::TokenOutputStream;
 use candle_nn::VarBuilder;
-use candle_transformers::generation::{LogitsProcessor, Sampling};
-use candle_transformers::models::mimi::candle;
-use hf_hub::{api::sync::Api, Repo, RepoType};
+use candle_transformers::{
+    generation::{LogitsProcessor, Sampling},
+    models::{
+        mimi::candle,
+        mistral::{Config, Model as Mistral},
+        quantized_mistral::Model as QMistral,
+    },
+};
+use clap::Parser;
+use hf_hub::{Repo, RepoType, api::sync::Api};
 use serde::Deserialize;
 use tokenizers::Tokenizer;
 
@@ -78,6 +80,7 @@ impl TextGeneration {
         }
         self.tokenizer.clear();
     }
+
     fn run(&mut self, prompt: &str, sample_len: usize) -> Result<()> {
         use std::io::Write;
         self.tokenizer.clear();
@@ -239,7 +242,7 @@ struct Args {
     force_dmmv: bool,
 }
 
-fn run(args: Args)  -> Result<()>{
+fn run(args: Args) -> Result<()> {
     use tracing_chrome::ChromeLayerBuilder;
     use tracing_subscriber::prelude::*;
 
@@ -365,7 +368,8 @@ fn run(args: Args)  -> Result<()>{
     let prompt2 = std::fs::read_to_string("prompt2.txt")?;
     for i in 0..=4 {
         let prompt1 = prompt1.clone();
-        let data: Data = serde_json::from_str(&std::fs::read_to_string(format!("test_data/data{i}.json"))?)?;
+        let data: Data =
+            serde_json::from_str(&std::fs::read_to_string(format!("test_data/data{i}.json"))?)?;
         let prompt1 = prompt1.replace("[GAME]", &data.game);
         let prompt1 = prompt1.replace("[TITLE]", &data.title);
         let prompt1 = prompt1.replace("[DESCRIPTION]", &data.description);
@@ -393,17 +397,18 @@ struct Data {
 }
 
 #[cfg(test)]
-mod test{
-    use crate::{run, Args, Which};
+mod test {
+    use crate::{Args, Which, run};
 
-    // Baseline test, should be ran with the release profile. Probably with cranelift in the future
+    // Baseline test, should be ran with the release profile. Probably with
+    // cranelift in the future
     #[test]
-    fn test_prompts(){
-       let args = Args{
-           sample_len: 5000,
-           which: Which::Mistral7bInstructV03,
-           prompt: String::new(), // Ignored
-           revision: String::from("main"),
+    fn test_prompts() {
+        let args = Args {
+            sample_len: 5000,
+            which: Which::Mistral7bInstructV03,
+            prompt: String::new(), // Ignored
+            revision: String::from("main"),
             ..Default::default()
         };
 
@@ -415,8 +420,8 @@ mod test{
     //   "types": ["addon", "expansion"],
     //   "genres": [],
     //   "themes": [],
-    //   "compatible_items": ["VFE Insectoids 2", "VRE Insectors", "Alpha Biomes"]
-    // }
+    //   "compatible_items": ["VFE Insectoids 2", "VRE Insectors", "Alpha
+    // Biomes"] }
     //  {
     //   "features": [
     //     "new creatures",
@@ -481,13 +486,13 @@ mod test{
     // "graphic overlay system",
     // "mod settings page",
     // "c# attribute for modder's ThingComps",
-    // "long-term features: raiders and traders use vehicles, aerial vehicle events, air defense, joint warfare, combined arms tactics"
-    // ]
+    // "long-term features: raiders and traders use vehicles, aerial vehicle
+    // events, air defense, joint warfare, combined arms tactics" ]
     // }
     // A Rimworld of Magic
     //  {
-    //   "types": ["mod", "expansion", "graphics", "texture", "audio", "ui", "bugfix", "patch"],
-    //   "genres": ["fantasy"],
+    //   "types": ["mod", "expansion", "graphics", "texture", "audio", "ui",
+    // "bugfix", "patch"],   "genres": ["fantasy"],
     //   "themes": ["magic", "role-playing"],
     //   "compatible_items": []
     // }
@@ -553,7 +558,4 @@ mod test{
     // "OG Testing Squad"
     // ]
     // }
-
-
-
 }

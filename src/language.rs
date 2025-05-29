@@ -130,6 +130,9 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3473101740
         );
         r.sort_unstable();
         r.dedup();
-        assert_eq!(vec![DetectedLanguage::English, DetectedLanguage::Japanese], r)
+        assert_eq!(
+            vec![DetectedLanguage::English, DetectedLanguage::Japanese],
+            r
+        );
     }
 }
