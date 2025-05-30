@@ -216,6 +216,14 @@ async fn list(
                     alias: Some("tags".into()),
                 });
             }
+            if let Some(OrderBy::Dependents) = order_by{
+                stmt.expr.0.push(Field::Single {
+                    expr: idiom(" <-item_dependencies.len()")
+                        .expect("expanding item_tags idiom")
+                        .into(),
+                    alias: Some("dependencies_length".into()),
+                });
+            }
         }
 
         stmt.limit = Some({

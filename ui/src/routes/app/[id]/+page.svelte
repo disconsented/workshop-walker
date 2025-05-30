@@ -134,6 +134,7 @@
 					<option value="LastUpdated">Last Updated</option>
 					<option value="Alphabetical">Alphabetical</option>
 					<option value="Score">Score</option>
+					<option value="Dependents">Dependents</option>
 				</select>
 			</div>
 
