@@ -55,19 +55,19 @@ pub struct WorkshopItem<ID> {
 }
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FullWorkshopItem {
-    pub appid: i64,
-    pub author: String,
-    pub dependants: Vec<WorkshopItem<String>>,
-    pub dependencies: Vec<WorkshopItem<String>>,
-    pub description: String,
-    pub id: String,
-    pub languages: Vec<DetectedLanguage>,
-    pub last_updated: u64,
+    pub appid: i64, // The steam ID of the app this belongs to
+    pub author: String, //Authors steam ID
+    pub dependants: Vec<FullWorkshopItem>, // A list of dependants found
+    pub dependencies: Vec<FullWorkshopItem>, // A list of dependencies found
+    pub description: String, // HTML encoded description from steam
+    pub id: String, // The item's ID
+    pub languages: Vec<DetectedLanguage>, // All languages found in the items description
+    pub last_updated: u64, // Timestamp in milliseconds
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preview_url: Option<String>,
-    pub title: String,
-    pub tags: Vec<Tag>,
-    pub score: f32,
+    pub preview_url: Option<String>, // The URL to the banner image
+    pub title: String, // The titles name
+    pub tags: Vec<Tag>, // The list of tags found
+    pub score: f32, // The "quality" score assigned by steam
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dependencies {
