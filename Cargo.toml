@@ -34,8 +34,8 @@ tracing = "0.1"
 surrealdb-migrations = "2.2"
 
 [patch.crates-io]
-#surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
-surrealdb-migrations = { path = "./surrealdb-migrations" }
+surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
+
 
 [profile.release]
 lto = true
