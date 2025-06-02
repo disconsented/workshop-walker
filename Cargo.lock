@@ -6828,6 +6828,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-migrations"
 version = "2.2.2"
+source = "git+https://github.com/disconsented/surrealdb-migrations.git#7f5b6bee020e77be3574159f12f780b2969d19d4"
 dependencies = [
  "chrono",
  "chrono-human-duration",
