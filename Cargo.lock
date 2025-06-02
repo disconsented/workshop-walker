@@ -6828,6 +6828,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-migrations"
 version = "2.2.2"
+source = "git+https://github.com/disconsented/surrealdb-migrations.git#e188c4eb5ce776b39a31cea4d326f508990fdaa8"
 dependencies = [
  "chrono",
  "chrono-human-duration",
@@ -6849,7 +6850,6 @@ dependencies = [
  "sha2",
  "surrealdb",
  "tokio",
- "tracing",
 ]
 
 [[package]]

@@ -34,6 +34,7 @@ tracing = "0.1"
 surrealdb-migrations = "2.2"
 
 [patch.crates-io]
+surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
 
 [profile.release]
 lto = true
@@ -41,6 +42,9 @@ strip = true
 opt-level = 3
 panic = 'abort'
 codegen-units = 1
+
+[profile.dev.package.surrealdb]
+opt-level = 3
 
 [lints.clippy]
 lint_groups_priority = { level = "allow", priority = 0 }
