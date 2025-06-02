@@ -17,8 +17,9 @@
 	<AppCard
 		appid="#"
 		image_url="https://community.cloudflare.steamstatic.com/public/shared/images/header/logo_steam.svg?t=962016"
-		description="New Games Coming soon :tm:"
-		developer="??"
-		name="Something new!"
+		description="We accept suggestions for new games on our <a class='anchor' href='https://github.com/disconsented/workshop-walker/discussions'>GitHub discussion page</a>!"
+		developer="Disconsented"
+		name="Suggest a new game for Workshop Walker?"
+		url="https://github.com/disconsented/workshop-walker"
 	></AppCard>
 </div>
