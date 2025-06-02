@@ -8,6 +8,7 @@
 		faArrowRight,
 		faCross,
 		faEllipsis,
+		faFilter,
 		faLink,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
@@ -169,7 +170,7 @@
 			{/each}
 		</article>
 		<!--Links-->
-		<footer class="input-group grid-cols-[auto_auto]">
+		<footer class="input-group w-min-full grid-cols-[auto_auto]">
 			<a
 				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 				target="_blank"
@@ -304,7 +305,9 @@
 			<Accordion.Item value="open">
 				<!-- Control -->
 				{#snippet lead()}Filter{/snippet}
-				{#snippet control()}{/snippet}
+				{#snippet control()}
+					<Icon data={faFilter} class="fa-fw"></Icon>
+				{/snippet}
 				<!-- Panel -->
 				{#snippet panel()}
 					<div class="col-span-4 grid w-full min-w-full grid-cols-2">
