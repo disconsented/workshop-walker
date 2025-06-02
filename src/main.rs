@@ -50,13 +50,6 @@ async fn main() -> Result<()> {
         .try_deserialize()
         .whatever_context("deserializing config")?;
 
-    let db_exists = tokio::fs::metadata("./workshopdb").await.is_ok()
-        && std::fs::read_dir("./workshopdb")
-            .whatever_context("checking members of dbdir")?
-            .flatten()
-            .count()
-            > 1;
-
     let db = Surreal::new::<RocksDb>("./workshopdb")
         .await
         .whatever_context("connecting to db")?;
@@ -82,12 +75,13 @@ async fn main() -> Result<()> {
     .await
     .whatever_context("signing in to db")?;
 
+    debug!("checking migrations");
     // Run migrations
     MigrationRunner::new(&db)
         .up()
         .await
         .whatever_context("Failed to apply migrations")?;
-
+    debug!("migrations finished");
     {
         let db = db.clone();
         let token = settings.steam.api_token.clone();
