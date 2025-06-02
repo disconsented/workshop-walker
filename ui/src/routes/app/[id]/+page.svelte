@@ -40,6 +40,9 @@
 
 <svelte:head>
 	<title>Workshop Walker - Search</title>
+	<meta property="og:title" content="Workshop Walker - Search" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={window.location.href} />
 </svelte:head>
 
 {#await data.req}

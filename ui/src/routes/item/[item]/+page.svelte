@@ -96,6 +96,12 @@
 
 <svelte:head>
 	<title>{item.title ? 'Workshop Walker - ' + item.title : 'Workshop Walker - Loading'}</title>
+	{#await data then data}
+		<meta property="og:title" content={'Workshop Walker - ' + data.title} />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={window.location.href} />
+		<meta property="og:image" content={data.preview_url} />
+	{/await}
 </svelte:head>
 
 {#await data}

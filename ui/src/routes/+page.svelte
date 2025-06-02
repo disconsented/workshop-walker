@@ -4,6 +4,9 @@
 
 <svelte:head>
 	<title>Workshop Walker - Steam Items</title>
+	<meta property="og:title" content="Workshop Walker" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={window.location.href} />
 </svelte:head>
 
 <div class="flex gap-4">
