@@ -1,4 +1,4 @@
-use std::{convert::Into, fmt};
+use std::{collections::HashMap, convert::Into, fmt};
 
 use lingua::{
     Language,
@@ -9,6 +9,10 @@ use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 use crate::language::DetectedLanguage::Unknown;
+
+// The threshold of total words a language must be, to be considered valid for
+// detection.
+const WORD_PERCENTAGE: f32 = 0.2;
 
 #[derive(
     Debug,
@@ -63,15 +67,21 @@ pub fn detect(text: &str) -> Vec<DetectedLanguage> {
         LanguageDetectorBuilder::from_languages(&[English, Russian, Chinese, Japanese, Korean])
             .with_minimum_relative_distance(0.9)
             .build();
-
-    let mut r: Vec<DetectedLanguage> = detector
-        .detect_multiple_languages_of(text)
+    let mut detected_languages = HashMap::new();
+    let mut total_words = 0;
+    for language in detector.detect_multiple_languages_of(text) {
+        detected_languages
+            .entry(language.language())
+            .and_modify(|e| *e += language.word_count())
+            .or_insert(language.word_count());
+        total_words += language.word_count();
+    }
+    detected_languages
         .into_iter()
-        .map(|result| result.language().into())
-        .collect();
-    r.sort_unstable();
-    r.dedup();
-    r
+        .filter_map(|(lang, words)| {
+            (words as f32 > total_words as f32 * WORD_PERCENTAGE).then(|| lang.into())
+        })
+        .collect()
 }
 
 #[cfg(test)]
