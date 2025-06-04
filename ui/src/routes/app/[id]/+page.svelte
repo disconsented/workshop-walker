@@ -12,7 +12,7 @@
 		faLink,
 		faSearch
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit, title, lastUpdated } from './store.svelte';
+	import { tags, orderBy, language, limit, title, lastUpdated, showImage } from './store.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
@@ -63,6 +63,18 @@
 					>
 						Grid View
 					</button>
+
+					{#if viewMode === 'table'}
+						<form>
+							<input
+								name="show-image"
+								class="checkbox"
+								type="checkbox"
+								bind:checked={showImage.v}
+							/>
+							<label for="show-image">Show images</label>
+						</form>
+					{/if}
 				</div>
 
 				<span>Results</span>
@@ -157,24 +169,41 @@
 	</form>
 {/snippet}
 
-{#snippet rTable(data)}
+{#snippet rTable(data: any)}
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
 				<tr>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+					{#if showImage.v === true}
+						<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Image</th>
+					{/if}
+					<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Title</th>
+					<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Author</th>
+					<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
 						>Last Updated
 					</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
+					<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
 						>Description
 					</th>
 				</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
 				{#each slicedSource(data) as item (item.id)}
-					<tr class="hover:bg-gray-50">
+					<tr class="group hover:bg-gray-50">
+						{#if showImage.v === true}
+							<td class="w-52 p-0">
+								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
+									<img
+										class="aspect-video object-cover lg:h-32 lg:min-w-48"
+										class:hue-rotate-90={!item.preview_url}
+										class:grayscale={!item.preview_url}
+										src={item.preview_url ||
+											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
+										alt="banner"
+									/></a
+								>
+							</td>
+						{/if}
 						<td class="px-6 py-4 text-sm">
 							<a
 								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
@@ -195,7 +224,10 @@
 							>
 						</td>
 						<td class="px-6 py-4 text-sm">
-							<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
+							<a
+								href="https://steamcommunity.com/profiles/{item.author}"
+								class="anchor whitespace-nowrap"
+							>
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 								Author
 							</a>
