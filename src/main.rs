@@ -17,6 +17,7 @@ use surrealdb::{
     opt::auth::Root,
     sql::{Data, Value, statements::InsertStatement, to_value},
 };
+use surrealdb_migrations::MigrationRunner;
 use tokio::{
     io::AsyncWriteExt,
     spawn,
@@ -49,13 +50,6 @@ async fn main() -> Result<()> {
         .try_deserialize()
         .whatever_context("deserializing config")?;
 
-    let db_exists = tokio::fs::metadata("./workshopdb").await.is_ok()
-        && std::fs::read_dir("./workshopdb")
-            .whatever_context("checking members of dbdir")?
-            .flatten()
-            .count()
-            > 1;
-
     let db = Surreal::new::<RocksDb>("./workshopdb")
         .await
         .whatever_context("connecting to db")?;
@@ -65,27 +59,15 @@ async fn main() -> Result<()> {
         .use_db("workshop")
         .await
         .whatever_context("using ns/db")?;
+    db.query(format!(
+        "DEFINE USER IF NOT EXISTS {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, \
+         FOR SESSION NONE;",
+        settings.database.user, settings.database.password
+    ))
+    .await
+    .whatever_context("creating root user")?;
 
-    if !db_exists {
-        info!("creating db");
-        db.query(format!(
-            "DEFINE USER {} ON ROOT PASSWORD '{}' ROLES OWNER DURATION FOR TOKEN 1h, FOR SESSION \
-             NONE;",
-            settings.database.user, settings.database.password
-        ))
-        .await
-        .whatever_context("creating root user")?;
-        let errors = db
-            .query(include_str!("../migrations/001-create-database.surql"))
-            .await
-            .whatever_context("running creation")?
-            .take_errors();
-        ensure_whatever!(
-            errors.is_empty(),
-            "Running migrations got error: {errors:?}"
-        );
-    }
-    // Signin as a namespace, database, or root user
+    // Signin as db user (root)
     db.signin(Root {
         username: &settings.database.user,
         password: &settings.database.password,
@@ -93,6 +75,13 @@ async fn main() -> Result<()> {
     .await
     .whatever_context("signing in to db")?;
 
+    debug!("checking migrations");
+    // Run migrations
+    MigrationRunner::new(&db)
+        .up()
+        .await
+        .whatever_context("Failed to apply migrations")?;
+    debug!("migrations finished");
     {
         let db = db.clone();
         let token = settings.steam.api_token.clone();

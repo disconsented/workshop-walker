@@ -1,5 +1,4 @@
 <script lang="ts">
-
 	import { timeAgo } from '$lib/timeAgo';
 
 	let { date }: { date: number } = $props();
