@@ -255,6 +255,17 @@
 		{:else}
 			<div class="pt-6 text-xs opacity-60">No preview image available</div>
 		{/if}
+		<!-- Tags -->
+		<div class="pt-6">
+			<span>
+				Tags:
+				{#each item.tags as tag}
+					<span class="badge preset-outlined-primary-500">{tag.display_name}</span>
+				{:else}
+					<span class="badge preset-outlined-warning-500">No Tags</span>
+				{/each}
+			</span>
+		</div>
 	</div>
 {/snippet}
 
