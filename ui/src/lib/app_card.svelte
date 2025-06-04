@@ -5,13 +5,16 @@
 		description: string;
 		developer: string;
 		appid: string;
+		url: string | undefined;
 	}
 
-	let { image_url, name, developer, description, appid }: Props = $props();
+	let { image_url, name, developer, description, appid, url = undefined }: Props = $props();
+	// Direct URL, anchor or app page link
+	const link = url ? url : appid === '#' ? '#' : '/app/' + appid;
 </script>
 
 <a
-	href={appid === '#' ? '#' : '/app/' + appid}
+	href={link}
 	class:card-hover={appid !== '#'}
 	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 block w-md max-w-md divide-y overflow-hidden border-[1px]"
 >
@@ -27,7 +30,7 @@
 			<h2 class="h6">{name}</h2>
 		</div>
 		<p class="opacity-60">
-			{description}
+			{@html description}
 		</p>
 	</article>
 	<footer class="flex items-center justify-between gap-4 p-4">

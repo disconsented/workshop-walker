@@ -10,7 +10,8 @@
 		faCross,
 		faEllipsis,
 		faLink,
-		faSearch
+		faSearch,
+		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
 	import { tags, orderBy, language, limit, title, lastUpdated, showImage } from './store.svelte';
 
@@ -37,57 +38,72 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Workshop Walker - Search</title>
+	<meta property="og:title" content="Workshop Walker - Search" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={window.location.href} />
+</svelte:head>
+
 {#await data.req}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
 	</div>
 {:then value}
-	<div class="min-h-screen">
-		<div class="mx-auto max-w-7xl px-4 py-8">
-			{@render SearchPanel()}
-			<div class="mt-6">
-				<div class="mb-4 flex gap-2">
-					<button
-						class="btn {viewMode === 'table'
-							? 'preset-filled-primary-500'
-							: 'preset-outlined-surface-500'} "
-						onclick={() => (viewMode = 'table')}
-					>
-						Table View
-					</button>
-					<button
-						class="btn {viewMode === 'grid'
-							? 'preset-filled-primary-500'
-							: 'preset-outlined-surface-500'}"
-						onclick={() => (viewMode = 'grid')}
-					>
-						Grid View
-					</button>
+	{#if value.status}
+		{@render errorCard(value)}
+	{:else}
+		<div class="min-h-screen">
+			<div class="mx-auto max-w-7xl px-4 py-8">
+				{@render SearchPanel()}
+				<div class="mt-6">
+					<div class="mb-4 flex gap-2">
+						<button
+							class="btn {viewMode === 'table'
+								? 'preset-filled-primary-500'
+								: 'preset-outlined-surface-500'} "
+							onclick={() => (viewMode = 'table')}
+						>
+							Table View
+						</button>
+						<button
+							class="btn {viewMode === 'grid'
+								? 'preset-filled-primary-500'
+								: 'preset-outlined-surface-500'}"
+							onclick={() => (viewMode = 'grid')}
+						>
+							Grid View
+						</button>
+
+						{#if viewMode === 'table'}
+							<form>
+								<input
+									name="show-image"
+									class="checkbox"
+									type="checkbox"
+									bind:checked={showImage.v}
+								/>
+								<label for="show-image">Show images</label>
+							</form>
+						{/if}
+					</div>
+
+					<div class="flex flex-row place-content-between">
+						<span>{value.length} Result(s)</span>
+						<div>{@render pagination({ data: value })}</div>
+					</div>
 
 					{#if viewMode === 'table'}
-						<form>
-							<input
-								name="show-image"
-								class="checkbox"
-								type="checkbox"
-								bind:checked={showImage.v}
-							/>
-							<label for="show-image">Show images</label>
-						</form>
+						{@render rTable(value)}
+					{:else}
+						{@render rgrid(value)}
 					{/if}
 				</div>
-
-				<span>Results</span>
-				{#if viewMode === 'table'}
-					{@render rTable(value)}
-				{:else}
-					{@render rgrid(value)}
-				{/if}
 			</div>
 		</div>
-	</div>
+	{/if}
 {:catch error}
-	<p>Something went wrong: {error.message}</p>
+	{@render errorCard(error)}
 {/await}
 
 {#snippet SearchPanel()}
@@ -122,6 +138,8 @@
 					<option value="3">Chinese</option>
 					<option value="4">Japanese</option>
 					<option value="5">Korean</option>
+					<option value="6">Spanish</option>
+					<option value="7">Portuguese</option>
 				</select>
 			</div>
 
@@ -131,6 +149,7 @@
 					<option value="LastUpdated">Last Updated</option>
 					<option value="Alphabetical">Alphabetical</option>
 					<option value="Score">Score</option>
+					<option value="Dependents">Dependents</option>
 				</select>
 			</div>
 
@@ -265,31 +284,7 @@
 				{/each}
 				<option value={data.length}>Show All</option>
 			</select>
-			<!-- Pagination -->
-			<Pagination
-				{data}
-				{page}
-				onPageChange={(e) => (page = e.page)}
-				pageSize={size}
-				onPageSizeChange={(e) => (size = e.pageSize)}
-				siblingCount={4}
-			>
-				{#snippet labelEllipsis()}
-					<Icon data={faEllipsis} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelNext()}
-					<Icon data={faArrowRight} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelPrevious()}
-					<Icon data={faArrowLeft} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelFirst()}
-					<Icon data={fa1} class="fa-fw"></Icon>
-				{/snippet}
-				{#snippet labelLast()}
-					<Icon data={faCross} class="fa-fw"></Icon>
-				{/snippet}
-			</Pagination>
+			{@render pagination({ data: data })}
 		</footer>
 	</div>
 {/snippet}
@@ -360,30 +355,58 @@
 			{/each}
 			<option value={data.length}>Show All</option>
 		</select>
-		<!-- Pagination -->
-		<Pagination
-			{data}
-			{page}
-			onPageChange={(e) => (page = e.page)}
-			pageSize={size}
-			onPageSizeChange={(e) => (size = e.pageSize)}
-			siblingCount={4}
-		>
-			{#snippet labelEllipsis()}
-				<Icon data={faEllipsis} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelNext()}
-				<Icon data={faArrowRight} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelPrevious()}
-				<Icon data={faArrowLeft} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelFirst()}
-				<Icon data={fa1} class="fa-fw"></Icon>
-			{/snippet}
-			{#snippet labelLast()}
-				<Icon data={faCross} class="fa-fw"></Icon>
-			{/snippet}
-		</Pagination>
+		{@render pagination({ data: data })}
 	</footer>
+{/snippet}
+
+{#snippet pagination(obj)}
+	<!-- Pagination -->
+	<Pagination
+		data={obj.data}
+		{page}
+		onPageChange={(e) => (page = e.page)}
+		pageSize={size}
+		onPageSizeChange={(e) => (size = e.pageSize)}
+		siblingCount={4}
+	>
+		{#snippet labelEllipsis()}
+			<Icon data={faEllipsis} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelNext()}
+			<Icon data={faArrowRight} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelPrevious()}
+			<Icon data={faArrowLeft} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelFirst()}
+			<Icon data={fa1} class="fa-fw"></Icon>
+		{/snippet}
+		{#snippet labelLast()}
+			<Icon data={faCross} class="fa-fw"></Icon>
+		{/snippet}
+	</Pagination>
+{/snippet}
+
+{#snippet errorCard(value)}
+	<div
+		class="card preset-outlined-error-500 grid grid-cols-1 items-center gap-4 p-4 lg:grid-cols-[auto_1fr_auto]"
+	>
+		<Icon data={faTriangleExclamation} class="fa-fw"></Icon>
+		<div>
+			{#if value.status}
+				<p class="font-bold">Error Code: {value.status}</p>
+			{/if}
+			{#if value.statusText}
+				<p class="text-xs opacity-60">{value.statusText}</p>
+			{/if}
+
+			{#if value.body}
+				<pre class="text-xs opacity-60">{value.body}</pre>
+			{/if}
+
+			{#if value.message}
+				<p class="text-xs opacity-60">{value.message}</p>
+			{/if}
+		</div>
+	</div>
 {/snippet}

@@ -2,7 +2,7 @@ use std::{convert::Into, fmt};
 
 use lingua::{
     Language,
-    Language::{Chinese, English, Japanese, Korean, Russian},
+    Language::{Chinese, English, Japanese, Korean, Portuguese, Russian, Spanish},
     LanguageDetectorBuilder,
 };
 use salvo::prelude::ToSchema;
@@ -31,6 +31,8 @@ pub enum DetectedLanguage {
     Chinese = 3,
     Japanese = 4,
     Korean = 5,
+    Spanish = 6,
+    Portuguese = 7,
     Unknown = 0,
 }
 
@@ -47,6 +49,8 @@ impl From<Language> for DetectedLanguage {
             Japanese => Self::Japanese,
             Korean => Self::Korean,
             English => Self::English,
+            Spanish => Self::Spanish,
+            Portuguese => Self::Portuguese,
             _ => Unknown,
         }
     }
@@ -130,6 +134,9 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3473101740
         );
         r.sort_unstable();
         r.dedup();
-        assert_eq!(vec![DetectedLanguage::English, DetectedLanguage::Japanese], r)
+        assert_eq!(
+            vec![DetectedLanguage::English, DetectedLanguage::Japanese],
+            r
+        );
     }
 }

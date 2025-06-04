@@ -179,6 +179,7 @@ pub struct Struct {
     pub can_be_deleted: bool,
     #[serde(default)]
     pub can_subscribe: bool,
+    #[serde(default)]
     pub children: Vec<Child>,
     pub consumer_appid: Option<i64>,
     pub consumer_shortcutid: Option<i64>,
@@ -215,6 +216,7 @@ pub struct Struct {
     #[serde(default)]
     pub show_subscribe_all: bool,
     pub subscriptions: Option<i64>,
+    #[serde(default)]
     pub tags: Vec<Tag>,
     pub time_created: Option<i64>,
     pub time_updated: Option<i64>,

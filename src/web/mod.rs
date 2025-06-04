@@ -100,13 +100,14 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                 "SELECT in.appid as appid, in.description as description, in.id as id, in.title
                  as title, in.author as author, in.languages as languages, in.last_updated as
                  last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, \
-                 display_name} as tags FROM $id<-item_dependencies.*;",
+                 display_name} as tags, in.preview_url as preview_url FROM \
+                 $id<-item_dependencies.*;",
             )
             .query(
                 "SELECT out.appid as appid, out.description as description, out.id as id,
                  out.author as author, out.languages as languages, out.last_updated as
                  last_updated, out.title as title, out.score as score, out.tags.{id: \
-                 id.to_string(), app_id, display_name} as tags
+                 id.to_string(), app_id, display_name} as tags, out.preview_url as preview_url
                  FROM $id->item_dependencies.*;",
             )
             .bind(("id", id.clone()))
@@ -141,9 +142,11 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
             last_updated: result.last_updated,
             dependencies: dependencies
                 .into_iter()
-                .map(|e| WorkshopItem {
+                .map(|e| FullWorkshopItem {
                     appid: e.appid,
                     author: e.author,
+                    dependants: vec![],
+                    dependencies: vec![],
                     description: e.description,
                     id: into_string(e.id.key()),
                     languages: e.languages,
@@ -157,9 +160,11 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
 
             dependants: dependants
                 .into_iter()
-                .map(|e| WorkshopItem {
+                .map(|e| FullWorkshopItem {
                     appid: e.appid,
                     author: e.author,
+                    dependants: vec![],
+                    dependencies: vec![],
                     description: e.description,
                     id: into_string(e.id.key()),
                     languages: e.languages,
@@ -214,6 +219,14 @@ async fn list(
                         .expect("expanding tags idiom")
                         .into(),
                     alias: Some("tags".into()),
+                });
+            }
+            if let Some(OrderBy::Dependents) = order_by{
+                stmt.expr.0.push(Field::Single {
+                    expr: idiom(" <-item_dependencies.len()")
+                        .expect("expanding item_tags idiom")
+                        .into(),
+                    alias: Some("dependencies_length".into()),
                 });
             }
         }

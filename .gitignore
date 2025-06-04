@@ -182,3 +182,6 @@ Temporary Items
 data_cache
 config/config.toml
 workshopdb
+ui/.idea
+ui/project.inlag
+.idea

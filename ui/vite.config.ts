@@ -10,7 +10,7 @@ export default defineConfig({
 		paraglideVitePlugin({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide'
-		}),
+		})
 	],
 	server: {
 		proxy: { '/api': 'http://localhost:5800' }

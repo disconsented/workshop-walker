@@ -1,180 +1,561 @@
+#[cfg(feature = "mkl")]
+extern crate intel_mkl_src;
+
+#[cfg(feature = "accelerate")]
+extern crate accelerate_src;
+
+use anyhow::{Error as E, Result};
+use candle_core::{DType, Device, Module, Tensor};
+use candle_examples::token_output_stream::TokenOutputStream;
+use candle_nn::VarBuilder;
+use candle_transformers::{
+    generation::{LogitsProcessor, Sampling},
+    models::{
+        mimi::candle,
+        mistral::{Config, Model as Mistral},
+        quantized_mistral::Model as QMistral,
+    },
+};
+use clap::Parser;
+use hf_hub::{Repo, RepoType, api::sync::Api};
+use serde::Deserialize;
+use tokenizers::Tokenizer;
+
+enum Model {
+    Mistral(Mistral),
+    Quantized(QMistral),
+}
+
+struct TextGeneration {
+    model: Model,
+    device: Device,
+    tokenizer: TokenOutputStream,
+    logits_processor: LogitsProcessor,
+    repeat_penalty: f32,
+    repeat_last_n: usize,
+}
+
+impl TextGeneration {
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        model: Model,
+        tokenizer: Tokenizer,
+        seed: u64,
+        temp: Option<f64>,
+        top_p: Option<f64>,
+        top_k: Option<usize>,
+        repeat_penalty: f32,
+        repeat_last_n: usize,
+        device: &Device,
+    ) -> Self {
+        let logits_processor = {
+            let temperature = temp.unwrap_or(0.);
+            let sampling = if temperature <= 0. {
+                Sampling::ArgMax
+            } else {
+                match (top_k, top_p) {
+                    (None, None) => Sampling::All { temperature },
+                    (Some(k), None) => Sampling::TopK { k, temperature },
+                    (None, Some(p)) => Sampling::TopP { p, temperature },
+                    (Some(k), Some(p)) => Sampling::TopKThenTopP { k, p, temperature },
+                }
+            };
+            LogitsProcessor::from_sampling(seed, sampling)
+        };
+
+        Self {
+            model,
+            tokenizer: TokenOutputStream::new(tokenizer),
+            logits_processor,
+            repeat_penalty,
+            repeat_last_n,
+            device: device.clone(),
+        }
+    }
+
+    fn reset(&mut self) {
+        match &mut self.model {
+            Model::Quantized(m) => m.clear_kv_cache(),
+            Model::Mistral(m) => m.clear_kv_cache(),
+        }
+        self.tokenizer.clear();
+    }
+
+    fn run(&mut self, prompt: &str, sample_len: usize) -> Result<()> {
+        use std::io::Write;
+        self.tokenizer.clear();
+        let mut tokens = self
+            .tokenizer
+            .tokenizer()
+            .encode(prompt, true)
+            .map_err(E::msg)?
+            .get_ids()
+            .to_vec();
+        for &t in tokens.iter() {
+            if let Some(t) = self.tokenizer.next_token(t)? {
+                print!("{t}")
+            }
+        }
+        std::io::stdout().flush()?;
+
+        let mut generated_tokens = 0usize;
+        let eos_token = match self.tokenizer.get_token("</s>") {
+            Some(token) => token,
+            None => anyhow::bail!("cannot find the </s> token"),
+        };
+        let start_gen = std::time::Instant::now();
+        for index in 0..sample_len {
+            let context_size = if index > 0 { 1 } else { tokens.len() };
+            let start_pos = tokens.len().saturating_sub(context_size);
+            let ctxt = &tokens[start_pos..];
+            let input = Tensor::new(ctxt, &self.device)?.unsqueeze(0)?;
+            let logits = match &mut self.model {
+                Model::Mistral(m) => m.forward(&input, start_pos)?,
+                Model::Quantized(m) => m.forward(&input, start_pos)?,
+            };
+            let logits = logits.squeeze(0)?.squeeze(0)?.to_dtype(DType::F32)?;
+            let logits = if self.repeat_penalty == 1. {
+                logits
+            } else {
+                let start_at = tokens.len().saturating_sub(self.repeat_last_n);
+                candle_transformers::utils::apply_repeat_penalty(
+                    &logits,
+                    self.repeat_penalty,
+                    &tokens[start_at..],
+                )?
+            };
+
+            let next_token = self.logits_processor.sample(&logits)?;
+            tokens.push(next_token);
+            generated_tokens += 1;
+            if next_token == eos_token {
+                break;
+            }
+            if let Some(t) = self.tokenizer.next_token(next_token)? {
+                print!("{t}");
+                std::io::stdout().flush()?;
+            }
+        }
+        let dt = start_gen.elapsed();
+        if let Some(rest) = self.tokenizer.decode_rest().map_err(E::msg)? {
+            print!("{rest}");
+        }
+        std::io::stdout().flush()?;
+        println!(
+            "\n{generated_tokens} tokens generated ({:.2} token/s)",
+            generated_tokens as f64 / dt.as_secs_f64(),
+        );
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq, clap::ValueEnum, Default)]
+enum Which {
+    #[default]
+    #[value(name = "7b-v0.1")]
+    Mistral7bV01,
+    #[value(name = "7b-v0.2")]
+    Mistral7bV02,
+    #[value(name = "7b-instruct-v0.1")]
+    Mistral7bInstructV01,
+    #[value(name = "7b-instruct-v0.2")]
+    Mistral7bInstructV02,
+    #[value(name = "7b-instruct-v0.3")]
+    Mistral7bInstructV03,
+    #[value(name = "7b-maths-v0.1")]
+    Mathstral7bV01,
+    #[value(name = "nemo-2407")]
+    MistralNemo2407,
+    #[value(name = "nemo-instruct-2407")]
+    MistralNemoInstruct2407,
+}
+
+#[derive(Parser, Debug, Default)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Run on CPU rather than on GPU.
+    #[arg(long)]
+    cpu: bool,
+
+    /// Enable tracing (generates a trace-timestamp.json file).
+    #[arg(long)]
+    tracing: bool,
+
+    #[arg(long)]
+    use_flash_attn: bool,
+
+    #[arg(long)]
+    prompt: String,
+
+    /// The temperature used to generate samples.
+    #[arg(long)]
+    temperature: Option<f64>,
+
+    /// Nucleus sampling probability cutoff.
+    #[arg(long)]
+    top_p: Option<f64>,
+
+    /// Only sample among the top K samples.
+    #[arg(long)]
+    top_k: Option<usize>,
+
+    /// The seed to use when generating random samples.
+    #[arg(long, default_value_t = 299792458)]
+    seed: u64,
+
+    /// The length of the sample to generate (in tokens).
+    #[arg(long, short = 'n', default_value_t = 10000)]
+    sample_len: usize,
+
+    /// The model size to use.
+    #[arg(long, default_value = "7b-v0.1")]
+    which: Which,
+
+    #[arg(long)]
+    model_id: Option<String>,
+
+    #[arg(long, default_value = "main")]
+    revision: String,
+
+    #[arg(long)]
+    tokenizer_file: Option<String>,
+
+    #[arg(long)]
+    config_file: Option<String>,
+
+    #[arg(long)]
+    weight_files: Option<String>,
+
+    #[arg(long)]
+    quantized: bool,
+
+    /// Penalty to be applied for repeating tokens, 1. means no penalty.
+    #[arg(long, default_value_t = 1.1)]
+    repeat_penalty: f32,
+
+    /// The context size to consider for the repeat penalty.
+    #[arg(long, default_value_t = 64)]
+    repeat_last_n: usize,
+
+    /// Use the slower dmmv cuda kernel.
+    #[arg(long)]
+    force_dmmv: bool,
+}
+
+fn run(args: Args) -> Result<()> {
+    use tracing_chrome::ChromeLayerBuilder;
+    use tracing_subscriber::prelude::*;
+
+    #[cfg(feature = "cuda")]
+    candle::quantized::cuda::set_force_dmmv(args.force_dmmv);
+
+    let _guard = if args.tracing {
+        let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
+        tracing_subscriber::registry().with(chrome_layer).init();
+        Some(guard)
+    } else {
+        None
+    };
+    println!(
+        "avx: {}, neon: {}, simd128: {}, f16c: {}",
+        candle::utils::with_avx(),
+        candle::utils::with_neon(),
+        candle::utils::with_simd128(),
+        candle::utils::with_f16c()
+    );
+    println!(
+        "temp: {:.2} repeat-penalty: {:.2} repeat-last-n: {}",
+        args.temperature.unwrap_or(0.),
+        args.repeat_penalty,
+        args.repeat_last_n
+    );
+
+    let start = std::time::Instant::now();
+    let api = Api::new()?;
+    let model_id = match args.model_id {
+        Some(model_id) => model_id,
+        None => {
+            if args.quantized {
+                if args.which != Which::Mistral7bV01 {
+                    anyhow::bail!("only 7b-v0.1 is available as a quantized model for now")
+                }
+                "lmz/candle-mistral".to_string()
+            } else {
+                let name = match args.which {
+                    Which::Mistral7bV01 => "mistralai/Mistral-7B-v0.1",
+                    Which::Mistral7bV02 => "mistralai/Mistral-7B-v0.3",
+                    Which::Mistral7bInstructV01 => "mistralai/Mistral-7B-Instruct-v0.1",
+                    Which::Mistral7bInstructV02 => "mistralai/Mistral-7B-Instruct-v0.2",
+                    Which::Mistral7bInstructV03 => "mistralai/Mistral-7B-Instruct-v0.3",
+                    Which::Mathstral7bV01 => "mistralai/mathstral-7B-v0.1",
+                    Which::MistralNemo2407 => "mistralai/Mistral-Nemo-Base-2407",
+                    Which::MistralNemoInstruct2407 => "mistralai/Mistral-Nemo-Instruct-2407",
+                };
+                name.to_string()
+            }
+        }
+    };
+    let repo = api.repo(Repo::with_revision(
+        model_id,
+        RepoType::Model,
+        args.revision,
+    ));
+    let tokenizer_filename = match args.tokenizer_file {
+        Some(file) => std::path::PathBuf::from(file),
+        None => repo.get("tokenizer.json")?,
+    };
+    let filenames = match args.weight_files {
+        Some(files) => files
+            .split(',')
+            .map(std::path::PathBuf::from)
+            .collect::<Vec<_>>(),
+        None => {
+            if args.quantized {
+                vec![repo.get("model-q4k.gguf")?]
+            } else {
+                candle_examples::hub_load_safetensors(&repo, "model.safetensors.index.json")?
+            }
+        }
+    };
+    println!("retrieved the files in {:?}", start.elapsed());
+    let tokenizer = Tokenizer::from_file(tokenizer_filename).map_err(E::msg)?;
+
+    let start = std::time::Instant::now();
+    let config = match args.config_file {
+        Some(config_file) => serde_json::from_slice(&std::fs::read(config_file)?)?,
+        None => {
+            if args.quantized {
+                Config::config_7b_v0_1(args.use_flash_attn)
+            } else {
+                let config_file = repo.get("config.json")?;
+                serde_json::from_slice(&std::fs::read(config_file)?)?
+            }
+        }
+    };
+    let device = candle_examples::device(args.cpu)?;
+    let (model, device) = if args.quantized {
+        let filename = &filenames[0];
+        let vb =
+            candle_transformers::quantized_var_builder::VarBuilder::from_gguf(filename, &device)?;
+        let model = QMistral::new(&config, vb)?;
+        (Model::Quantized(model), device)
+    } else {
+        let dtype = if device.is_cuda() {
+            DType::BF16
+        } else {
+            DType::F32
+        };
+        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&filenames, dtype, &device)? };
+        let model = Mistral::new(&config, vb)?;
+        (Model::Mistral(model), device)
+    };
+
+    println!("loaded the model in {:?}", start.elapsed());
+
+    let mut pipeline = TextGeneration::new(
+        model,
+        tokenizer,
+        args.seed,
+        args.temperature,
+        args.top_p,
+        args.top_k,
+        args.repeat_penalty,
+        args.repeat_last_n,
+        &device,
+    );
+    println!("{:?}", std::env::current_dir());
+    let prompt1 = std::fs::read_to_string("prompt1.txt")?;
+    let prompt2 = std::fs::read_to_string("prompt2.txt")?;
+    for i in 0..=4 {
+        let prompt1 = prompt1.clone();
+        let data: Data =
+            serde_json::from_str(&std::fs::read_to_string(format!("test_data/data{i}.json"))?)?;
+        let prompt1 = prompt1.replace("[GAME]", &data.game);
+        let prompt1 = prompt1.replace("[TITLE]", &data.title);
+        let prompt1 = prompt1.replace("[DESCRIPTION]", &data.description);
+        pipeline.run(&prompt1, args.sample_len)?;
+        pipeline.reset();
+        let prompt2 = prompt2.clone();
+        let prompt2 = prompt2.replace("[GAME]", &data.game);
+        let prompt2 = prompt2.replace("[TITLE]", &data.title);
+        let prompt2 = prompt2.replace("[DESCRIPTION]", &data.description);
+        pipeline.run(&prompt2, args.sample_len)?;
+        pipeline.reset();
+    }
+    Ok(())
+}
+// fn main() -> Result<()> {
+//     let args = Args::parse();
+//     run(args)
+// }
+
+#[derive(Deserialize)]
+struct Data {
+    game: String,
+    title: String,
+    description: String,
+}
+
 #[cfg(test)]
 mod test {
-    use std::{
-        cmp::Ordering,
-        collections::HashMap,
-        env,
-        env::current_dir,
-        fmt::Write,
-        fs::{File, read_to_string},
-        ops::RangeInclusive,
-    };
+    use crate::{Args, Which, run};
 
-    use indicatif::{ProgressBar, ProgressIterator, ProgressState, ProgressStyle};
-    use rust_bert::pipelines::{
-        keywords_extraction::{Keyword, KeywordExtractionModel},
-        ner::NERModel,
-        question_answering::{QaInput, QuestionAnsweringModel},
-        summarization::SummarizationModel,
-    };
-    use serde::Deserialize;
-    use surrealdb::{Surreal, engine::local::RocksDb};
-
+    // Baseline test, should be ran with the release profile. Probably with
+    // cranelift in the future
     #[test]
-    fn test_thing() {
-        let keyword_extraction_model = KeywordExtractionModel::new(Default::default()).unwrap();
-        let ner_model = NERModel::new(Default::default()).unwrap();
-        let summarization_model = SummarizationModel::new(Default::default()).unwrap();
-        let qa_model = QuestionAnsweringModel::new(Default::default()).unwrap();
+    fn test_prompts() {
+        let args = Args {
+            sample_len: 5000,
+            which: Which::Mistral7bInstructV03,
+            prompt: String::new(), // Ignored
+            revision: String::from("main"),
+            ..Default::default()
+        };
 
-        let input = "Rust is a multi-paradigm, general-purpose programming language. Rust \
-                     emphasizes performance, type safety, and concurrency. Rust enforces memory \
-                     safety—that is, that all references point to valid memory—without requiring \
-                     the use of a garbage collector or reference counting present in other \
-                     memory-safe languages. To simultaneously enforce memory safety and prevent \
-                     concurrent data races, Rust's borrow checker tracks the object lifetime and \
-                     variable scope of all references in a program during compilation. Rust is \
-                     popular for systems programming but also offers high-level features \
-                     including functional programming constructs.";
-        let output = keyword_extraction_model.predict(&[input]).unwrap();
-
-        println!("{output:?}");
-        dbg!(current_dir());
-        for i in 1..=3 {
-            let input = read_to_string(dbg!(format!("src/keywords/test{i}.txt"))).unwrap();
-            let input = [input];
-            {
-                let output = keyword_extraction_model.predict(&input).unwrap();
-                println!("KeywordExtractionModel: {output:#?}");
-            }
-            {
-                let output = ner_model.predict(&input);
-                println!("NERModel: {output:#?}");
-            }
-            {
-                let output = summarization_model.summarize(&input);
-                println!("SummarizationModel: {output:#?}");
-            }
-            {
-                let context = input[0].clone();
-                let question = "What phrases or keywords can you pick out here?".into();
-                let output = qa_model.predict(&[QaInput { question, context }], 1, 32);
-                println!("QuestionAnsweringModel: {output:#?}");
-            }
-        }
+        run(args).unwrap();
     }
 
-    #[test]
-    fn test_combined() {
-        println!("WD: {:?}", env::current_dir().unwrap());
-        println!("loading data");
-        let text = RangeInclusive::new(1, 3)
-            .map(|i| read_to_string(format!("src/test{i}.txt")).unwrap())
-            .collect::<Vec<_>>();
-        println!("Loading model");
-        let combined = {
-            let keyword_extraction_model = KeywordExtractionModel::new(Default::default()).unwrap();
-            keyword_extraction_model.predict(&text).unwrap()
-        }
-        .concat();
-
-        let individual = {
-            let keyword_extraction_model = KeywordExtractionModel::new(Default::default()).unwrap();
-            text.iter()
-                .map(|s| keyword_extraction_model.predict(&[s]).unwrap())
-                .collect::<Vec<Vec<_>>>()
-        }
-        .concat()
-        .concat();
-
-        fn to_map(words: Vec<Keyword>) -> HashMap<String, f32> {
-            words
-                .into_iter()
-                .map(|keyword| (keyword.text, keyword.score))
-                .collect()
-        }
-
-        assert_eq!(to_map(combined), to_map(individual));
-    }
-
-    #[tokio::test]
-    async fn test_massive() {
-        let db = Surreal::new::<RocksDb>("../workshopdb").await.unwrap();
-
-        #[derive(Deserialize)]
-        struct Thing {
-            title: String,
-            description: String,
-        }
-
-        db.use_ns("workshop").use_db("workshop").await.unwrap();
-        let mut resp = db
-            .query(
-                "SELECT * FROM workshop_items WHERE language=1 AND tags CONTAINSALL [tags:Mod, \
-                 tags:⟨1.5⟩]  ORDER BY votes;",
-            )
-            .await
-            .unwrap();
-        dbg!(resp.take_errors());
-
-        let items: Vec<Thing> = resp.take(0).unwrap();
-        std::thread::spawn(move || {
-            let keyword_extraction_model = KeywordExtractionModel::new(Default::default()).unwrap();
-            println!("extracting {} items", items.len());
-            let items = items
-                .into_iter()
-                .map(|pair| pair.description)
-                .collect::<Vec<_>>()
-                .to_vec();
-
-            let chunk_size = 5;
-            let pb = ProgressBar::new((items.len() / chunk_size) as u64);
-            pb.set_style(
-                ProgressStyle::with_template(
-                    "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] \
-                     {human_pos}/{human_len} ({eta})",
-                )
-                .unwrap()
-                .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
-                    write!(w, "{}", humantime::format_duration(state.eta())).unwrap()
-                })
-                .progress_chars("#>-"),
-            );
-            println!("remapped");
-            let keywords = items
-                .chunks(chunk_size)
-                .progress_with(pb)
-                .map(|set| keyword_extraction_model.predict(set).unwrap().concat())
-                .map(|words| {
-                    words
-                        .into_iter()
-                        .map(|word| (word.text, word.score))
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>()
-                .concat();
-            println!("{}", keywords.len());
-            let mut map = HashMap::new();
-            for (keyword, score) in keywords {
-                map.entry(keyword)
-                    .and_modify(|vec: &mut Vec<_>| vec.push(score))
-                    .or_insert_with(|| vec![score]);
-            }
-            let mut summed = map
-                .into_iter()
-                .map(|(key, vals)| (key, vals.iter().sum::<f32>() / vals.len() as f32))
-                .collect::<Vec<_>>();
-            summed.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
-
-            let mut file = File::create("/tmp/foo.txt").unwrap();
-            for (word, score) in &summed {
-                use std::io::Write;
-                writeln!(&mut file, "{word}:{score}").unwrap();
-            }
-
-            println!("{summed:#?}");
-        })
-        .join()
-        .unwrap();
-    }
+    // Alpha Animals:
+    //  {
+    //   "types": ["addon", "expansion"],
+    //   "genres": [],
+    //   "themes": [],
+    //   "compatible_items": ["VFE Insectoids 2", "VRE Insectors", "Alpha
+    // Biomes"] }
+    //  {
+    //   "features": [
+    //     "new creatures",
+    //     "unique animals",
+    //     "vanilla-friendly creatures",
+    //     "new mechanic",
+    //     "walking tanks",
+    //     "living resource farm",
+    //     "indestructible plant monsters",
+    //     "night time stalkers",
+    //     "giant spiders",
+    //     "new alien biomes",
+    //     "black hive faction",
+    //     "new insects",
+    //     "black hive raids (mod options)",
+    //     "new animals (future plans)"
+    //   ]
+    // }
+    // DMS:
+    // {
+    // "types": ["mod", "expansion", "graphics", "texture", "audio", "ui"],
+    // "genres": ["cyberpunk"],
+    // "themes": ["science fiction", "mecha"],
+    // "compatible_items": []
+    // }
+    // {
+    // "features": [
+    // "heavy metallic weapons",
+    // "industrial-tactical robots",
+    // "bio-mech bionic",
+    // "new scenario",
+    // "standalone technology tree",
+    // "ideology style pack",
+    // "interstellar colonization company",
+    // "royalty title system",
+    // "military-industrial-style killing machines",
+    // "customizable mechanoid weapons",
+    // "new clothes",
+    // "CE compatibility"
+    // ]
+    // }
+    // VFE:
+    // {
+    // "types": ["mod", "graphics", "ui"],
+    // "genres": [],
+    // "themes": [],
+    // "compatible_items": []
+    // }
+    // {
+    // "features": [
+    // "vehicle framework for modders",
+    // "equal treatment for land, sea, aerial vehicles",
+    // "vehicle health system",
+    // "external and internal components",
+    // "physical hitboxes on vehicles",
+    // "custom pathfinding for vehicles",
+    // "multi-cell pathfinding",
+    // "3 shaders for patterns and skins",
+    // "turrets with custom positions",
+    // "aerial vehicles with separate skyfaller launching system",
+    // "animation editor for vehicles",
+    // "graphic overlay system",
+    // "mod settings page",
+    // "c# attribute for modder's ThingComps",
+    // "long-term features: raiders and traders use vehicles, aerial vehicle
+    // events, air defense, joint warfare, combined arms tactics" ]
+    // }
+    // A Rimworld of Magic
+    //  {
+    //   "types": ["mod", "expansion", "graphics", "texture", "audio", "ui",
+    // "bugfix", "patch"],   "genres": ["fantasy"],
+    //   "themes": ["magic", "role-playing"],
+    //   "compatible_items": []
+    // }
+    //  {
+    //   "features": [
+    //     "unique classes",
+    //     "unique abilities",
+    //     "unique development tree",
+    //     "unique apparel/equipment",
+    //     "gem crafting",
+    //     "enchantments",
+    //     "magical buildings",
+    //     "new events",
+    //     "unique research tree",
+    //     "magic faction",
+    //     "ai classes with abilities",
+    //     "mod options",
+    //     "unique power balance"
+    //   ]
+    // }
+    // Save Our Ship 2
+    // {
+    // "types": ["expansion", "mod"],
+    // "genres": [],
+    // "themes": ["space", "scifi", "shipbuilding", "combat", "adventure"],
+    // "compatible_items": ["Harmony", "Vehicle Framework"]
+    // }
+    // {
+    // "features": [
+    // "custom endings",
+    // "ship-to-ship combat",
+    // "derelict searching",
+    // "cosmic secret discovery",
+    // "machine godhood evolution",
+    // "new features",
+    // "stability upgrades",
+    // "ship building",
+    // "pre-flight checklist",
+    // "ship lifting off",
+    // "vanilla expanded textures",
+    // "heat system overhaul",
+    // "shields",
+    // "reactors",
+    // "weapons",
+    // "travel to new world",
+    // "new game plus",
+    // "final end game quest",
+    // "shuttle upgrades",
+    // "mod options",
+    // "ship physics",
+    // "boarding party hard mode",
+    // "Save Our Ship Wiki",
+    // "community wiki volunteering",
+    // "ship creation kit",
+    // "workshop sharing",
+    // "compatibility sheet",
+    // "mod compatibility reporting",
+    // "developed by Kentington and Thain",
+    // "testers",
+    // "submod support",
+    // "contributors",
+    // "shipwrights",
+    // "OG Testing Squad"
+    // ]
+    // }
 }
