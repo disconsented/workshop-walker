@@ -54,7 +54,7 @@
 		{@render errorCard(value)}
 	{:else}
 		<div class="min-h-screen">
-			<div class="mx-auto max-w-7xl px-4 py-8">
+			<div class="mx-auto px-4 py-8">
 				{@render SearchPanel()}
 				<div class="mt-6">
 					<div class="mb-4 flex gap-2">
@@ -258,7 +258,7 @@
 {/snippet}
 
 {#snippet rgrid(data)}
-	<div class="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+	<div class="flex gap-4 flex-wrap place-content-center">
 		{#each slicedSource(data) as item (item.id)}
 			<div
 				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block max-w-md divide-y overflow-hidden border-[1px]"
