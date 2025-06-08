@@ -27,7 +27,7 @@
 	let viewMode = $state('grid');
 
 	let page = $state(1);
-	let size = $state(10);
+	let size = $state(15);
 	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
 
 	function runSearch(e) {
