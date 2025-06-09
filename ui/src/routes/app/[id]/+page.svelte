@@ -96,7 +96,6 @@
 {/await}
 
 {#snippet SearchPanel()}
-	{@const tagGroup = tags.v}
 	<form class="card preset-filled-surface-100-900 rounded-lg p-6 text-center shadow">
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 			<div>
@@ -255,7 +254,7 @@
 {/snippet}
 
 {#snippet rgrid(data)}
-	<div class="flex gap-4 flex-wrap place-content-center">
+	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
 			<div
 				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block max-w-md divide-y overflow-hidden border-[1px]"
