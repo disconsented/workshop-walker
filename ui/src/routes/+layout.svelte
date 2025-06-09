@@ -31,7 +31,7 @@
 		<!-- Left Sidebar. -->
 		<aside class=""></aside>
 		<!-- Main Content -->
-		<main class="space-y-4 p-4">
+		<main class="space-y-4 p-4 max-w-dvw">
 			{@render children()}
 		</main>
 	</div>
