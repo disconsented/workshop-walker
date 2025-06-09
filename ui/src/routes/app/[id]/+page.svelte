@@ -13,10 +13,11 @@
 		faSearch,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit, title, lastUpdated } from './store.svelte';
+	import { tags, orderBy, language, limit, title } from './store.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
+	import TimePicker from '$lib/timePicker.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import { invalidate } from '$app/navigation';
 
@@ -110,11 +111,7 @@
 
 			<div>
 				<span class="mb-2 block text-sm font-medium">Updated Since:</span>
-				<input
-					type="date"
-					class="input w-full rounded-lg border px-3 py-2"
-					bind:value={lastUpdated.v}
-				/>
+				<TimePicker></TimePicker>
 			</div>
 
 			<div>
