@@ -189,7 +189,7 @@
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
 				{#each slicedSource(data) as item (item.id)}
-					<tr class="hover:bg-gray-50">
+					<tr class="group hover:bg-gray-50">
 						<td class="px-6 py-4 text-sm">
 							<a
 								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
@@ -225,7 +225,14 @@
 						<td class="px-6 py-4 text-sm">
 							<TimeAgo date={item.last_updated}></TimeAgo>
 						</td>
-						<td class="truncate px-6 py-4 text-sm">{item.description}</td>
+						<td class="wrap-anywhere table-description block h-36 overflow-hidden text-sm">
+							<div class="relative h-full">
+								<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
+								<div
+									class="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
+								></div>
+							</div>
+						</td>
 					</tr>
 				{:else}
 					<tr>
