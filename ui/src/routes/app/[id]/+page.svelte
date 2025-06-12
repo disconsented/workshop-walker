@@ -139,7 +139,7 @@
 
 			<div class="flex flex-wrap gap-2 md:col-span-4">
 				<!--ToDo: Load tags from backend-->
-				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5'] as tag}
+				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6'] as tag}
 					<span class="flex items-center space-x-2">
 						<input
 							name="tag"
