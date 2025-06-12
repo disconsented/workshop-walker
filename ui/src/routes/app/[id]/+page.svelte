@@ -20,12 +20,14 @@
 	import TimePicker from '$lib/timePicker.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import { invalidate } from '$app/navigation';
+	import { Switch } from '@skeletonlabs/skeleton-svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	console.log(data);
 	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
 	let viewMode = $state('grid');
+	let showTableImages = $state(false);
 
 	let page = $state(1);
 	let size = $state(15);
@@ -58,7 +60,7 @@
 			<div class="mx-auto px-4 py-8">
 				{@render SearchPanel()}
 				<div class="mt-6">
-					<div class="mb-4 flex gap-2">
+					<div class="mb-4 flex items-center gap-2">
 						<button
 							class="btn {viewMode === 'table'
 								? 'preset-filled-primary-500'
@@ -75,6 +77,17 @@
 						>
 							Grid View
 						</button>
+
+						{#if viewMode === 'table'}
+							<div class="flex items-center justify-between gap-1">
+								<Switch
+									name="show_images"
+									checked={showTableImages}
+									onCheckedChange={(e) => (showTableImages = e.checked)}
+								></Switch>
+								<label for="show_images">Show images</label>
+							</div>
+						{/if}
 					</div>
 
 					<div class="flex flex-row place-content-between">
@@ -177,19 +190,36 @@
 		<table class="table caption-bottom">
 			<thead class="">
 				<tr>
+					{#if showTableImages === true}
+						<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
+					{/if}
 					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
 					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-						>Last Updated
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+						Last Updated
 					</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase"
-						>Description
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+						Description
 					</th>
 				</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
 				{#each slicedSource(data) as item (item.id)}
 					<tr class="group hover:bg-gray-50">
+						{#if showTableImages === true}
+							<td class="w-52 p-0">
+								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
+									<img
+										class="aspect-video object-cover lg:h-32 lg:min-w-48"
+										class:hue-rotate-90={!item.preview_url}
+										class:grayscale={!item.preview_url}
+										src={item.preview_url ||
+											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
+										alt="banner"
+									/></a
+								>
+							</td>
+						{/if}
 						<td class="px-6 py-4 text-sm">
 							<a
 								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
@@ -210,7 +240,10 @@
 							>
 						</td>
 						<td class="px-6 py-4 text-sm">
-							<a href="https://steamcommunity.com/profiles/{item.author}" class="anchor">
+							<a
+								href="https://steamcommunity.com/profiles/{item.author}"
+								class="anchor whitespace-nowrap"
+							>
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 								Author
 							</a>
@@ -225,11 +258,11 @@
 						<td class="px-6 py-4 text-sm">
 							<TimeAgo date={item.last_updated}></TimeAgo>
 						</td>
-						<td class="wrap-anywhere table-description block h-36 overflow-hidden text-sm">
+						<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
 							<div class="relative h-full">
 								<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
 								<div
-									class="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
+									class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
 								></div>
 							</div>
 						</td>
