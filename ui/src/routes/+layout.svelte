@@ -1,12 +1,19 @@
 <script lang="ts">
 	import '../app.css';
 	import { AppBar } from '@skeletonlabs/skeleton-svelte';
-	import { faArrowLeft, faHome } from '@fortawesome/free-solid-svg-icons';
+	import { faHome } from '@fortawesome/free-solid-svg-icons';
 	import Icon from 'svelte-awesome';
 	import { faGithub } from '@fortawesome/free-brands-svg-icons';
+	import { onNavigate } from '$app/navigation';
 
 	let { children } = $props();
-	let value = $state('files');
+	const logged_in = document.cookie.includes('token_set=');
+	console.debug('logged in?', document.cookie, logged_in);
+	let location = $state(encodeURI(document.location.pathname));
+	onNavigate((navigation) => {
+		console.log(navigation);
+		location = encodeURI(navigation.to.url.pathname);
+	});
 </script>
 
 <div class="grid h-screen grid-rows-[auto_1fr_auto]">
@@ -20,9 +27,23 @@
 			{/snippet}
 			<span>Workshop Walker</span>
 			{#snippet trail()}
+				{#if logged_in}
+					<a href="/api/logout?location={location}"
+						 class="btn preset-outlined-warning-500">
+						Sign Out
+					</a>
+				{:else}
+					<a href="/api/login?location={location}" aria-label="Sign In Through Steam">
+						<img
+							alt="Sign In Through Steam"
+							src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png">
+					</a>
+				{/if}
+
 				<a href="https://github.com/disconsented/workshop-walker">
 					<Icon data={faGithub} class="fa-fw"></Icon>
 				</a>
+
 			{/snippet}
 		</AppBar>
 	</header>
