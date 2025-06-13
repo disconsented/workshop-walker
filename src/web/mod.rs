@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use itertools::Itertools;
 use salvo::{
@@ -24,6 +24,8 @@ use tokio::sync::OnceCell;
 use tracing::{Instrument, info_span, instrument};
 
 use crate::{
+    app_config::Config,
+    auth,
     language::DetectedLanguage,
     model::{FullWorkshopItem, OrderBy, WorkshopItem, into_string},
 };
@@ -31,11 +33,17 @@ use crate::{
 /// Global
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
 ///  Start the webserver returning once it exists
-pub async fn start(db: Surreal<Db>) {
+pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     DB_POOL.get_or_init(|| async { db }).await;
     let router = Router::new()
         .push(Router::with_path("api/list").get(list))
-        .push(Router::with_path("api/item/{id}").get(get));
+        .push(Router::with_path("api/item/{id}").get(get))
+        .push(
+            Router::with_path("api")
+                .hoop(affix_state::inject(config))
+                .push(Router::with_path("login").get(auth::redirect))
+                .push(Router::with_path("verify").get(auth::verify)),
+        );
     let doc = OpenApi::new("workshop-walker", "0.0.1").merge_router(&router);
     let router = router
         .push(doc.into_router("/api-doc/openapi.json"))
@@ -221,7 +229,7 @@ async fn list(
                     alias: Some("tags".into()),
                 });
             }
-            if let Some(OrderBy::Dependents) = order_by{
+            if let Some(OrderBy::Dependents) = order_by {
                 stmt.expr.0.push(Field::Single {
                     expr: idiom(" <-item_dependencies.len()")
                         .expect("expanding item_tags idiom")
