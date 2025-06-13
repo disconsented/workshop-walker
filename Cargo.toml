@@ -15,13 +15,13 @@ license = "MPL-2"
 [dependencies]
 tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
 surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", ] }
 indicatif = "0.17.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.8"
-salvo = { version = "0.78", features = ["oapi", "logging", "serve-static"] }
+salvo = { version = "0.78", features = ["oapi", "logging", "serve-static", "affix-state", "cookie"] }
 config = "0.15"
 veil = "0.2"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
@@ -32,6 +32,9 @@ bbscope = "0.2"
 humantime = "2.2"
 tracing = "0.1"
 surrealdb-migrations = "2.2"
+serde-xml-rs = "0.8.1"
+chrono = "0.4"
+biscuit-auth = "6.0.0-beta.3"
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
