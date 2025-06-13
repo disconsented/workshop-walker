@@ -11,9 +11,15 @@ use salvo::{
 use serde::{Deserialize, Serialize};
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
+use surrealdb::{
+    Surreal,
+    engine::local::Db,
+    sql::{Data, Operator, Value, statements::InsertStatement, to_value},
+    syn::idiom,
+};
 use tokio::sync::OnceCell;
-
-use crate::app_config::Config;
+use tracing::error;
+use crate::{app_config::Config, model::User};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -109,7 +115,7 @@ pub async fn get_url(client: Client, config: &Config) -> Result<String> {
     Ok(url.to_string())
 }
 
-fn redirect_url(base: &Arc<String>)-> String{
+fn redirect_url(base: &Arc<String>) -> String {
     String::clone(base) + "/api/verify"
 }
 
@@ -204,7 +210,28 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
             .max_age(Duration::hours(12))
             .build(),
     );
-    // let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
+    {
+        let db = depot.obtain::<Surreal<Db>>().expect("getting shared state");
+        let user = User {
+            id: user_id.to_owned(),
+            admin: false,
+            banned: false,
+            last_logged_in: Utc::now(),
+        };
+        let mut stmt = InsertStatement::default();
+        stmt.into = Some(Value::Table("users".into()));
+        stmt.data = Data::SingleExpression(to_value(user.clone()).unwrap());
+        stmt.update = Some(Data::UpdateExpression(vec![(
+            idiom("last_logged_in").unwrap(),
+            Operator::Equal,
+            Utc::now().into(),
+        )]));
+        let errors = db.query(stmt).await.unwrap().take_errors();
+        for (i, error) in errors{
+            error!("Error: {i}: {error}");
+        }
+    }
+
     Ok(())
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
