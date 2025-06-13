@@ -1,0 +1,226 @@
+use std::{str::FromStr, sync::Arc};
+
+use biscuit_auth::{KeyPair, macros::biscuit};
+use chrono::{NaiveDateTime, TimeDelta, Utc};
+use reqwest::{Client, Url};
+use salvo::{
+    Depot, Request, Response, handler,
+    http::cookie::{Cookie, SameSite, time::Duration},
+    prelude::{Redirect, StatusCode, StatusError},
+};
+use serde::{Deserialize, Serialize};
+use serde_xml_rs::from_str;
+use snafu::{ErrorCompat, prelude::*};
+use tokio::sync::OnceCell;
+
+use crate::app_config::Config;
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Error = StatusError;
+const STEAM_DISCOVERY: &str = "https://steamcommunity.com/openid/";
+static OPENID_INFO: OnceCell<Info> = OnceCell::const_new();
+
+struct Info {
+    r#type: String,
+    uri: String,
+}
+
+#[derive(Debug, Snafu)]
+#[non_exhaustive]
+#[snafu(visibility(pub(crate)))]
+enum InnerError {
+    QueryingDiscovery,
+    DiscoveryBadResponse,
+    DeserializingDiscovery,
+    InfoAlreadySet,
+    ExpectedInfoReady,
+    BuildingURI,
+    SelfValidationFailed,
+    PeerValidationFailed,
+}
+
+impl InnerError {
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            InnerError::QueryingDiscovery => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::DiscoveryBadResponse => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::DeserializingDiscovery => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::InfoAlreadySet => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::ExpectedInfoReady => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::BuildingURI => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::SelfValidationFailed => StatusCode::FORBIDDEN,
+            InnerError::PeerValidationFailed => StatusCode::FORBIDDEN,
+        }
+    }
+}
+
+impl From<InnerError> for StatusError {
+    fn from(value: InnerError) -> Self {
+        let mut error = StatusError::internal_server_error();
+        error.code = value.status_code();
+        error.name = value
+            .status_code()
+            .canonical_reason()
+            .unwrap_or_default()
+            .to_string();
+        error.brief = value.to_string();
+        error.detail = value.backtrace().map(std::string::ToString::to_string);
+        error
+    }
+}
+
+pub async fn get_url(client: Client, config: &Config) -> Result<String> {
+    if !OPENID_INFO.initialized() {
+        let response = client
+            .get(STEAM_DISCOVERY)
+            .send()
+            .await
+            .map_err(|_| InnerError::QueryingDiscovery)?;
+        let response_text = response
+            .text()
+            .await
+            .map_err(|_| InnerError::DiscoveryBadResponse)?;
+
+        let doc: Xrds = from_str(&response_text).map_err(|_| InnerError::DeserializingDiscovery)?;
+        OPENID_INFO
+            .set(Info {
+                r#type: doc.xrd.service.r#type,
+                uri: doc.xrd.service.uri,
+            })
+            .map_err(|_| InnerError::InfoAlreadySet)?;
+    }
+    let info = OPENID_INFO.get().ok_or(InnerError::ExpectedInfoReady)?;
+    let mut url = Url::from_str(&info.uri).map_err(|_| InnerError::BuildingURI)?;
+    url.query_pairs_mut()
+        .append_pair("openid.mode", "checkid_setup")
+        .append_pair("openid.ns", "http://specs.openid.net/auth/2.0")
+        .append_pair(
+            "openid.claimed_id",
+            "http://specs.openid.net/auth/2.0/identifier_select",
+        )
+        .append_pair(
+            "openid.identity",
+            "http://specs.openid.net/auth/2.0/identifier_select",
+        )
+        .append_pair("openid.return_to", &redirect_url(&config.base_url))
+        .append_pair("openid.realm", &redirect_url(&config.base_url))
+        .finish();
+
+    Ok(url.to_string())
+}
+
+fn redirect_url(base: &Arc<String>)-> String{
+    String::clone(base) + "/api/verify"
+}
+
+#[handler]
+pub async fn redirect(resp: &mut Response, depot: &mut Depot) -> Result<()> {
+    let client = reqwest::Client::new();
+    let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
+    let url = get_url(client, config).await?;
+    resp.render(Redirect::found(url));
+
+    Ok(())
+}
+
+#[handler]
+pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depot) -> Result<()> {
+    let map = req.queries();
+    {
+        let info = OPENID_INFO.get().ok_or(InnerError::ExpectedInfoReady)?;
+        if (map.get("openid.ns").map(String::as_str))
+            != (Some(&info.r#type[0..info.r#type.len() - b"/server".len()]))
+        {
+            return Err(InnerError::SelfValidationFailed)?;
+        }
+
+        if (map.get("openid.op_endpoint")) != (Some(&info.uri)) {
+            return Err(InnerError::SelfValidationFailed)?;
+        }
+        if let Some((timestamp, _)) = map.get("openid.response_nonce").unwrap().split_once('Z') {
+            let timestamp = timestamp.parse::<NaiveDateTime>().unwrap();
+            if timestamp - Utc::now().naive_utc() > TimeDelta::minutes(5) {
+                return Err(InnerError::SelfValidationFailed)?;
+            }
+        } else {
+            return Err(InnerError::SelfValidationFailed)?;
+        }
+    }
+
+    let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
+
+    for item in map.get("openid.signed").unwrap().split(',') {
+        let key = format!("openid.{item}");
+        url.query_pairs_mut()
+            .append_pair(&key, map.get(&key).unwrap())
+            .finish();
+    }
+    url.query_pairs_mut()
+        .append_pair("openid.sig", map.get("openid.sig").unwrap())
+        .append_pair("openid.ns", map.get("openid.ns").unwrap())
+        .append_pair("openid.mode", "check_authentication")
+        .finish();
+
+    let resp = reqwest::get(url).await.unwrap();
+    let text = resp.text().await.unwrap();
+
+    if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
+        return Err(InnerError::PeerValidationFailed)?;
+    }
+
+    let user_id = map
+        .get("openid.identity")
+        .unwrap()
+        .split('/')
+        .next_back()
+        .unwrap();
+
+    let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
+    let keypair = &KeyPair::from(&config.biscuit.private_key);
+
+    let biscuit: biscuit_auth::Biscuit = biscuit!(
+        r#"
+          user({user_id});
+          check if time($time), $time <= {};
+    "#
+    )
+    .build(keypair)
+    .unwrap();
+
+    let based = biscuit.to_base64().expect("creating token");
+
+    response.add_cookie(
+        Cookie::build(("token", based))
+            .max_age(Duration::hours(12))
+            .http_only(true)
+            .secure(true)
+            .same_site(SameSite::Strict)
+            .path("/")
+            .build(),
+    );
+
+    response.add_cookie(
+        Cookie::build("token_set")
+            .max_age(Duration::hours(12))
+            .build(),
+    );
+    // let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
+    Ok(())
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Xrds {
+    #[serde(rename = "XRD")]
+    xrd: Xrd,
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Xrd {
+    #[serde(rename = "Service")]
+    service: Service,
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Service {
+    #[serde(rename = "Type")]
+    r#type: String,
+    #[serde(rename = "URI")]
+    uri: String,
+}

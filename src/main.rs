@@ -3,6 +3,7 @@ use std::{
     fmt::Write,
     ops::Add,
     path::PathBuf,
+    sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -32,10 +33,12 @@ use crate::{
 };
 
 mod app_config;
+mod auth;
 mod language;
 mod model;
 mod steam;
 mod web;
+
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = Whatever;
 #[tokio::main]
@@ -174,7 +177,7 @@ async fn main() -> Result<()> {
             }
         });
     }
-    web::start(db).await;
+    web::start(db, Arc::new(settings)).await;
     Ok(())
 }
 
