@@ -43,7 +43,8 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                 .hoop(affix_state::inject(config))
                 .hoop(affix_state::inject(db))
                 .push(Router::with_path("login").get(auth::redirect))
-                .push(Router::with_path("verify").get(auth::verify)),
+                .push(Router::with_path("verify").get(auth::verify))
+                .push(Router::with_path("logout").get(auth::invalidate)),
         );
     let doc = OpenApi::new("workshop-walker", "0.0.1").merge_router(&router);
     let router = router
