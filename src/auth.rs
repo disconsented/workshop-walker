@@ -5,7 +5,10 @@ use chrono::{NaiveDateTime, TimeDelta, Utc};
 use reqwest::{Client, Url};
 use salvo::{
     Depot, Request, Response, handler,
-    http::cookie::{Cookie, SameSite, time::Duration},
+    http::{
+        HeaderValue,
+        cookie::{Cookie, SameSite, time::Duration},
+    },
     prelude::{Redirect, StatusCode, StatusError},
 };
 use serde::{Deserialize, Serialize};
@@ -19,6 +22,7 @@ use surrealdb::{
 };
 use tokio::sync::OnceCell;
 use tracing::error;
+
 use crate::{app_config::Config, model::User};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -75,7 +79,7 @@ impl From<InnerError> for StatusError {
     }
 }
 
-pub async fn get_url(client: Client, config: &Config) -> Result<String> {
+pub async fn get_url(client: Client, config: &Config, location: &str) -> Result<String> {
     if !OPENID_INFO.initialized() {
         let response = client
             .get(STEAM_DISCOVERY)
@@ -108,22 +112,25 @@ pub async fn get_url(client: Client, config: &Config) -> Result<String> {
             "openid.identity",
             "http://specs.openid.net/auth/2.0/identifier_select",
         )
-        .append_pair("openid.return_to", &redirect_url(&config.base_url))
-        .append_pair("openid.realm", &redirect_url(&config.base_url))
+        .append_pair(
+            "openid.return_to",
+            &redirect_url(&config.base_url, location),
+        )
+        .append_pair("openid.realm", config.base_url.as_str())
         .finish();
 
     Ok(url.to_string())
 }
 
-fn redirect_url(base: &Arc<String>) -> String {
-    String::clone(base) + "/api/verify"
+fn redirect_url(base: &Arc<String>, location: &str) -> String {
+    String::clone(base) + "/api/verify?location=" + location
 }
 
 #[handler]
-pub async fn redirect(resp: &mut Response, depot: &mut Depot) -> Result<()> {
+pub async fn redirect(req: &mut Request, resp: &mut Response, depot: &mut Depot) -> Result<()> {
     let client = reqwest::Client::new();
     let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
-    let url = get_url(client, config).await?;
+    let url = get_url(client, config, req.query("location").unwrap()).await?;
     resp.render(Redirect::found(url));
 
     Ok(())
@@ -208,6 +215,9 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
     response.add_cookie(
         Cookie::build("token_set")
             .max_age(Duration::hours(12))
+            .secure(true)
+            .same_site(SameSite::Strict)
+            .path("/")
             .build(),
     );
     {
@@ -227,13 +237,23 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
             Utc::now().into(),
         )]));
         let errors = db.query(stmt).await.unwrap().take_errors();
-        for (i, error) in errors{
+        for (i, error) in errors {
             error!("Error: {i}: {error}");
         }
     }
 
+    response.render(Redirect::found(req.query::<&str>("location").unwrap()));
     Ok(())
 }
+#[handler]
+pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()> {
+    response
+        .headers
+        .insert("Clear-Site-Data", HeaderValue::from_static("\"cookies\""));
+    response.render(Redirect::found(req.query::<&str>("location").unwrap()));
+    Ok(())
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Xrds {
     #[serde(rename = "XRD")]
