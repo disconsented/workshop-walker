@@ -34,13 +34,14 @@ use crate::{
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
 ///  Start the webserver returning once it exists
 pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
-    DB_POOL.get_or_init(|| async { db }).await;
+    let db = DB_POOL.get_or_init(|| async { db }).await.clone();
     let router = Router::new()
         .push(Router::with_path("api/list").get(list))
         .push(Router::with_path("api/item/{id}").get(get))
         .push(
             Router::with_path("api")
                 .hoop(affix_state::inject(config))
+                .hoop(affix_state::inject(db))
                 .push(Router::with_path("login").get(auth::redirect))
                 .push(Router::with_path("verify").get(auth::verify)),
         );

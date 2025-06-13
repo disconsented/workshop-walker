@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Utc};
 use salvo::prelude::ToSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb::{RecordId, RecordIdKey};
 
@@ -108,12 +108,23 @@ pub struct App {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     /// The steam account ID
-    pub id: u64,
+    pub id: String,
     /// Privileged access
     pub admin: bool,
     pub banned: bool,
     /// UTC timestamp of when the user last logged in
+    // Surrealdb bug: https://github.com/surrealdb/surrealdb/issues/3550
+    #[serde(serialize_with = "serialize_chrono_as_sql_datetime")]
     pub last_logged_in: DateTime<Utc>,
+}
+pub fn serialize_chrono_as_sql_datetime<S>(
+    x: &chrono::DateTime<Utc>,
+    s: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    Into::<surrealdb::sql::Datetime>::into(*x).serialize(s)
 }
 
 /// Crowdsourced metadata for an item, private version
