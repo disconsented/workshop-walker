@@ -3,7 +3,6 @@ use chrono::{DateTime, Utc};
 use log::{debug, error};
 use salvo::{
     Depot, Response, Writer,
-    fuse::flex::Guard,
     oapi::extract::JsonBody,
     prelude::{StatusCode, ToSchema, endpoint},
 };
@@ -30,8 +29,6 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: &m
         .await
         .expect("already authenticated");
     let user = UserID::from(user);
-    &user;
-    &vote_data;
     let query = db
         // .query("BEGIN TRANSACTION;")
         .query("LET $link = properties:{class: $class, value: $value}")
@@ -68,7 +65,7 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: &m
     let result = query.await;
     match result {
         Ok(e) => match e.check() {
-            Ok(v) => {
+            Ok(_) => {
                 response.status_code(StatusCode::NO_CONTENT);
             }
             Err(err) => {
@@ -113,7 +110,7 @@ pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: 
         .await;
     match result {
         Ok(e) => match e.check() {
-            Ok(v) => {
+            Ok(_) => {
                 response.status_code(StatusCode::NO_CONTENT);
             }
             Err(err) => {
