@@ -191,6 +191,7 @@
 				loading="lazy"
 				class="aspect-[21/9] w-full object-cover grayscale hue-rotate-90 hover:filter-none"
 				class:hidden={compact}
+				onerror={(e) => e.target.src="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189"}
 			/>
 			<div class="preset-filled-surface-100-900 rounded-sm text-center">{item.title}</div>
 		</a>
@@ -759,6 +760,7 @@
 					loading="lazy"
 					class="aspect-[21/9] w-full object-cover grayscale hue-rotate-90 hover:filter-none"
 					class:hidden={false}
+					onerror={(e) => e.target.src="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189"}
 				/>
 				<div class="preset-filled-surface-100-900 rounded-sm text-center font-medium text-balance">
 					{item.title}
