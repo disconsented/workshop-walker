@@ -1,15 +1,20 @@
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::SystemTime};
 
-use biscuit_auth::{KeyPair, macros::biscuit};
+use biscuit_auth::{
+    Authorizer, Biscuit, KeyPair,
+    builder_ext::AuthorizerExt,
+    macros::{authorizer, biscuit},
+};
 use chrono::{NaiveDateTime, TimeDelta, Utc};
+use itertools::Itertools;
 use reqwest::{Client, Url};
 use salvo::{
-    Depot, Request, Response, handler,
+    Depot, Request, Response,
     http::{
         HeaderValue,
         cookie::{Cookie, SameSite, time::Duration},
     },
-    prelude::{Redirect, StatusCode, StatusError},
+    prelude::{Redirect, StatusCode, StatusError, endpoint},
 };
 use serde::{Deserialize, Serialize};
 use serde_xml_rs::from_str;
@@ -21,9 +26,9 @@ use surrealdb::{
     syn::idiom,
 };
 use tokio::sync::OnceCell;
-use tracing::error;
+use tracing::{debug, error};
 
-use crate::{app_config::Config, model::User};
+use crate::{app_config::Config, db::UserID, model::User};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -126,7 +131,7 @@ fn redirect_url(base: &Arc<String>, location: &str) -> String {
     String::clone(base) + "/api/verify?location=" + location
 }
 
-#[handler]
+#[endpoint]
 pub async fn redirect(req: &mut Request, resp: &mut Response, depot: &mut Depot) -> Result<()> {
     let client = reqwest::Client::new();
     let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
@@ -136,7 +141,7 @@ pub async fn redirect(req: &mut Request, resp: &mut Response, depot: &mut Depot)
     Ok(())
 }
 
-#[handler]
+#[endpoint]
 pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depot) -> Result<()> {
     let map = req.queries();
     {
@@ -194,8 +199,9 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
     let biscuit: biscuit_auth::Biscuit = biscuit!(
         r#"
           user({user_id});
-          check if time($time), $time <= {};
-    "#
+          check if time($time), $time <= {expires};
+    "#,
+        expires = SystemTime::now() + Duration::hours(12)
     )
     .build(keypair)
     .unwrap();
@@ -223,7 +229,7 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
     {
         let db = depot.obtain::<Surreal<Db>>().expect("getting shared state");
         let user = User {
-            id: user_id.to_owned(),
+            id: UserID::from(user_id.to_owned()).into_recordid(),
             admin: false,
             banned: false,
             last_logged_in: Utc::now(),
@@ -245,13 +251,85 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
     response.render(Redirect::found(req.query::<&str>("location").unwrap()));
     Ok(())
 }
-#[handler]
+
+#[endpoint]
 pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()> {
     response
         .headers
         .insert("Clear-Site-Data", HeaderValue::from_static("\"cookies\""));
     response.render(Redirect::found(req.query::<&str>("location").unwrap()));
     Ok(())
+}
+
+#[endpoint]
+pub async fn validate(req: &mut Request, depot: &mut Depot, response: &mut Response) {
+    match req.cookie("token") {
+        None => {
+            response.status_code(StatusCode::UNAUTHORIZED);
+        }
+        Some(token) => {
+            let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
+            let keypair = &KeyPair::from(&config.biscuit.private_key);
+            let token = Biscuit::from_base64(token.value(), keypair.public()).unwrap();
+            let mut authorizer: Authorizer =
+                authorizer!("").time().allow_all().build(&token).unwrap();
+
+            if let Err(e) = authorizer.authorize() {
+                debug!("Auth failed: {e:?}");
+                response.status_code(StatusCode::UNAUTHORIZED);
+                return;
+            }
+
+            depot.inject(authorizer);
+        }
+    }
+}
+
+#[endpoint]
+pub async fn enforce_admin(depot: &mut Depot, response: &mut Response) {
+    match get_user(depot).await {
+        None => {
+            response.status_code(StatusCode::UNAUTHORIZED);
+        }
+        Some(userid) => {
+            let result = depot
+                .obtain::<Surreal<Db>>()
+                .expect("getting shared state")
+                .query("SElECT admin FROM $user")
+                .bind(("user", UserID::from(userid).into_recordid()))
+                .await;
+            match result.map(surrealdb::Response::check) {
+                Err(e) => {
+                    error!("running admin query: {e:?}");
+                    response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+                Ok(Err(e)) => {
+                    error!("checking admin query: {e:?}");
+                    response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+                Ok(Ok(mut db_response)) => {
+                    let is_admin: Option<bool> = db_response.take("admin").unwrap();
+                    if is_admin != Some(true) {
+                        response.status_code(StatusCode::UNAUTHORIZED);
+                    }
+                }
+            }
+        }
+    }
+}
+#[endpoint]
+pub async fn validate_opt(req: &mut Request, depot: &mut Depot, response: &mut Response) {
+    if req.cookie("token").is_some() {
+        validate::validate(req, depot, response).await;
+    }
+}
+
+pub async fn get_user(depot: &mut Depot) -> Option<String> {
+    let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
+    let (userid, _): (String, i64) = authorizer
+        .query_exactly_one("data($user, 0) <- user($user)")
+        .ok()?;
+    Some(userid)
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
