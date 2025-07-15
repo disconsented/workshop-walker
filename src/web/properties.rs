@@ -137,6 +137,14 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot, respons
         class: new_property.0.class,
         value: new_property.0.value,
     };
+
+    if test_prop.value.len() > 32 {
+        response.status_code(StatusCode::BAD_REQUEST);
+        response.body(format!(
+            "Property cannot be longer than 32 characters; is {}",
+            test_prop.value.len()
+        ));
+    }
     let prop_exists = {
         #[derive(Serialize, Deserialize, Clone, Debug)]
         struct Temp {
