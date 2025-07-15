@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 @import '@skeletonlabs/skeleton';
 @import '@skeletonlabs/skeleton/optional/presets';
-@import '@skeletonlabs/skeleton/themes/cerberus';
+@import '@skeletonlabs/skeleton/themes/hamlindigo';
+@import '../src/workshop-walker.css';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 @source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
