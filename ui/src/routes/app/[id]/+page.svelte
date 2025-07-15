@@ -310,6 +310,7 @@
 						alt="banner"
 						class:hue-rotate-90={!item.preview_url}
 						class:grayscale={!item.preview_url}
+						onerror={(e) => e.target.src="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189"}
 					/>
 				</header>
 				<article class="space-y-4 p-4">
@@ -352,7 +353,7 @@
 								<Property
 									loggedIn={logged_in}
 									property={{ class: prop.out.class, value: prop.out.value, ...prop }}
-									hideVote={!logged_in}
+									hideVote={true}
 									itemID={item.id}
 								></Property>
 							{/each}
