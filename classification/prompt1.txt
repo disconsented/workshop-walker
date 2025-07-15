@@ -3,7 +3,8 @@
 Extract the following information from the Steam Workshop item in strict JSON format (all lowercase):
 - "types": Array of classification types (e.g., "translation", "quality of life", "qol", "addon", "overhaul", "mod", "expansion", "graphics", "texture", "audio", "ui", "bugfix", "patch")
 - "genres": Array of literary themes mentioned.
-- "themes": Array of literary genres mentioned.- "compatible_items": Array of compatible item names (only if explicitly mentioned; otherwise empty array)
+- "themes": Array of literary genres mentioned.
+- "compatible_items": Array of compatible item names (only if explicitly mentioned; otherwise empty array)
 
 Rules:
 1. For "types", infer from description when not explicitly stated (e.g., a UI improvement is "ui" or "quality of life")
