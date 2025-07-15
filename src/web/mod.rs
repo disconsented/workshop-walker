@@ -1,4 +1,11 @@
-use std::{str::FromStr, sync::Arc};
+mod admin;
+mod companions;
+mod properties;
+
+use std::{
+    str::FromStr,
+    sync::{Arc, OnceLock},
+};
 
 use itertools::Itertools;
 use salvo::{
@@ -12,6 +19,7 @@ use salvo::{
 };
 use serde_json::Map;
 use snafu::{OptionExt, ResultExt, Whatever};
+use snowflake::SnowflakeIdGenerator;
 use str_macro::str;
 use surrealdb::{
     RecordId, Surreal,
@@ -20,32 +28,76 @@ use surrealdb::{
     sql::{Cond, Expression, Field, Operator, statements::SelectStatement, to_value},
     syn::idiom,
 };
-use tokio::sync::OnceCell;
+use tokio::sync::{Mutex, OnceCell};
 use tracing::{Instrument, info_span, instrument};
 
 use crate::{
     app_config::Config,
     auth,
+    db::UserID,
     language::DetectedLanguage,
     model::{FullWorkshopItem, OrderBy, WorkshopItem, into_string},
 };
 
 /// Global
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
+static ID_GENERATOR: OnceLock<Arc<Mutex<SnowflakeIdGenerator>>> = OnceLock::new();
+
+fn get_gen() -> Arc<Mutex<SnowflakeIdGenerator>> {
+    Arc::clone(ID_GENERATOR.get_or_init(|| Arc::new(Mutex::new(SnowflakeIdGenerator::new(1, 1)))))
+}
 ///  Start the webserver returning once it exists
 pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let db = DB_POOL.get_or_init(|| async { db }).await.clone();
-    let router = Router::new()
-        .push(Router::with_path("api/list").get(list))
-        .push(Router::with_path("api/item/{id}").get(get))
-        .push(
-            Router::with_path("api")
-                .hoop(affix_state::inject(config))
-                .hoop(affix_state::inject(db))
-                .push(Router::with_path("login").get(auth::redirect))
-                .push(Router::with_path("verify").get(auth::verify))
-                .push(Router::with_path("logout").get(auth::invalidate)),
-        );
+    let router = Router::new().push(
+        Router::with_path("api")
+            .push(Router::with_path("list").get(list))
+            .push(
+                Router::with_path("item/{id}")
+                    .hoop(affix_state::inject(config.clone()))
+                    .hoop(auth::validate_opt)
+                    .get(get),
+            )
+            .push(
+                Router::with_path("property")
+                    .hoop(affix_state::inject(config.clone()))
+                    .hoop(auth::validate)
+                    .post(properties::new),
+            )
+            .push(
+                Router::with_path("vote")
+                    .hoop(affix_state::inject(config.clone()))
+                    .hoop(auth::validate)
+                    .hoop(affix_state::inject(db.clone()))
+                    .push(
+                        Router::with_path("property")
+                            .post(properties::vote)
+                            .delete(properties::remove),
+                    ),
+            )
+            .push(
+                Router::with_path("admin")
+                    .hoop(affix_state::inject(config.clone()))
+                    .hoop(auth::validate)
+                    .hoop(affix_state::inject(db.clone()))
+                    .hoop(auth::enforce_admin)
+                    .push(
+                        Router::with_path("properties")
+                            .put(admin::patch_workshop_item_properties)
+                            .get(admin::get_workshop_item_properties),
+                    )
+                    .push(
+                        Router::with_path("users")
+                            .get(admin::get_users)
+                            .put(admin::patch_user),
+                    ),
+            )
+            .hoop(affix_state::inject(config))
+            .hoop(affix_state::inject(db))
+            .push(Router::with_path("login").get(auth::redirect))
+            .push(Router::with_path("verify").get(auth::verify))
+            .push(Router::with_path("logout").get(auth::invalidate)),
+    );
     let doc = OpenApi::new("workshop-walker", "0.0.1").merge_router(&router);
     let router = router
         .push(doc.into_router("/api-doc/openapi.json"))
@@ -100,24 +152,30 @@ impl Writer for Error {
 
 #[endpoint]
 #[instrument]
-async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
+async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWorkshopItem>> {
     let id = id.0;
     let db: &Surreal<Db> = DB_POOL.get().expect("DB not initialised");
-    async fn query(id: String, db: &Surreal<Db>) -> Result<FullWorkshopItem, Whatever> {
+    let user = auth::get_user(depot).await;
+    async fn query(
+        id: String,
+        db: &Surreal<Db>,
+        user: Option<String>,
+    ) -> Result<FullWorkshopItem, Whatever> {
         let id = RecordId::from_table_key("workshop_items", &id);
         let mut response = db
             .query(
                 "SELECT in.appid as appid, in.description as description, in.id as id, in.title
                  as title, in.author as author, in.languages as languages, in.last_updated as
                  last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, \
-                 display_name} as tags, in.preview_url as preview_url FROM \
+                 display_name} as tags, in.preview_url as preview_url, [] as properties FROM \
                  $id<-item_dependencies.*;",
             )
             .query(
                 "SELECT out.appid as appid, out.description as description, out.id as id,
                  out.author as author, out.languages as languages, out.last_updated as
                  last_updated, out.title as title, out.score as score, out.tags.{id: \
-                 id.to_string(), app_id, display_name} as tags, out.preview_url as preview_url
+                 id.to_string(), app_id, display_name} as tags, out.preview_url as preview_url, \
+                 [] as properties
                  FROM $id->item_dependencies.*;",
             )
             .bind(("id", id.clone()))
@@ -129,13 +187,53 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
             response.take(1).whatever_context("no dependencies found")?;
 
         let result = {
-            let mut res = db
-                .query(
-                    r"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags FROM $id",
-                )
-                .bind(("id", id))
-                .await
-                .whatever_context("getting item")?;
+            let mut res = match user {
+                None => db
+                    .query(
+                        r"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags,
+                    ->workshop_item_properties.filter(|$prop|$prop.status == 1)[*].{
+                        id: id.to_string(),
+                        in: in.to_string(),
+                        out: out.id.{
+                            class,
+                            `value`
+                        },
+                        source: 'system',
+                        status,
+                        upvote_count,
+                        vote_count
+                    } as properties FROM $id",
+                    )
+                    .bind(("id", id))
+                    .await
+                    .whatever_context("getting item (unauth)")?,
+                // array::filter doesn't capture scoped variables yet hence why this is being
+                // formatted in
+                Some(user) => db
+                    .query(format!(
+                        "SELECT *, tags.{{id: id.to_string(), app_id, display_name}} as tags,
+                                        ->workshop_item_properties.filter(|$prop|$prop.status == 1 \
+                         || $prop.source == {})[*].{{
+                                            id: id.to_string(),
+                                            in: in.to_string(),
+                                            out: out.id.{{
+                                                class,
+                                                `value`
+                                            }},
+                                            source: 'system',
+                                            status,
+                                            upvote_count,
+                                            vote_count,
+                                            vote_state: votes:{{item: $id, link: out, user: \
+                         {0}}}.score
+                                        }} as properties FROM $id",
+                        UserID::from(user).into_recordid()
+                    ))
+                    .bind(("id", id))
+                    .await
+                    .whatever_context("getting item (auth)")?,
+            };
+
             let result: Option<WorkshopItem<RecordId>> =
                 res.take(0).whatever_context("not found")?;
             result.whatever_context("not found")?
@@ -165,6 +263,7 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                     last_updated: e.last_updated,
                     tags: e.tags,
                     score: e.score,
+                    properties: e.properties,
                 })
                 .collect(),
 
@@ -183,13 +282,15 @@ async fn get(id: PathParam<String>) -> Result<Json<FullWorkshopItem>> {
                     last_updated: e.last_updated,
                     tags: e.tags,
                     score: e.score,
+                    properties: e.properties,
                 })
                 .collect(),
             tags: result.tags,
             score: result.score,
+            properties: result.properties,
         })
     }
-    let results = query(id, db).await?;
+    let results = query(id, db, user).await?;
 
     Ok(Json(results))
 }
@@ -229,6 +330,28 @@ async fn list(
                         .expect("expanding tags idiom")
                         .into(),
                     alias: Some("tags".into()),
+                });
+            }
+            {
+                stmt.expr.0.push(Field::Single {
+                    // Select _approved_ props only
+                    expr: idiom(
+                        r"->workshop_item_properties.filter(|$prop|$prop.status == 1)[*].{
+                                        id: id.to_string(),
+                                        in: in.to_string(),
+                                        out: out.id.{
+                                            class,
+                                            `value`
+                                        },
+                                        source: 'system',
+                                        status,
+                                        upvote_count,
+                                        vote_count
+                                    }",
+                    )
+                    .expect("expanding properties idiom")
+                    .into(),
+                    alias: Some("properties".into()),
                 });
             }
             if let Some(OrderBy::Dependents) = order_by {
@@ -413,6 +536,7 @@ async fn list(
                 last_updated: res.last_updated,
                 tags: res.tags,
                 score: res.score,
+                properties: res.properties,
             })
             .collect())
     }

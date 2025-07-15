@@ -6,10 +6,14 @@
 		fa1,
 		faArrowLeft,
 		faArrowRight,
+		faChevronDown,
+		faChevronUp,
 		faCross,
 		faEllipsis,
 		faFilter,
 		faLink,
+		faThumbsDown,
+		faThumbsUp,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
 	import { Switch } from '@skeletonlabs/skeleton-svelte';
@@ -17,6 +21,10 @@
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
+	import PropertyPrompt from './PropertyPrompt.svelte';
+	import Property from './Property.svelte';
+	import { Modal } from '@skeletonlabs/skeleton-svelte';
+	import { onNavigate } from '$app/navigation';
 
 	let { data }: { data: PageData } = $props();
 	console.log('Hello, wolrd!', data);
@@ -93,6 +101,17 @@
 	let size = $state(20);
 	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
 	$inspect(slicedSource);
+	let openPanels = $state(['relations', 'companions', 'description']);
+
+	let loginModalState = $state(false);
+
+	let location = $state(encodeURI(document.location.pathname));
+	onNavigate((navigation) => {
+		console.log(navigation);
+		location = encodeURI(navigation.to.url.pathname);
+	});
+
+	const logged_in = document.cookie.includes('token_set=');
 </script>
 
 <svelte:head>
@@ -105,6 +124,7 @@
 	{/await}
 </svelte:head>
 
+{@render loginModal()}
 {#await data}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
@@ -123,9 +143,29 @@
 					<div class="space-y-6 md:col-span-2">
 						<!-- Title and Author -->
 						{@render titleCard()}
-						{@render relations()}
-						<!-- Description -->
-						{@render description()}
+						<Accordion
+							value={openPanels}
+							onValueChange={(e) => (openPanels = e.value)}
+							multiple
+							padding=""
+						>
+							<Accordion.Item value="relations" panelPadding="">
+								<!-- Control -->
+								{#snippet lead()}
+									<Icon data={faLink} class="fa-fw"></Icon>
+								{/snippet}
+								{#snippet control()}Relations{/snippet}
+								<!-- Panel -->
+								{#snippet panel()}{@render relations()}{/snippet}
+							</Accordion.Item>
+							<Accordion.Item value="description" panelPadding="">
+								{#snippet lead()}
+									<Icon data={faLink} class="fa-fw"></Icon>
+								{/snippet}
+								{#snippet control()}Description{/snippet}
+								{#snippet panel()}{@render description()}{/snippet}
+							</Accordion.Item>
+						</Accordion>
 					</div>
 				</div>
 			</div>
@@ -135,7 +175,7 @@
 
 {#snippet linkSet(item)}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 flex max-w-md flex-col place-content-between
+		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 flex max-w-xs flex-col place-content-between
 					divide-y overflow-hidden border-[1px]"
 	>
 		<!--Title-->
@@ -266,6 +306,46 @@
 				{/each}
 			</span>
 		</div>
+		<!-- Properties -->
+		<div class="pt-6">
+			<span>
+				Properties:
+				<div class="flex flex-row flex-wrap items-center gap-2">
+					{#each item.properties as property}
+						{@debug property}
+						<Property
+							loggedIn={logged_in}
+							property={{ class: property.out.class, value: property.out.value, ...property }}
+							hideVote={false}
+							itemID={item.id}
+						></Property>
+					{:else}
+						<span class="badge preset-outlined-warning-500">No Properties; Submit one?</span>
+						{#if !logged_in}
+							<PropertyPrompt
+								loggedIn={logged_in}
+								onClick={() => {
+									loginModalState = true;
+								}}
+								item={item.id}
+							></PropertyPrompt>
+						{/if}
+					{/each}
+				</div>
+			</span>
+		</div>
+		{#if logged_in}
+			<!--Submit Properties-->
+			<div class="mt-2 w-fit">
+				<PropertyPrompt
+					loggedIn={logged_in}
+					onClick={() => {
+						loginModalState = true;
+					}}
+					item={item.id}
+				></PropertyPrompt>
+			</div>
+		{/if}
 	</div>
 {/snippet}
 
@@ -302,6 +382,187 @@
 {/snippet}
 
 {#snippet relations()}
+	<div
+		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
+	>
+		<!-- Controls -->
+		<Accordion
+			{filterPanel}
+			onValueChange={(e) => (filterPanel = e.value)}
+			collapsible
+			classes="col-span-4"
+		>
+			<Accordion.Item value="open">
+				<!-- Control -->
+				{#snippet lead()}Filter{/snippet}
+				{#snippet control()}
+					<Icon data={faFilter} class="fa-fw"></Icon>
+				{/snippet}
+				<!-- Panel -->
+				{#snippet panel()}
+					<div class="col-span-4 grid w-full min-w-full grid-cols-2">
+						<div class="label shrink-0">
+							<span class="label-text">Tags</span>
+							<div class="flex flex-row flex-wrap gap-3">
+								{#each tags as tag}
+									<label class="flex items-center space-x-2">
+										<input
+											name="tags"
+											class="checkbox"
+											type="checkbox"
+											value={tag}
+											bind:group={selectedTags}
+										/>
+										<p>{tag}</p>
+									</label>
+								{/each}
+							</div>
+						</div>
+						<div class="label shrink-0">
+							<span class="label-text">Languages</span>
+							<div class="flex flex-row flex-wrap gap-3">
+								{#each languages as lang}
+									<label class="flex items-center space-x-2">
+										<input
+											name="langs "
+											class="checkbox"
+											type="checkbox"
+											value={lang}
+											bind:group={selectedLangs}
+										/>
+										<p>{lang}</p>
+									</label>
+								{/each}
+							</div>
+						</div>
+						<div class="">
+							<label class="label">
+								<span class="label-text">Compact</span>
+								<Switch
+									name="compact"
+									checked={compact}
+									onCheckedChange={(e) => (compact = e.checked)}
+								/>
+							</label>
+						</div>
+					</div>
+				{/snippet}
+			</Accordion.Item>
+			<hr class="hr" />
+		</Accordion>
+		<!-- Dependencies -->
+		<div class="col-span-4">
+			<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
+			{#if item.dependencies.length > 0}
+				<div class="flex flex-row flex-wrap items-center items-center justify-between gap-2">
+					{#each item.dependencies as dependency (dependency.id)}
+						{@render linkSet(dependency)}
+					{/each}
+				</div>
+			{:else}
+				<p class="text-gray-400">No dependencies</p>
+			{/if}
+		</div>
+
+		<section class="col-span-4 flex justify-between" class:hidden={filteredDependents.length === 0}>
+			<select
+				name="size"
+				id="size"
+				class="select max-w-[150px]"
+				value={size}
+				onchange={(e) => (size = Number(e.currentTarget.value))}
+			>
+				{#each [20] as v}
+					<option value={v}>Items {v}</option>
+				{/each}
+				<option value={filteredDependents.length}>Show All</option>
+			</select>
+			<!-- Pagination -->
+			<Pagination
+				data={filteredDependents}
+				{page}
+				onPageChange={(e) => (page = e.page)}
+				pageSize={size}
+				onPageSizeChange={(e) => (size = e.pageSize)}
+				siblingCount={4}
+			>
+				{#snippet labelEllipsis()}
+					<Icon data={faEllipsis} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelNext()}
+					<Icon data={faArrowRight} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelPrevious()}
+					<Icon data={faArrowLeft} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelFirst()}
+					<Icon data={fa1} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelLast()}
+					<Icon data={faCross} class="fa-fw"></Icon>
+				{/snippet}
+			</Pagination>
+		</section>
+		<!-- Dependents -->
+		<div class="col-span-4">
+			<h2 class="mb-4 text-xl font-bold">
+				{#if filteredDependents.length > 0}{filteredDependents.length}
+				{/if} Dependents
+			</h2>
+			{#if filteredDependents.length > 0}
+				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
+					{#each slicedSource(filteredDependents) as dependent (dependent.id)}
+						{@render linkSet(dependent)}
+					{/each}
+				</div>
+			{:else}
+				<p class="text-gray-400">No dependents</p>
+			{/if}
+		</div>
+
+		<footer class="col-span-4 flex justify-between" class:hidden={filteredDependents.length === 0}>
+			<select
+				name="size"
+				id="size"
+				class="select max-w-[150px]"
+				value={size}
+				onchange={(e) => (size = Number(e.currentTarget.value))}
+			>
+				{#each [20] as v}
+					<option value={v}>Items {v}</option>
+				{/each}
+				<option value={filteredDependents.length}>Show All</option>
+			</select>
+			<!-- Pagination -->
+			<Pagination
+				data={filteredDependents}
+				{page}
+				onPageChange={(e) => (page = e.page)}
+				pageSize={size}
+				onPageSizeChange={(e) => (size = e.pageSize)}
+				siblingCount={4}
+			>
+				{#snippet labelEllipsis()}
+					<Icon data={faEllipsis} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelNext()}
+					<Icon data={faArrowRight} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelPrevious()}
+					<Icon data={faArrowLeft} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelFirst()}
+					<Icon data={fa1} class="fa-fw"></Icon>
+				{/snippet}
+				{#snippet labelLast()}
+					<Icon data={faCross} class="fa-fw"></Icon>
+				{/snippet}
+			</Pagination>
+		</footer>
+	</div>
+{/snippet}
+
+{#snippet companions()}
 	<div
 		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
 	>
@@ -375,9 +636,9 @@
 		<div class="col-span-4">
 			<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
 			{#if item.dependencies.length > 0}
-				<div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+				<div class="wrap flex flex-col">
 					{#each item.dependencies as dependency (dependency.id)}
-						{@render linkSet(dependency)}
+						{@render companionCard(dependency)}
 					{/each}
 				</div>
 			{:else}
@@ -431,10 +692,10 @@
 				{/if} Dependents
 			</h2>
 			{#if filteredDependents.length > 0}
-				<div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
 					<!--{@debug slicedSource}-->
 					{#each slicedSource(filteredDependents) as dependent (dependent.id)}
-						{@render linkSet(dependent)}
+						{@render companionCard(dependent)}
 					{/each}
 				</div>
 			{:else}
@@ -482,4 +743,110 @@
 			</Pagination>
 		</footer>
 	</div>
+{/snippet}
+
+{#snippet companionCard(item)}
+	<div
+		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 border-l-primary-500 flex max-w-xs flex-col
+            place-content-between divide-y overflow-hidden border-[1px] border-l-4"
+	>
+		<!-- Title with voting -->
+		<div class="flex flex-col">
+			<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class="hover:filter-none">
+				<img
+					src={item.preview_url}
+					alt="banner"
+					loading="lazy"
+					class="aspect-[21/9] w-full object-cover grayscale hue-rotate-90 hover:filter-none"
+					class:hidden={false}
+				/>
+				<div class="preset-filled-surface-100-900 rounded-sm text-center font-medium text-balance">
+					{item.title}
+				</div>
+			</a>
+
+			<!-- Voting controls -->
+			<div class="flex items-center justify-center gap-4 p-2">
+				<button
+					class="btn preset-tonal-surface hover:bg-error-500/20 rounded-full p-2"
+					aria-label="Downvote"
+				>
+					<Icon data={faThumbsDown} class="fa-fw text-error-500" />
+				</button>
+				<span class="text-primary-500 font-mono text-lg font-bold">
+					{item.votes ?? 0}
+				</span>
+				<button
+					class="btn preset-tonal-surface hover:bg-success-500/20 rounded-full p-2"
+					aria-label="Upvote"
+				>
+					<Icon data={faThumbsUp} class="fa-fw text-success-500" />
+				</button>
+			</div>
+		</div>
+
+		<!-- Tags -->
+		<article class="flex flex-wrap gap-1" style="align-items: end">
+			{#each item.tags as tag (tag.id)}
+				<span class="badge preset-tonal-surface">
+					{tag.display_name}
+				</span>
+			{:else}
+				<span class="text-gray-400">No tags</span>
+			{/each}
+		</article>
+
+		<!-- Links -->
+		<footer class="input-group w-min-full grid-cols-[auto_auto]">
+			<a
+				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="btn preset-tonal-surface flex items-center gap-2 truncate whitespace-normal"
+			>
+				<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+				Workshop
+			</a>
+			<a
+				href="/item/{item.id}"
+				target="_self"
+				rel="noopener noreferrer"
+				class="btn preset-tonal-primary flex items-center gap-2 truncate whitespace-normal"
+			>
+				<Icon data={faLink} class="fa-fw"></Icon>
+				View
+			</a>
+		</footer>
+	</div>
+{/snippet}
+
+{#snippet loginModal()}
+	<Modal
+		open={loginModalState}
+		onOpenChange={(e) => (loginModalState = e.open)}
+		triggerBase="btn preset-tonal"
+		contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
+		backdropClasses="backdrop-blur-sm"
+	>
+		{#snippet content()}
+			<header class="flex justify-between">
+				<h2 class="h2">Please Login To Continue</h2>
+			</header>
+			<footer class="flex justify-end gap-4">
+				<a
+					href="/api/login?location={location}"
+					aria-label="Sign In Through Steam"
+					class="mt-auto mb-auto"
+				>
+					<img
+						alt="Sign In Through Steam"
+						src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
+					/>
+				</a>
+				<button type="button" class="btn preset-tonal" onclick={() => (loginModalState = false)}
+					>Cancel</button
+				>
+			</footer>
+		{/snippet}
+	</Modal>
 {/snippet}
