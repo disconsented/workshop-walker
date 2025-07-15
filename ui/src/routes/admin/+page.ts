@@ -1,4 +1,3 @@
-
 export const prerender = false;
 export const load: PageLoad = async ({ fetch, params }) => {
 	return {
