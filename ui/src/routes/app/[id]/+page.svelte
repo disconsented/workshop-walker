@@ -347,7 +347,7 @@
 					{#if item.properties && item.properties.length > 0}
 						<hr class="hr my-1" />
 						<div class="flex flex-wrap gap-1">
-							{#each item.properties as prop (prop.id)}
+							{#each item.properties as prop}
 								{@debug prop}
 								<Property
 									loggedIn={logged_in}
