@@ -33,7 +33,8 @@ use crate::{
 };
 
 mod app_config;
-mod auth;
+pub(crate) mod auth;
+mod db;
 mod language;
 mod model;
 mod steam;
@@ -211,6 +212,7 @@ async fn insert_data(db: &Surreal<Db>, bb: &BBCode, data: Struct) -> Result<(), 
         last_updated: data.time_updated.unwrap_or_default() as _,
         tags: vec![],
         score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
+        properties: vec![],
     };
     let tags = data
         .tags

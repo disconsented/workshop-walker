@@ -28,22 +28,21 @@
 			<span>Workshop Walker</span>
 			{#snippet trail()}
 				{#if logged_in}
-					<a href="/api/logout?location={location}"
-						 class="btn preset-outlined-warning-500">
+					<a href="/api/logout?location={location}" class="btn preset-outlined-warning-500">
 						Sign Out
 					</a>
 				{:else}
 					<a href="/api/login?location={location}" aria-label="Sign In Through Steam">
 						<img
 							alt="Sign In Through Steam"
-							src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png">
+							src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
+						/>
 					</a>
 				{/if}
 
 				<a href="https://github.com/disconsented/workshop-walker">
 					<Icon data={faGithub} class="fa-fw"></Icon>
 				</a>
-
 			{/snippet}
 		</AppBar>
 	</header>

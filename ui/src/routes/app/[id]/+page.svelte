@@ -20,6 +20,7 @@
 	import TimePicker from '$lib/timePicker.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import { invalidate } from '$app/navigation';
+	import Property from '../../item/[item]/Property.svelte';
 	import { Switch } from '@skeletonlabs/skeleton-svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -39,6 +40,8 @@
 			return url.pathname === '/api/list';
 		});
 	}
+
+	const logged_in = document.cookie.includes('token_set=');
 </script>
 
 <svelte:head>
@@ -333,12 +336,28 @@
 					</div>
 					<p class="mb-2 truncate text-sm text-gray-600">{item.description}</p>
 				</article>
-				<footer class="m-2 flex flex-wrap gap-1">
-					{#each item.tags as tag (tag.id)}
-						<span class="badge preset-filled">{tag.display_name}</span>
-					{:else}
-						<span class="badge preset-filled">-</span>
-					{/each}
+				<footer class="m-2">
+					<div class="flex flex-wrap gap-1">
+						{#each item.tags as tag (tag.id)}
+							<span class="badge preset-filled">{tag.display_name}</span>
+						{:else}
+							<span class="badge preset-filled">-</span>
+						{/each}
+					</div>
+					{#if item.properties && item.properties.length > 0}
+						<hr class="hr my-1" />
+						<div class="flex flex-wrap gap-1">
+							{#each item.properties as prop (prop.id)}
+								{@debug prop}
+								<Property
+									loggedIn={logged_in}
+									property={{ class: prop.out.class, value: prop.out.value, ...prop }}
+									hideVote={!logged_in}
+									itemID={item.id}
+								></Property>
+							{/each}
+						</div>
+					{/if}
 				</footer>
 			</div>
 		{:else}
