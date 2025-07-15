@@ -17,6 +17,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # https://til.simonwillison.net/github-actions/creating-github-labels
+      issues: write
     concurrency:
       group: release-plz-${{ github.ref }}
       cancel-in-progress: false
