@@ -1,0 +1,18 @@
+[workspace]
+allow_dirty = true # allow updating repositories with uncommitted changes
+changelog_update = false # disable changelog updates
+dependencies_update = true # update dependencies with `cargo update`
+git_release_enable = false # disable GitHub/Gitea releases
+pr_branch_prefix = "release-plz-" # PR branch prefix
+pr_labels = ["release"] # add the `release` label to the release Pull Request
+publish_allow_dirty = true # add `--allow-dirty` to `cargo publish`
+semver_check = false # disable API breaking changes checks
+publish_timeout = "10m" # set a timeout for `cargo publish`
+release_commits = "^feat:" # prepare release only if at least one commit matches a regex
+
+[[package]] # the double square brackets define a TOML table array
+name = "workshop-walker"
+changelog_path = "CHANGELOG.md" # use a custom changelog path for `package_a`
+changelog_update = true # enable changelog update for `package_a`
+git_release_enable = true # enable GitHub/Gitea releases for `package_a`
+publish = false # disable `cargo publish` for `package_a`
