@@ -135,7 +135,7 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot, respons
     let db: &Surreal<Db> = DB_POOL.get().expect("DB not initialised");
     let test_prop = Property {
         class: new_property.0.class,
-        value: new_property.0.value,
+        value: new_property.0.value.to_ascii_lowercase(),
     };
 
     if test_prop.value.len() > 32 {
@@ -144,6 +144,15 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot, respons
             "Property cannot be longer than 32 characters; is {}",
             test_prop.value.len()
         ));
+    }
+
+    if test_prop
+        .value
+        .chars()
+        .all(|c| c.is_alphabetic() || c == ' ')
+    {
+        response.status_code(StatusCode::BAD_REQUEST);
+        response.body("Property value must be alphabetic characters only");
     }
     let prop_exists = {
         #[derive(Serialize, Deserialize, Clone, Debug)]
