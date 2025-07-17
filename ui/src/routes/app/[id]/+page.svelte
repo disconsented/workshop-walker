@@ -300,7 +300,7 @@
 	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
 			<div
-				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block max-w-md divide-y overflow-hidden border-[1px]"
+				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block w-md divide-y overflow-hidden border-[1px]"
 			>
 				<header>
 					<img
