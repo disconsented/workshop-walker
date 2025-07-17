@@ -35,6 +35,8 @@ pub type Error = StatusError;
 const STEAM_DISCOVERY: &str = "https://steamcommunity.com/openid/";
 static OPENID_INFO: OnceCell<Info> = OnceCell::const_new();
 
+const TOKEN_LIFETIME: Duration = Duration::days(30);
+
 struct Info {
     r#type: String,
     uri: String,
@@ -201,7 +203,7 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
           user({user_id});
           check if time($time), $time <= {expires};
     "#,
-        expires = SystemTime::now() + Duration::hours(12)
+        expires = SystemTime::now() + TOKEN_LIFETIME
     )
     .build(keypair)
     .unwrap();
@@ -210,7 +212,7 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
 
     response.add_cookie(
         Cookie::build(("token", based))
-            .max_age(Duration::hours(12))
+            .max_age(TOKEN_LIFETIME)
             .http_only(true)
             .secure(true)
             .same_site(SameSite::Strict)
@@ -220,7 +222,7 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
 
     response.add_cookie(
         Cookie::build("token_set")
-            .max_age(Duration::hours(12))
+            .max_age(TOKEN_LIFETIME)
             .secure(true)
             .same_site(SameSite::Strict)
             .path("/")
