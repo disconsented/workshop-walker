@@ -380,7 +380,7 @@
 		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#description">Description</a></h2>
-		<p class="whitespace-pre-wrap text-gray-300">{@html data.description}</p>
+		<p class="whitespace-pre-wrap prose prose-invert max-w-none">{@html data.description}</p>
 	</div>
 {/snippet}
 
