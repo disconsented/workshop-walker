@@ -80,7 +80,7 @@
 	const tags = get_tags(data);
 	const languages = get_languages(data);
 
-	let selectedTags = $state(['tags:Mod', 'tags:⟨1.5⟩']);
+	let selectedTags = $state(['tags:Mod', 'tags:⟨1.6⟩']);
 	let selectedLangs = $state(['English']);
 
 	function filter(item) {
