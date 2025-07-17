@@ -1,12 +1,12 @@
-DEFINE TABLE votes TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+DEFINE TABLE OVERWRITE votes TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
 -- ------------------------------
 -- FIELDS
 -- ------------------------------
 
-DEFINE FIELD id ON votes TYPE { item: record<workshop_items>, link: record<properties> | record<companions>, user: record<users> } PERMISSIONS FULL;
-DEFINE FIELD score ON votes TYPE int PERMISSIONS FULL;
-DEFINE FIELD when ON votes TYPE datetime PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE id ON votes TYPE { item: record<workshop_items>, link: record<properties> | record<companions>, user: record<users> } PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE score ON votes TYPE int PERMISSIONS FULL;
+DEFINE FIELD OVERWRITE when ON votes TYPE datetime PERMISSIONS FULL;
 
-REMOVE FIELD user ON votes;
-REMOVE FIELD link ON votes;
+REMOVE FIELD IF EXISTS user ON votes;
+REMOVE FIELD IF EXISTS link ON votes;
