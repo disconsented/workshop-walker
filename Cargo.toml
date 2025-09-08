@@ -1,6 +1,6 @@
 [workspace]
 default-members = []
-members = ["classification", "macros"]
+members = ["macros"]
 
 
 [features]
@@ -41,6 +41,7 @@ log = "0.4.27"
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
+surrealdb = {git = "https://github.com/disconsented/surrealdb.git", tag = "v2.3.8"}
 
 
 [profile.release]
