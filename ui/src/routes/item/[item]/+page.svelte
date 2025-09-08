@@ -293,7 +293,7 @@
 		<!-- Preview Image -->
 		{#if item.preview_url}
 			<div class="pt-6">
-				<img src={item.preview_url} alt={item.title} class="h-auto max-w-full rounded-lg" />
+				<img src={item.preview_url} alt={item.title} class="h-auto max-w-full rounded-lg" loading="lazy"/>
 			</div>
 		{:else}
 			<div class="pt-6 text-xs opacity-60">No preview image available</div>
