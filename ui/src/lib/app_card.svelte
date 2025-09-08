@@ -23,6 +23,7 @@
 			src={image_url}
 			class="aspect-[21/9] w-full object-fill grayscale hue-rotate-90"
 			alt="{name} Banner"
+			loading="lazy"
 		/>
 	</header>
 	<article class="space-y-4 p-4">

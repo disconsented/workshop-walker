@@ -36,6 +36,7 @@
 						<img
 							alt="Sign In Through Steam"
 							src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
+							loading="lazy"
 						/>
 					</a>
 				{/if}

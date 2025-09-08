@@ -219,6 +219,7 @@
 										src={item.preview_url ||
 											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
 										alt="banner"
+										loading="lazy"
 									/></a
 								>
 							</td>
@@ -313,6 +314,7 @@
 						onerror={(e) =>
 							(e.target.src =
 								'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
+						loading="lazy"
 					/>
 				</header>
 				<article class="space-y-4 p-4">
