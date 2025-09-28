@@ -8,8 +8,6 @@ use veil::Redact;
 pub struct Config {
     pub steam: Steam,
     pub database: Database,
-    pub read_from_cache: bool,
-    pub download_workshop: bool,
     pub updater: bool,
     pub base_url: Arc<String>,
     pub biscuit: Arc<Biscuit>,

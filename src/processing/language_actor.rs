@@ -3,12 +3,13 @@ use std::{collections::HashMap, convert::Into, fmt};
 use lingua::{
     Language,
     Language::{Chinese, English, Japanese, Korean, Portuguese, Russian, Spanish},
-    LanguageDetectorBuilder,
+    LanguageDetector, LanguageDetectorBuilder,
 };
+use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::language::DetectedLanguage::Unknown;
+use crate::processing::language_actor::DetectedLanguage::Unknown;
 
 // The threshold of total words a language must be, to be considered valid for
 // detection.
@@ -59,17 +60,60 @@ impl From<Language> for DetectedLanguage {
         }
     }
 }
+
+pub struct LanguageActor {}
+
+pub struct LanguageArgs {}
+pub struct LanguageState {
+    detector: LanguageDetector,
+}
+
+pub enum LanguageMsg {
+    Detect(String, RpcReplyPort<Vec<DetectedLanguage>>),
+}
+#[async_trait]
+impl Actor for LanguageActor {
+    type Arguments = LanguageArgs;
+    type Msg = LanguageMsg;
+    type State = LanguageState;
+
+    async fn pre_start(
+        &self,
+        _: ActorRef<Self::Msg>,
+        args: Self::Arguments,
+    ) -> Result<Self::State, ActorProcessingErr> {
+        Ok(Self::State {
+            detector: LanguageDetectorBuilder::from_languages(&[
+                English, Russian, Chinese, Japanese, Korean,
+            ])
+            .with_minimum_relative_distance(0.9)
+            .build(),
+        })
+    }
+
+    async fn handle(
+        &self,
+        _: ActorRef<Self::Msg>,
+        message: Self::Msg,
+        state: &mut Self::State,
+    ) -> Result<(), ActorProcessingErr> {
+        match message {
+            LanguageMsg::Detect(text, reply) => {
+                let _ = reply.send(detect(&text, &state.detector));
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Using heuristics, determine what languages are likely present in the text.
 /// I'd noticed that mods sometimes have translated descriptions, hence, the
 /// need to return N langs.
-pub fn detect(text: &str) -> Vec<DetectedLanguage> {
-    let detector =
-        LanguageDetectorBuilder::from_languages(&[English, Russian, Chinese, Japanese, Korean])
-            .with_minimum_relative_distance(0.9)
-            .build();
+pub fn detect(text: &str, language_detector: &LanguageDetector) -> Vec<DetectedLanguage> {
     let mut detected_languages = HashMap::new();
     let mut total_words = 0;
-    for language in detector.detect_multiple_languages_of(text) {
+    for language in language_detector.detect_multiple_languages_of(text) {
         detected_languages
             .entry(language.language())
             .and_modify(|e| *e += language.word_count())
@@ -90,7 +134,7 @@ mod test {
         LanguageDetectorBuilder,
     };
 
-    use crate::language::DetectedLanguage;
+    use crate::processing::language_actor::DetectedLanguage;
 
     #[test]
     fn test_lang_encode() {
