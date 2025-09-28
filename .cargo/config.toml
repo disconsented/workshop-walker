@@ -1,5 +1,6 @@
-
-
 [target.'cfg(target_os = "linux")']
 linker = "clang"
 rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/mold"]
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-Ctarget-cpu=native", "-C", "target-feature=+avx2,+avx,+sse2,+avx512f,+avx512bw,+avx512bf16,+avx512bitalg,+avx512bw,+avx512cd,+avx512dq,+avx512f,+avx512ifma,+avx512vbmi,+avx512vbmi2,+avx512vl,+avx512vnni,+avx512vpopcntdq,+avxifma,+avxneconvert,+avxvnni,+avxvnniint16,+avxvnniint8"]
