@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb::{RecordId, RecordIdKey};
 
-use crate::language::DetectedLanguage;
+use crate::processing::language_actor::DetectedLanguage;
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
 pub enum OrderBy {
     Alphabetical,
@@ -325,7 +325,7 @@ mod test {
     use serde::{Deserialize, Serialize};
     use surrealdb::RecordId;
 
-    use crate::model::{Class, Id, Source};
+    use crate::db::model::{Class, Id, Source};
 
     #[test]
     fn test_id_newtype() {

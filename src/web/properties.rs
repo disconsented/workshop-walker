@@ -10,8 +10,10 @@ use serde::{Deserialize, Serialize};
 use surrealdb::{RecordId, Surreal, engine::local::Db};
 
 use crate::{
-    db::{ItemID, UserID},
-    model::{Class, Property, Source, WorkshopItemProperties},
+    db::{
+        ItemID, UserID,
+        model::{Class, Property, Source, WorkshopItemProperties},
+    },
     web::DB_POOL,
 };
 
@@ -127,7 +129,7 @@ pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: 
 /// Add a new property with the following rules:
 /// Must be entirely new or an exact match to an existing property.
 /// Likeness checks are done on the value only (for now) using
-/// damerau_levenshtein distance.
+/// `damerau_levenshtein` distance.
 #[endpoint]
 pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot, response: &mut Response) {
     let workshop_id = ItemID::from(new_property.0.workshop_item).into_recordid();
@@ -266,7 +268,7 @@ mod test {
 
     use surrealdb::{Surreal, engine::local::Mem};
 
-    use crate::model::{Class, Property};
+    use crate::db::model::{Class, Property};
 
     #[test]
     fn test_biscuit_conversion() {

@@ -8,8 +8,8 @@ use salvo::{
 use serde::{Deserialize, Serialize};
 use surrealdb::{Surreal, engine::local::Db};
 
-use crate::{
-    db::{ItemID, UserID},
+use crate::db::{
+    ItemID, UserID,
     model::{Property, Status, User, WorkshopItemProperties},
 };
 

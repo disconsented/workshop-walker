@@ -38,6 +38,7 @@ biscuit-auth = "6.0.0-beta.3"
 rs-snowflake = "0.6"
 macros = { path = "./macros" }
 log = "0.4.27"
+ractor = {version = "0.15", features = ["monitors", "async-trait"]}
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
