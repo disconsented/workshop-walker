@@ -138,9 +138,14 @@ fn redirect_url(base: &Arc<String>, location: &str) -> String {
 
 #[endpoint]
 pub async fn redirect(req: &mut Request, resp: &mut Response, depot: &mut Depot) -> Result<()> {
-    let client = reqwest::Client::new();
-    let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
-    let url = get_url(client, config, req.query("location").unwrap()).await?;
+    let client = Client::new();
+    let config = depot
+        .obtain::<Arc<Config>>()
+        .map_err(|_| InnerError::ExpectedInfoReady)?;
+    let location = req
+        .query::<&str>("location")
+        .ok_or(InnerError::SelfValidationFailed)?;
+    let url = get_url(client, config, location).await?;
     resp.render(Redirect::found(url));
 
     Ok(())
@@ -152,7 +157,7 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
     {
         let info = OPENID_INFO.get().ok_or(InnerError::ExpectedInfoReady)?;
         if (map.get("openid.ns").map(String::as_str))
-            != (Some(&info.r#type[0..info.r#type.len() - b"/server".len()]))
+            != (Some(&info.r#type[0..info.r#type.len().saturating_sub(b"/server".len())]))
         {
             return Err(InnerError::SelfValidationFailed)?;
         }
@@ -160,8 +165,13 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
         if (map.get("openid.op_endpoint")) != (Some(&info.uri)) {
             return Err(InnerError::SelfValidationFailed)?;
         }
-        if let Some((timestamp, _)) = map.get("openid.response_nonce").unwrap().split_once('Z') {
-            let timestamp = timestamp.parse::<NaiveDateTime>().unwrap();
+        if let Some((timestamp, _)) = map
+            .get("openid.response_nonce")
+            .ok_or(InnerError::SelfValidationFailed)?
+            .split_once('Z')
+        {
+            let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
+                .map_err(|_| InnerError::SelfValidationFailed)?;
             if timestamp - Utc::now().naive_utc() > TimeDelta::minutes(5) {
                 return Err(InnerError::SelfValidationFailed)?;
             }
@@ -172,20 +182,36 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
 
     let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
 
-    for item in map.get("openid.signed").unwrap().split(',') {
+    for item in map
+        .get("openid.signed")
+        .ok_or(InnerError::SelfValidationFailed)?
+        .split(',')
+    {
         let key = format!("openid.{item}");
-        url.query_pairs_mut()
-            .append_pair(&key, map.get(&key).unwrap())
-            .finish();
+        let val = map.get(&key).ok_or(InnerError::SelfValidationFailed)?;
+        url.query_pairs_mut().append_pair(&key, val).finish();
     }
     url.query_pairs_mut()
-        .append_pair("openid.sig", map.get("openid.sig").unwrap())
-        .append_pair("openid.ns", map.get("openid.ns").unwrap())
+        .append_pair(
+            "openid.sig",
+            map.get("openid.sig")
+                .ok_or(InnerError::SelfValidationFailed)?,
+        )
+        .append_pair(
+            "openid.ns",
+            map.get("openid.ns")
+                .ok_or(InnerError::SelfValidationFailed)?,
+        )
         .append_pair("openid.mode", "check_authentication")
         .finish();
 
-    let resp = reqwest::get(url).await.unwrap();
-    let text = resp.text().await.unwrap();
+    let resp = reqwest::get(url)
+        .await
+        .map_err(|_| InnerError::PeerValidationFailed)?;
+    let text = resp
+        .text()
+        .await
+        .map_err(|_| InnerError::PeerValidationFailed)?;
 
     if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
         return Err(InnerError::PeerValidationFailed)?;
@@ -193,12 +219,14 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
 
     let user_id = map
         .get("openid.identity")
-        .unwrap()
-        .split('/')
-        .next_back()
-        .unwrap();
+        .ok_or(InnerError::PeerValidationFailed)?
+        .rsplit('/')
+        .next()
+        .ok_or(InnerError::PeerValidationFailed)?;
 
-    let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
+    let config = depot
+        .obtain::<Arc<Config>>()
+        .map_err(|_| InnerError::ExpectedInfoReady)?;
     let keypair = &KeyPair::from(&config.biscuit.private_key);
 
     let biscuit: biscuit_auth::Biscuit = biscuit!(
@@ -209,9 +237,11 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
         expires = SystemTime::now() + TOKEN_LIFETIME
     )
     .build(keypair)
-    .unwrap();
+    .map_err(|_| InnerError::PeerValidationFailed)?;
 
-    let based = biscuit.to_base64().expect("creating token");
+    let based = biscuit
+        .to_base64()
+        .map_err(|_| InnerError::PeerValidationFailed)?;
 
     response.add_cookie(
         Cookie::build(("token", based))
@@ -232,7 +262,9 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
             .build(),
     );
     {
-        let db = depot.obtain::<Surreal<Db>>().expect("getting shared state");
+        let db = depot
+            .obtain::<Surreal<Db>>()
+            .map_err(|_| InnerError::ExpectedInfoReady)?;
         let user = User {
             id: UserID::from(user_id.to_owned()).into_recordid(),
             admin: false,
@@ -241,19 +273,28 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
         };
         let mut stmt = InsertStatement::default();
         stmt.into = Some(Value::Table("users".into()));
-        stmt.data = Data::SingleExpression(to_value(user.clone()).unwrap());
+        stmt.data = Data::SingleExpression(
+            to_value(user.clone()).map_err(|_| InnerError::PeerValidationFailed)?,
+        );
         stmt.update = Some(Data::UpdateExpression(vec![(
-            idiom("last_logged_in").unwrap(),
+            idiom("last_logged_in").map_err(|_| InnerError::PeerValidationFailed)?,
             Operator::Equal,
             Utc::now().into(),
         )]));
-        let errors = db.query(stmt).await.unwrap().take_errors();
-        for (i, error) in errors {
-            error!("Error: {i}: {error}");
+        for (i, error) in db
+            .query(stmt)
+            .await
+            .map_err(|_| InnerError::PeerValidationFailed)?
+            .take_errors()
+        {
+            error!(i, ?error, "verification failed");
         }
     }
 
-    response.render(Redirect::found(req.query::<&str>("location").unwrap()));
+    let redirect_to = req
+        .query::<&str>("location")
+        .ok_or(InnerError::SelfValidationFailed)?;
+    response.render(Redirect::found(redirect_to));
     Ok(())
 }
 
@@ -262,7 +303,10 @@ pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()
     response
         .headers
         .insert("Clear-Site-Data", HeaderValue::from_static("\"cookies\""));
-    response.render(Redirect::found(req.query::<&str>("location").unwrap()));
+    let redirect_to = req
+        .query::<&str>("location")
+        .ok_or(InnerError::SelfValidationFailed)?;
+    response.render(Redirect::found(redirect_to));
     Ok(())
 }
 
@@ -273,14 +317,22 @@ pub async fn validate(req: &mut Request, depot: &mut Depot, response: &mut Respo
             response.status_code(StatusCode::UNAUTHORIZED);
         }
         Some(token) => {
-            let config = depot.obtain::<Arc<Config>>().expect("getting shared state");
+            let Ok(config) = depot.obtain::<Arc<Config>>() else {
+                response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+                return;
+            };
             let keypair = &KeyPair::from(&config.biscuit.private_key);
-            let token = Biscuit::from_base64(token.value(), keypair.public()).unwrap();
-            let mut authorizer: Authorizer =
-                authorizer!("").time().allow_all().build(&token).unwrap();
+            let Ok(token) = Biscuit::from_base64(token.value(), keypair.public()) else {
+                response.status_code(StatusCode::UNAUTHORIZED);
+                return;
+            };
+            let Ok(mut authorizer) = authorizer!("").time().allow_all().build(&token) else {
+                response.status_code(StatusCode::UNAUTHORIZED);
+                return;
+            };
 
             if let Err(e) = authorizer.authorize() {
-                debug!("Auth failed: {e:?}");
+                debug!(error = ?e, "Failed to authorize");
                 response.status_code(StatusCode::UNAUTHORIZED);
                 return;
             }
@@ -297,23 +349,24 @@ pub async fn enforce_admin(depot: &mut Depot, response: &mut Response) {
             response.status_code(StatusCode::UNAUTHORIZED);
         }
         Some(userid) => {
-            let result = depot
+            match depot
                 .obtain::<Surreal<Db>>()
-                .expect("getting shared state")
+                .expect("db")
                 .query("SElECT admin FROM $user")
                 .bind(("user", UserID::from(userid).into_recordid()))
-                .await;
-            match result.map(surrealdb::Response::check) {
-                Err(e) => {
-                    error!("running admin query: {e:?}");
+                .await
+                .map(surrealdb::Response::check)
+            {
+                Err(error) => {
+                    error!(?error, "running admin query");
                     response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
                 }
-                Ok(Err(e)) => {
-                    error!("checking admin query: {e:?}");
+                Ok(Err(error)) => {
+                    error!(?error, "checking admin query");
                     response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
                 }
                 Ok(Ok(mut db_response)) => {
-                    if db_response.take("admin").unwrap() != Some(true) {
+                    if db_response.take("admin").ok().flatten() != Some(true) {
                         response.status_code(StatusCode::UNAUTHORIZED);
                     }
                 }
