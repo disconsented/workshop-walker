@@ -20,7 +20,7 @@ impl Actor for BBActor {
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
-        args: Self::Arguments,
+        _: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(Self::State {
             bb: BBCode::from_config(BBCodeTagConfig::extended(), None)?,

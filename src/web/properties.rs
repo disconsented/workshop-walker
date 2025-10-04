@@ -2,19 +2,19 @@ use biscuit_auth::Authorizer;
 use chrono::{DateTime, Utc};
 use log::{debug, error};
 use salvo::{
-    Depot, Response, Writer,
-    oapi::extract::JsonBody,
-    prelude::{StatusCode, ToSchema, endpoint},
+    oapi::extract::JsonBody, prelude::{endpoint, StatusCode, ToSchema}, Depot,
+    Response,
+    Writer,
 };
 use serde::{Deserialize, Serialize};
-use surrealdb::{RecordId, Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, RecordId, Surreal};
 
 use crate::{
     db::{
-        ItemID, UserID,
-        model::{Class, Property, Source, WorkshopItemProperties},
+        model::{Class, Property, Source, WorkshopItemProperties}, ItemID,
+        UserID,
     },
-    web::DB_POOL,
+    web::{auth, DB_POOL},
 };
 
 /// Add or change a vote for a property.
@@ -27,9 +27,7 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: &m
         return;
     }
     let db: &Surreal<Db> = DB_POOL.get().expect("DB not initialised");
-    let user = crate::auth::get_user(depot)
-        .await
-        .expect("already authenticated");
+    let user = auth::get_user(depot).expect("already authenticated");
     let user = UserID::from(user);
     let query = db
         // .query("BEGIN TRANSACTION;")
@@ -84,9 +82,7 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: &m
 #[endpoint]
 pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot, response: &mut Response) {
     let db: &Surreal<Db> = DB_POOL.get().expect("DB not initialised");
-    let user = crate::auth::get_user(depot)
-        .await
-        .expect("already authenticated");
+    let user = auth::get_user(depot).expect("already authenticated");
     let user = UserID::from(user);
     let result = db
         .query("BEGIN TRANSACTION;")
@@ -265,8 +261,7 @@ pub struct UpdateVote {
 
 #[cfg(test)]
 mod test {
-
-    use surrealdb::{Surreal, engine::local::Mem};
+    use surrealdb::{engine::local::Mem, Surreal};
 
     use crate::db::model::{Class, Property};
 

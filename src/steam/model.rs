@@ -46,11 +46,7 @@ pub enum EPublishedFileQueryType {
     RankedByLastUpdatedDate = 21,
 }
 
-#[expect(
-    non_camel_case_types,
-    clippy::arbitrary_source_item_ordering,
-    clippy::missing_docs_in_private_items
-)] // Can't control the _ and steam requires it
+#[expect(non_camel_case_types, clippy::missing_docs_in_private_items)] // Can't control the _ and steam requires it
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone)]
 #[repr(u8)]
 enum EPublishedFileInfoMatchingFileType {
