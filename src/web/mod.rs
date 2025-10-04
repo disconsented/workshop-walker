@@ -53,7 +53,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let db = DB_POOL.get_or_init(|| async { db }).await.clone();
     let router = Router::new().push(
         Router::with_path("api")
-            .hoop(max_size((1024 * 1024)))
+            .hoop(max_size(1024 * 1024))
             .push(Router::with_path("list").get(list))
             .push(
                 Router::with_path("item/{id}")
@@ -158,7 +158,7 @@ impl Writer for Error {
 async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWorkshopItem>> {
     let id = id.0;
     let db: &Surreal<Db> = DB_POOL.get().expect("DB not initialised");
-    let user = auth::get_user(depot).await;
+    let user = auth::get_user(depot);
     async fn query(
         id: String,
         db: &Surreal<Db>,

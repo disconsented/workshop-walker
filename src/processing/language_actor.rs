@@ -122,7 +122,7 @@ pub fn detect(text: &str, language_detector: &LanguageDetector) -> Vec<DetectedL
     }
     detected_languages
         .into_iter()
-        .filter(|&(lang, words)| (words as f32 > total_words as f32 * WORD_PERCENTAGE))
+        .filter(|&(lang, words)| words as f32 > total_words as f32 * WORD_PERCENTAGE)
         .map(|(lang, words)| lang.into())
         .collect()
 }

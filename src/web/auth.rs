@@ -292,7 +292,7 @@ pub async fn validate(req: &mut Request, depot: &mut Depot, response: &mut Respo
 
 #[endpoint]
 pub async fn enforce_admin(depot: &mut Depot, response: &mut Response) {
-    match get_user(depot).await {
+    match get_user(depot) {
         None => {
             response.status_code(StatusCode::UNAUTHORIZED);
         }
@@ -313,8 +313,7 @@ pub async fn enforce_admin(depot: &mut Depot, response: &mut Response) {
                     response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
                 }
                 Ok(Ok(mut db_response)) => {
-                    let is_admin: Option<bool> = db_response.take("admin").unwrap();
-                    if is_admin != Some(true) {
+                    if db_response.take("admin").unwrap() != Some(true) {
                         response.status_code(StatusCode::UNAUTHORIZED);
                     }
                 }
@@ -329,7 +328,7 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot, response: &mut R
     }
 }
 
-pub async fn get_user(depot: &mut Depot) -> Option<String> {
+pub fn get_user(depot: &mut Depot) -> Option<String> {
     let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
     let (userid, _): (String, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
