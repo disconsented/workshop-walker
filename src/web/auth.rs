@@ -1,4 +1,9 @@
-use std::{str::FromStr, sync::Arc, time::SystemTime};
+use std::{
+    mem,
+    str::FromStr,
+    sync::{Arc, OnceLock},
+    time::SystemTime,
+};
 
 use biscuit_auth::{
     Authorizer, Biscuit, KeyPair,
@@ -6,7 +11,8 @@ use biscuit_auth::{
     macros::{authorizer, biscuit},
 };
 use chrono::{NaiveDateTime, TimeDelta, Utc};
-use itertools::Itertools;
+use multimap::MultiMap;
+use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
 use reqwest::{Client, Url};
 use salvo::{
     Depot, Request, Response,
@@ -25,18 +31,18 @@ use surrealdb::{
     sql::{Data, Operator, Value, statements::InsertStatement, to_value},
     syn::idiom,
 };
-use tokio::sync::OnceCell;
 use tracing::{debug, error};
 
 use crate::{
-    app_config::Config,
+    app_config::BiscuitConfig,
     db::{UserID, model::User},
 };
+
+static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
 const STEAM_DISCOVERY: &str = "https://steamcommunity.com/openid/";
-static OPENID_INFO: OnceCell<Info> = OnceCell::const_new();
 
 const TOKEN_LIFETIME: Duration = Duration::days(30);
 
@@ -57,19 +63,24 @@ enum InnerError {
     BuildingURI,
     SelfValidationFailed,
     PeerValidationFailed,
+    InternalError,
+    Unauthorized,
 }
 
 impl InnerError {
     pub fn status_code(&self) -> StatusCode {
         match self {
-            InnerError::QueryingDiscovery => StatusCode::INTERNAL_SERVER_ERROR,
-            InnerError::DiscoveryBadResponse => StatusCode::INTERNAL_SERVER_ERROR,
-            InnerError::DeserializingDiscovery => StatusCode::INTERNAL_SERVER_ERROR,
-            InnerError::InfoAlreadySet => StatusCode::INTERNAL_SERVER_ERROR,
-            InnerError::ExpectedInfoReady => StatusCode::INTERNAL_SERVER_ERROR,
-            InnerError::BuildingURI => StatusCode::INTERNAL_SERVER_ERROR,
-            InnerError::SelfValidationFailed => StatusCode::FORBIDDEN,
-            InnerError::PeerValidationFailed => StatusCode::FORBIDDEN,
+            InnerError::SelfValidationFailed | InnerError::PeerValidationFailed => {
+                StatusCode::FORBIDDEN
+            }
+            InnerError::QueryingDiscovery
+            | InnerError::DiscoveryBadResponse
+            | InnerError::DeserializingDiscovery
+            | InnerError::InfoAlreadySet
+            | InnerError::ExpectedInfoReady
+            | InnerError::BuildingURI
+            | InnerError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::Unauthorized => StatusCode::UNAUTHORIZED,
         }
     }
 }
@@ -89,162 +100,40 @@ impl From<InnerError> for StatusError {
     }
 }
 
-pub async fn get_url(client: Client, config: &Config, location: &str) -> Result<String> {
-    if !OPENID_INFO.initialized() {
-        let response = client
-            .get(STEAM_DISCOVERY)
-            .send()
-            .await
-            .map_err(|_| InnerError::QueryingDiscovery)?;
-        let response_text = response
-            .text()
-            .await
-            .map_err(|_| InnerError::DiscoveryBadResponse)?;
-
-        let doc: Xrds = from_str(&response_text).map_err(|_| InnerError::DeserializingDiscovery)?;
-        OPENID_INFO
-            .set(Info {
-                r#type: doc.xrd.service.r#type,
-                uri: doc.xrd.service.uri,
-            })
-            .map_err(|_| InnerError::InfoAlreadySet)?;
-    }
-    let info = OPENID_INFO.get().ok_or(InnerError::ExpectedInfoReady)?;
-    let mut url = Url::from_str(&info.uri).map_err(|_| InnerError::BuildingURI)?;
-    url.query_pairs_mut()
-        .append_pair("openid.mode", "checkid_setup")
-        .append_pair("openid.ns", "http://specs.openid.net/auth/2.0")
-        .append_pair(
-            "openid.claimed_id",
-            "http://specs.openid.net/auth/2.0/identifier_select",
-        )
-        .append_pair(
-            "openid.identity",
-            "http://specs.openid.net/auth/2.0/identifier_select",
-        )
-        .append_pair(
-            "openid.return_to",
-            &redirect_url(&config.base_url, location),
-        )
-        .append_pair("openid.realm", config.base_url.as_str())
-        .finish();
-
-    Ok(url.to_string())
-}
-
-fn redirect_url(base: &Arc<String>, location: &str) -> String {
-    String::clone(base) + "/api/verify?location=" + location
-}
-
 #[endpoint]
-pub async fn redirect(req: &mut Request, resp: &mut Response, depot: &mut Depot) -> Result<()> {
-    let client = Client::new();
-    let config = depot
-        .obtain::<Arc<Config>>()
-        .map_err(|_| InnerError::ExpectedInfoReady)?;
+pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> Result<()> {
     let location = req
-        .query::<&str>("location")
+        .query::<String>("location")
         .ok_or(InnerError::SelfValidationFailed)?;
-    let url = get_url(client, config, location).await?;
-    resp.render(Redirect::found(url));
+    let actor = AUTH_ACTOR
+        .get()
+        .cloned()
+        .ok_or(InnerError::InternalError)
+        .inspect_err(|e| error!(?e, "{}:{}", file!(), line!()))?;
+    let steam_auth_url = call!(actor, AuthMessage::GetAuthUrl, location)
+        .map_err(|_| InnerError::InternalError)
+        .inspect_err(|e| error!(?e, "{}:{}", file!(), line!()))?;
+
+    resp.render(Redirect::found(steam_auth_url));
 
     Ok(())
 }
 
 #[endpoint]
-pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depot) -> Result<()> {
-    let map = req.queries();
-    {
-        let info = OPENID_INFO.get().ok_or(InnerError::ExpectedInfoReady)?;
-        if (map.get("openid.ns").map(String::as_str))
-            != (Some(&info.r#type[0..info.r#type.len().saturating_sub(b"/server".len())]))
-        {
-            return Err(InnerError::SelfValidationFailed)?;
-        }
-
-        if (map.get("openid.op_endpoint")) != (Some(&info.uri)) {
-            return Err(InnerError::SelfValidationFailed)?;
-        }
-        if let Some((timestamp, _)) = map
-            .get("openid.response_nonce")
-            .ok_or(InnerError::SelfValidationFailed)?
-            .split_once('Z')
-        {
-            let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
-                .map_err(|_| InnerError::SelfValidationFailed)?;
-            if timestamp - Utc::now().naive_utc() > TimeDelta::minutes(5) {
-                return Err(InnerError::SelfValidationFailed)?;
-            }
-        } else {
-            return Err(InnerError::SelfValidationFailed)?;
-        }
-    }
-
-    let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
-
-    for item in map
-        .get("openid.signed")
-        .ok_or(InnerError::SelfValidationFailed)?
-        .split(',')
-    {
-        let key = format!("openid.{item}");
-        let val = map.get(&key).ok_or(InnerError::SelfValidationFailed)?;
-        url.query_pairs_mut().append_pair(&key, val).finish();
-    }
-    url.query_pairs_mut()
-        .append_pair(
-            "openid.sig",
-            map.get("openid.sig")
-                .ok_or(InnerError::SelfValidationFailed)?,
-        )
-        .append_pair(
-            "openid.ns",
-            map.get("openid.ns")
-                .ok_or(InnerError::SelfValidationFailed)?,
-        )
-        .append_pair("openid.mode", "check_authentication")
-        .finish();
-
-    let resp = reqwest::get(url)
-        .await
-        .map_err(|_| InnerError::PeerValidationFailed)?;
-    let text = resp
-        .text()
-        .await
-        .map_err(|_| InnerError::PeerValidationFailed)?;
-
-    if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
-        return Err(InnerError::PeerValidationFailed)?;
-    }
-
-    let user_id = map
-        .get("openid.identity")
-        .ok_or(InnerError::PeerValidationFailed)?
-        .rsplit('/')
-        .next()
-        .ok_or(InnerError::PeerValidationFailed)?;
-
-    let config = depot
-        .obtain::<Arc<Config>>()
-        .map_err(|_| InnerError::ExpectedInfoReady)?;
-    let keypair = &KeyPair::from(&config.biscuit.private_key);
-
-    let biscuit: biscuit_auth::Biscuit = biscuit!(
-        r#"
-          user({user_id});
-          check if time($time), $time <= {expires};
-    "#,
-        expires = SystemTime::now() + TOKEN_LIFETIME
-    )
-    .build(keypair)
-    .map_err(|_| InnerError::PeerValidationFailed)?;
-
-    let based = biscuit
-        .to_base64()
-        .map_err(|_| InnerError::PeerValidationFailed)?;
+pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response) -> Result<()> {
+    // Pull this out first because it'll likely be gone after the take.
+    let redirect_to = req
+        .query::<String>("location")
+        .ok_or(InnerError::SelfValidationFailed)?;
+    let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
+    let map = mem::take(req.queries_mut());
+    let token = call!(actor, |reply| {
+        AuthMessage::VerifySteamResponse(map, reply)
+    })
+    .map_err(|_| InnerError::InternalError)?;
 
     response.add_cookie(
-        Cookie::build(("token", based))
+        Cookie::build(("token", token))
             .max_age(TOKEN_LIFETIME)
             .http_only(true)
             .secure(true)
@@ -261,43 +150,13 @@ pub async fn verify(req: &mut Request, response: &mut Response, depot: &mut Depo
             .path("/")
             .build(),
     );
-    {
-        let db = depot
-            .obtain::<Surreal<Db>>()
-            .map_err(|_| InnerError::ExpectedInfoReady)?;
-        let user = User {
-            id: UserID::from(user_id.to_owned()).into_recordid(),
-            admin: false,
-            banned: false,
-            last_logged_in: Utc::now(),
-        };
-        let mut stmt = InsertStatement::default();
-        stmt.into = Some(Value::Table("users".into()));
-        stmt.data = Data::SingleExpression(
-            to_value(user.clone()).map_err(|_| InnerError::PeerValidationFailed)?,
-        );
-        stmt.update = Some(Data::UpdateExpression(vec![(
-            idiom("last_logged_in").map_err(|_| InnerError::PeerValidationFailed)?,
-            Operator::Equal,
-            Utc::now().into(),
-        )]));
-        for (i, error) in db
-            .query(stmt)
-            .await
-            .map_err(|_| InnerError::PeerValidationFailed)?
-            .take_errors()
-        {
-            error!(i, ?error, "verification failed");
-        }
-    }
 
-    let redirect_to = req
-        .query::<&str>("location")
-        .ok_or(InnerError::SelfValidationFailed)?;
     response.render(Redirect::found(redirect_to));
     Ok(())
 }
 
+/// Instructs the client to clear the cookies for the site, functioning as
+/// logout. Done here because JS can't access the tokens we use.
 #[endpoint]
 pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()> {
     response
@@ -311,77 +170,48 @@ pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()
 }
 
 #[endpoint]
-pub async fn validate(req: &mut Request, depot: &mut Depot, response: &mut Response) {
+pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Result<()> {
     match req.cookie("token") {
-        None => {
-            response.status_code(StatusCode::UNAUTHORIZED);
-        }
+        None => Err(InnerError::Unauthorized)?,
         Some(token) => {
-            let Ok(config) = depot.obtain::<Arc<Config>>() else {
-                response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-                return;
-            };
-            let keypair = &KeyPair::from(&config.biscuit.private_key);
-            let Ok(token) = Biscuit::from_base64(token.value(), keypair.public()) else {
-                response.status_code(StatusCode::UNAUTHORIZED);
-                return;
-            };
-            let Ok(mut authorizer) = authorizer!("").time().allow_all().build(&token) else {
-                response.status_code(StatusCode::UNAUTHORIZED);
-                return;
-            };
-
-            if let Err(e) = authorizer.authorize() {
-                debug!(error = ?e, "Failed to authorize");
-                response.status_code(StatusCode::UNAUTHORIZED);
-                return;
-            }
+            let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
+            let authorizer = call!(actor, |reply| {
+                AuthMessage::ValidateToken(token.clone(), reply)
+            })
+            .map_err(|_| InnerError::InternalError)?;
 
             depot.inject(authorizer);
+            Ok(())
         }
     }
 }
 
 #[endpoint]
-pub async fn enforce_admin(depot: &mut Depot, response: &mut Response) {
-    match get_user(depot) {
-        None => {
-            response.status_code(StatusCode::UNAUTHORIZED);
-        }
+pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
+    match get_user_from_depot(depot) {
+        None => Err(InnerError::Unauthorized)?,
         Some(userid) => {
-            match depot
-                .obtain::<Surreal<Db>>()
-                .expect("db")
-                .query("SElECT admin FROM $user")
-                .bind(("user", UserID::from(userid).into_recordid()))
-                .await
-                .map(surrealdb::Response::check)
-            {
-                Err(error) => {
-                    error!(?error, "running admin query");
-                    response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-                Ok(Err(error)) => {
-                    error!(?error, "checking admin query");
-                    response.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-                Ok(Ok(mut db_response)) => {
-                    if db_response.take("admin").ok().flatten() != Some(true) {
-                        response.status_code(StatusCode::UNAUTHORIZED);
-                    }
-                }
+            let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
+            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid, reply) })
+                .map_err(|_| InnerError::InternalError)??;
+
+            if admin {
+                Ok(())
+            } else {
+                Err(InnerError::Unauthorized)?
             }
         }
     }
 }
 #[endpoint]
-pub async fn validate_opt(req: &mut Request, depot: &mut Depot, response: &mut Response) {
+pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     if req.cookie("token").is_some() {
-        validate::validate(req, depot, response).await;
+        validate_biscuit_token::validate_biscuit_token(req, depot).await?;
     }
+    Ok(())
 }
-
-pub fn get_user(depot: &mut Depot) -> Option<String> {
+/// Returns the user id of the current user, if any.
+pub fn get_user_from_depot(depot: &mut Depot) -> Option<String> {
     let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
     let (userid, _): (String, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
@@ -405,4 +235,292 @@ struct Service {
     r#type: String,
     #[serde(rename = "URI")]
     uri: String,
+}
+
+pub struct AuthActor {}
+pub enum AuthMessage {
+    GetAuthUrl(String, RpcReplyPort<String>),
+    VerifySteamResponse(MultiMap<String, String>, RpcReplyPort<String>),
+    ValidateToken(Cookie<'static>, RpcReplyPort<Result<Authorizer>>),
+    IsAdmin(String, RpcReplyPort<Result<bool>>),
+}
+pub struct AuthState {
+    open_id_info: Info,
+    database: Surreal<Db>,
+    base_url: Arc<String>,
+    biscuit: Arc<BiscuitConfig>,
+}
+pub struct AuthArgs {
+    pub database: Surreal<Db>,
+    pub client: Client,
+    pub base_url: Arc<String>,
+    pub biscuit: Arc<BiscuitConfig>,
+}
+#[async_trait]
+impl Actor for AuthActor {
+    type Arguments = AuthArgs;
+    type Msg = AuthMessage;
+    type State = AuthState;
+
+    async fn pre_start(
+        &self,
+        myself: ActorRef<Self::Msg>,
+        args: Self::Arguments,
+    ) -> Result<Self::State, ActorProcessingErr> {
+        AUTH_ACTOR.get_or_init(|| myself);
+        Ok(Self::State {
+            open_id_info: AuthActor::discover_openid_info(&args.client).await?,
+            database: args.database,
+            base_url: args.base_url.clone(),
+            biscuit: args.biscuit.clone(),
+        })
+    }
+
+    // This is our main message handler
+    async fn handle(
+        &self,
+        _: ActorRef<Self::Msg>,
+        message: Self::Msg,
+        state: &mut Self::State,
+    ) -> Result<(), ActorProcessingErr> {
+        match message {
+            AuthMessage::GetAuthUrl(location, reply_port) => {
+                if reply_port
+                    .send(AuthActor::get_auth_url(state, &location)?)
+                    .is_err()
+                {
+                    error!(message = "GetAuthUrl", "Failed to reply to message");
+                }
+            }
+            AuthMessage::VerifySteamResponse(map, reply_port) => {
+                if reply_port
+                    .send(AuthActor::verify_steam_response(map, state).await?)
+                    .is_err()
+                {
+                    error!(
+                        message = "VerifySteamResponse",
+                        "Failed to reply to message"
+                    );
+                }
+            }
+            AuthMessage::ValidateToken(cookie, reply_port) => {
+                if reply_port
+                    .send(AuthActor::validate_cookie(&state.biscuit, cookie.value()))
+                    .is_err()
+                {
+                    error!(message = "ValidateToken", "Failed to reply to message");
+                }
+            }
+            AuthMessage::IsAdmin(userid, reply_port) => {
+                if reply_port
+                    .send(AuthActor::is_admin(&state.database, userid).await)
+                    .is_err()
+                {
+                    error!(message = "IsAdmin", "Failed to reply to message");
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl AuthActor {
+    async fn is_admin(db: &Surreal<Db>, userid: String) -> Result<bool> {
+        match db
+            .query("SELECT admin FROM $user")
+            .bind(("user", UserID::from(userid).into_recordid()))
+            .await
+            .map(surrealdb::Response::check)
+        {
+            Err(_) | Ok(Err(_)) => Err(InnerError::InternalError)?,
+            Ok(Ok(mut db_response)) => Ok(db_response.take("admin").ok().flatten() == Some(true)),
+        }
+    }
+
+    fn validate_cookie(config: &BiscuitConfig, token: &str) -> Result<Authorizer> {
+        let keypair = &KeyPair::from(&config.private_key);
+        let Ok(token) = Biscuit::from_base64(token, keypair.public()) else {
+            return Err(InnerError::Unauthorized)?;
+        };
+        let Ok(mut authorizer) = authorizer!("").time().allow_all().build(&token) else {
+            return Err(InnerError::Unauthorized)?;
+        };
+
+        if let Err(e) = authorizer.authorize() {
+            debug!(error = ?e, "Failed to authorize");
+            return Err(InnerError::Unauthorized)?;
+        }
+        Ok(authorizer)
+    }
+
+    fn get_auth_url(state: &AuthState, location: &str) -> Result<String> {
+        let mut url =
+            Url::from_str(&state.open_id_info.uri).map_err(|_| InnerError::BuildingURI)?;
+        url.query_pairs_mut()
+            .append_pair("openid.mode", "checkid_setup")
+            .append_pair("openid.ns", "http://specs.openid.net/auth/2.0")
+            .append_pair(
+                "openid.claimed_id",
+                "http://specs.openid.net/auth/2.0/identifier_select",
+            )
+            .append_pair(
+                "openid.identity",
+                "http://specs.openid.net/auth/2.0/identifier_select",
+            )
+            .append_pair(
+                "openid.return_to",
+                &AuthActor::redirect_url(&state.base_url, location),
+            )
+            .append_pair("openid.realm", state.base_url.as_str())
+            .finish();
+
+        Ok(url.to_string())
+    }
+
+    fn redirect_url(base: &Arc<String>, location: &str) -> String {
+        String::clone(base) + "/api/verify?location=" + location
+    }
+
+    async fn discover_openid_info(client: &Client) -> Result<Info> {
+        let response = client
+            .get(STEAM_DISCOVERY)
+            .send()
+            .await
+            .map_err(|_| InnerError::QueryingDiscovery)?;
+        let response_text = response
+            .text()
+            .await
+            .map_err(|_| InnerError::DiscoveryBadResponse)?;
+
+        let doc: Xrds = from_str(&response_text).map_err(|_| InnerError::DeserializingDiscovery)?;
+        Ok(Info {
+            r#type: doc.xrd.service.r#type,
+            uri: doc.xrd.service.uri,
+        })
+    }
+
+    async fn verify_steam_response(
+        map: MultiMap<String, String>,
+        state: &mut AuthState,
+    ) -> Result<String> {
+        {
+            if (map.get("openid.ns").map(String::as_str))
+                != (Some(
+                    &state.open_id_info.r#type[0..state
+                        .open_id_info
+                        .r#type
+                        .len()
+                        .saturating_sub(b"/server".len())],
+                ))
+            {
+                return Err(InnerError::SelfValidationFailed)?;
+            }
+
+            if (map.get("openid.op_endpoint")) != (Some(&state.open_id_info.uri)) {
+                return Err(InnerError::SelfValidationFailed)?;
+            }
+            if let Some((timestamp, _)) = map
+                .get("openid.response_nonce")
+                .ok_or(InnerError::SelfValidationFailed)?
+                .split_once('Z')
+            {
+                let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
+                    .map_err(|_| InnerError::SelfValidationFailed)?;
+                if timestamp - Utc::now().naive_utc() > TimeDelta::minutes(5) {
+                    return Err(InnerError::SelfValidationFailed)?;
+                }
+            } else {
+                return Err(InnerError::SelfValidationFailed)?;
+            }
+        }
+
+        let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
+
+        for item in map
+            .get("openid.signed")
+            .ok_or(InnerError::SelfValidationFailed)?
+            .split(',')
+        {
+            let key = format!("openid.{item}");
+            let val = map.get(&key).ok_or(InnerError::SelfValidationFailed)?;
+            url.query_pairs_mut().append_pair(&key, val).finish();
+        }
+        url.query_pairs_mut()
+            .append_pair(
+                "openid.sig",
+                map.get("openid.sig")
+                    .ok_or(InnerError::SelfValidationFailed)?,
+            )
+            .append_pair(
+                "openid.ns",
+                map.get("openid.ns")
+                    .ok_or(InnerError::SelfValidationFailed)?,
+            )
+            .append_pair("openid.mode", "check_authentication")
+            .finish();
+
+        let resp = reqwest::get(url)
+            .await
+            .map_err(|_| InnerError::PeerValidationFailed)?;
+        let text = resp
+            .text()
+            .await
+            .map_err(|_| InnerError::PeerValidationFailed)?;
+
+        if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
+            return Err(InnerError::PeerValidationFailed)?;
+        }
+
+        let user_id = map
+            .get("openid.identity")
+            .ok_or(InnerError::PeerValidationFailed)?
+            .rsplit('/')
+            .next()
+            .ok_or(InnerError::PeerValidationFailed)?;
+
+        let keypair = &KeyPair::from(&state.biscuit.private_key);
+
+        let biscuit: Biscuit = biscuit!(
+            r#"
+          user({user_id});
+          check if time($time), $time <= {expires};
+    "#,
+            expires = SystemTime::now() + TOKEN_LIFETIME
+        )
+        .build(keypair)
+        .map_err(|_| InnerError::PeerValidationFailed)?;
+
+        let based = biscuit
+            .to_base64()
+            .map_err(|_| InnerError::PeerValidationFailed)?;
+
+        {
+            let user = User {
+                id: UserID::from(user_id.to_owned()).into_recordid(),
+                admin: false,
+                banned: false,
+                last_logged_in: Utc::now(),
+            };
+            let mut stmt = InsertStatement::default();
+            stmt.into = Some(Value::Table("users".into()));
+            stmt.data = Data::SingleExpression(
+                to_value(user.clone()).map_err(|_| InnerError::PeerValidationFailed)?,
+            );
+            stmt.update = Some(Data::UpdateExpression(vec![(
+                idiom("last_logged_in").map_err(|_| InnerError::PeerValidationFailed)?,
+                Operator::Equal,
+                Utc::now().into(),
+            )]));
+            for (i, error) in state
+                .database
+                .query(stmt)
+                .await
+                .map_err(|_| InnerError::PeerValidationFailed)?
+                .take_errors()
+            {
+                error!(i, ?error, "verification failed");
+            }
+        }
+        Ok(based)
+    }
 }
