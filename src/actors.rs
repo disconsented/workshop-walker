@@ -1,4 +1,5 @@
 use ractor::Actor;
+use reqwest::Client;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
 
@@ -10,6 +11,11 @@ use crate::{
         language_actor::{LanguageActor, LanguageArgs},
     },
     steam::steam_download_actor::{SteamDownloadActor, SteamDownloadArgs},
+    web::{
+        auth::{AuthActor, AuthArgs},
+        item::{ItemActor, ItemArgs},
+        properties::{PropertiesActor, PropertiesArgs},
+    },
 };
 
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
@@ -35,8 +41,20 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     )
     .await
     .whatever_context("Spawning item_update actor")?;
+    let (..) = Actor::spawn(
+        Some("/auth".to_string()),
+        AuthActor {},
+        AuthArgs {
+            database: db.clone(),
+            client: client.clone(),
+            base_url: config.base_url.clone(),
+            biscuit: config.biscuit.clone(),
+        },
+    )
+    .await
+    .whatever_context("Spawning auth actor")?;
     if config.updater {
-        let (steam_download_actor, _) = Actor::spawn(
+        let (..) = Actor::spawn(
             Some("/steam-download".to_string()),
             SteamDownloadActor {},
             SteamDownloadArgs {
@@ -50,6 +68,26 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         .await
         .whatever_context("Spawning steam download actor")?;
     }
+
+    let (..) = Actor::spawn(
+        Some("/item".to_string()),
+        ItemActor,
+        ItemArgs {
+            database: db.clone(),
+        },
+    )
+    .await
+    .whatever_context("Spawning item actor")?;
+
+    let (..) = Actor::spawn(
+        Some("/properties".to_string()),
+        PropertiesActor,
+        PropertiesArgs {
+            database: db.clone(),
+        },
+    )
+    .await
+    .whatever_context("Spawning properties actor")?;
 
     Ok(())
 }
