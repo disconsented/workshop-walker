@@ -19,14 +19,14 @@ use crate::{
 pub struct JoinProcessActor {}
 
 pub struct JoinProcessArgs {
-    pub item_update_actor: ActorRef<ItemUpdateMsg>,
-    pub language_actor: ActorRef<LanguageMsg>,
-    pub bb_actor: ActorRef<BBMsg>,
+    pub item_update: ActorRef<ItemUpdateMsg>,
+    pub language: ActorRef<LanguageMsg>,
+    pub bb: ActorRef<BBMsg>,
 }
 pub struct JoinProcessState {
-    item_update_actor: ActorRef<ItemUpdateMsg>,
-    language_actor: ActorRef<LanguageMsg>,
-    bb_actor: ActorRef<BBMsg>,
+    item_update: ActorRef<ItemUpdateMsg>,
+    language: ActorRef<LanguageMsg>,
+    bb: ActorRef<BBMsg>,
 }
 
 pub enum JoinProcessMsg {
@@ -44,9 +44,9 @@ impl Actor for JoinProcessActor {
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(Self::State {
-            item_update_actor: args.item_update_actor,
-            language_actor: args.language_actor,
-            bb_actor: args.bb_actor,
+            item_update: args.item_update,
+            language: args.language,
+            bb: args.bb,
         })
     }
 
@@ -59,17 +59,13 @@ impl Actor for JoinProcessActor {
         match message {
             JoinProcessMsg::Process(mut data) => {
                 let description = take(&mut data.file_description).unwrap_or_default();
-                let languages = call!(
-                    state.language_actor,
-                    LanguageMsg::Detect,
-                    description.clone()
-                )?;
-                let description = call!(state.bb_actor, BBMsg::Process, description)?;
+                let languages = call!(state.language, LanguageMsg::Detect, description.clone())?;
+                let description = call!(state.bb, BBMsg::Process, description)?;
                 let children = take(&mut data.children);
                 match Self::new_item(data, languages, description) {
                     Ok(item) => {
                         state
-                            .item_update_actor
+                            .item_update
                             .send_message(ItemUpdateMsg::Upsert((item, children)))?;
                     }
                     Err(error) => {

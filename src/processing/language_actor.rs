@@ -80,7 +80,7 @@ impl Actor for LanguageActor {
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
-        args: Self::Arguments,
+        _: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(Self::State {
             detector: LanguageDetectorBuilder::from_languages(&[
@@ -122,8 +122,8 @@ pub fn detect(text: &str, language_detector: &LanguageDetector) -> Vec<DetectedL
     }
     detected_languages
         .into_iter()
-        .filter(|&(lang, words)| words as f32 > total_words as f32 * WORD_PERCENTAGE)
-        .map(|(lang, words)| lang.into())
+        .filter(|&(_, words)| words as f32 > total_words as f32 * WORD_PERCENTAGE)
+        .map(|(lang, _)| lang.into())
         .collect()
 }
 
