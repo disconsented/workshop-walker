@@ -140,6 +140,14 @@ pub struct Property {
     pub class: Class,
     pub value: String,
 }
+
+impl Display for Property {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.class.to_string())?;
+        f.write_str(":")?;
+        f.write_str(&self.value)
+    }
+}
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct PropertyExt<SOURCE> {
     /// Reasoning or justification for an inclusion
@@ -243,6 +251,18 @@ pub enum Class {
     Genre,
     /// Mod features, like "new scenario" or "new clothes"
     Feature,
+}
+
+impl Display for Class {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let txt = match self {
+            Class::Type => "TYPE",
+            Class::Theme => "THEME",
+            Class::Genre => "GENRE",
+            Class::Feature => "FEATURE",
+        };
+        f.write_str(txt)
+    }
 }
 
 #[derive(
