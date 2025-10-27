@@ -66,7 +66,7 @@ impl Actor for JoinProcessActor {
                     Ok(item) => {
                         state
                             .item_update
-                            .send_message(ItemUpdateMsg::Upsert((item, children)))?;
+                            .send_message(ItemUpdateMsg::MaybeQueueMl((item, children)))?;
                     }
                     Err(error) => {
                         error!(%error, "Creating new item");

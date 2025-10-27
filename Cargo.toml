@@ -1,85 +1,99 @@
 [workspace]
-default-members = []
-members = ["macros", "serde-hack"]
-
+members = ["macros", "serde-hack", "classification"]
 
 [workspace.package]
-name = "workshop-walker"
 version = "0.2.0"
 edition = "2024"
 license = "MPL-2"
 
 [workspace.dependencies]
-tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
-surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+classification = { path = "./classification" }
+macros = { path = "./macros" }
+serde-hack = { path = "./serde-hack" }
+
+bbscope = "0.2"
+biscuit-auth = "6.0.0-beta.3"
+candle-core = { version = "0.9" }
+candle-examples = "0.9"
+candle-nn = "0.9"
+candle-transformers = "0.9"
+chrono = "0.4"
+config = "0.15"
+hf-hub = "0.4"
+humantime = "2.2"
+intel-mkl-src = { version = "0.8" }
+itertools = "0.14"
+lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean"] }
+multimap = "0.10"
+ractor = { version = "0.15", features = ["monitors", "async-trait"] }
 reqwest = { version = "0.12", features = ["json", ] }
+rs-snowflake = "0.6"
+salvo = { version = "0.84", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 serde = { version = "1.0", features = ["derive"] }
+serde-content = "0.1"
+serde-xml-rs = "0.8.1"
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.8"
-salvo = { version = "0.84", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
-config = "0.15"
-veil = "0.2"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean"] }
-itertools = "0.14"
 str-macro = "1"
-bbscope = "0.2"
-humantime = "2.2"
-tracing = "0.1"
+surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
 surrealdb-migrations = "2.2"
-serde-xml-rs = "0.8.1"
-chrono = "0.4"
-biscuit-auth = "6.0.0-beta.3"
-rs-snowflake = "0.6"
-macros = { path = "./macros" }
-ractor = { version = "0.15", features = ["monitors", "async-trait"] }
-multimap = "0.10"
-serde-content = "0.1"
-serde-hack = { path = "./serde-hack" }
+tokenizers = "0.21"
+tokio = { version = "1.48", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+veil = "0.2"
+
+[package]
+name = "workshop-walker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
-surrealdb = { workspace = true, features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+bbscope.workspace = true
+biscuit-auth.workspace = true
+chrono.workspace = true
+classification = { workspace = true, optional = true }
+config.workspace = true
+humantime.workspace = true
+itertools.workspace = true
+lingua = { workspace = true, features = ["english", "russian", "chinese", "japanese", "korean"] }
+macros.workspace = true
+multimap.workspace = true
+ractor = { workspace = true, features = ["monitors", "async-trait"] }
 reqwest = { workspace = true, features = ["json", ] }
+rs-snowflake.workspace = true
+salvo = { workspace = true, features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 serde = { workspace = true, features = ["derive"] }
+serde-content.workspace = true
+serde-hack.workspace = true
+serde-xml-rs.workspace = true
 serde_json.workspace = true
 serde_repr.workspace = true
 snafu.workspace = true
-salvo = { workspace = true, features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
-config.workspace = true
-veil.workspace = true
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
-lingua = { workspace = true, features = ["english", "russian", "chinese", "japanese", "korean"] }
-itertools.workspace = true
 str-macro.workspace = true
-bbscope.workspace = true
-humantime.workspace = true
-tracing.workspace = true
+surrealdb = { workspace = true, features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
 surrealdb-migrations.workspace = true
-serde-xml-rs.workspace = true
-chrono.workspace = true
-biscuit-auth.workspace = true
-rs-snowflake.workspace = true
-macros.workspace = true
-ractor = { workspace = true, features = ["monitors", "async-trait"] }
-multimap.workspace = true
-serde-hack.workspace = true
-serde-content.workspace = true
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing.workspace = true
+veil.workspace = true
 
+[features]
+default = ["ml-classification"]
+ml-classification = ["classification", "classification/mkl"]
 
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
 surrealdb = { git = "https://github.com/disconsented/surrealdb.git", tag = "v2.3.8" }
 
-
 [profile.release]
 lto = true
-strip = true
 opt-level = 3
 panic = 'abort'
-codegen-units = 1
+#codegen-units = 1
 
 [profile.dev.package.surrealdb]
 opt-level = 3
@@ -88,7 +102,6 @@ opt-level = 3
 lint_groups_priority = { level = "allow", priority = 0 }
 suspicious = { level = "deny", priority = 1 }
 style = { level = "deny", priority = 2 }
-#restriction = { level = "deny", priority = 3 }
 perf = { level = "deny", priority = 4 }
 pedantic = { level = "deny", priority = 5 }
 correctness = { level = "deny", priority = 6 }

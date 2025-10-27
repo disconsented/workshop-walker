@@ -1,32 +1,116 @@
 #[cfg(feature = "mkl")]
 extern crate intel_mkl_src;
+pub mod actor;
+mod hub;
+mod runner;
 
-#[cfg(feature = "accelerate")]
-extern crate accelerate_src;
+use std::backtrace::Backtrace;
 
-use anyhow::{Error as E, Result};
-use candle_core::{DType, Device, Module, Tensor};
+use snafu::{ResultExt, Snafu, whatever};
+
+const MODEL_ID: &str = "mistralai/Mistral-7B-Instruct-v0.2";
+
+use candle_core::{DType, Device, Tensor};
 use candle_examples::token_output_stream::TokenOutputStream;
-use candle_nn::VarBuilder;
 use candle_transformers::{
     generation::{LogitsProcessor, Sampling},
-    models::{
-        mimi::candle,
-        mistral::{Config, Model as Mistral},
-        quantized_mistral::Model as QMistral,
-    },
+    models::mistral::Model,
 };
-use clap::Parser;
-use hf_hub::{Repo, RepoType, api::sync::Api};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokenizers::Tokenizer;
+use tracing::debug;
 
-enum Model {
-    Mistral(Mistral),
-    Quantized(QMistral),
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("failed to initialise HF Hub API: {message}"))]
+    ApiInit { message: String },
+
+    #[snafu(display("failed to load model index from hub: {message}"))]
+    HubLoadIndex { message: String },
+
+    #[snafu(display("failed to get '{filename}' from hub: {message}"))]
+    RepoGet {
+        filename: &'static str,
+        message: String,
+    },
+
+    #[snafu(display("failed to create VarBuilder from safetensors: {source}"))]
+    VarBuilderLoad { source: candle_core::Error },
+
+    #[snafu(display("failed to load tokenizer: {source}"))]
+    TokenizerLoad { source: tokenizers::Error },
+
+    #[snafu(display("tokenizer encode failed: {source}"))]
+    TokenizerEncode { source: tokenizers::Error },
+
+    #[snafu(display("missing required token: {token}"))]
+    MissingToken { token: &'static str },
+
+    #[snafu(display("tensor operation failed: {source}"))]
+    TensorOp { source: candle_core::Error },
+
+    #[snafu(display("model forward failed: {source}"))]
+    Forward { source: candle_core::Error },
+
+    #[snafu(display("sampling next token failed: {source}"))]
+    Sample { source: candle_core::Error },
+
+    #[snafu(display("repeat penalty application failed: {source}"))]
+    RepeatPenalty { source: candle_core::Error },
+
+    #[snafu(display("token stream operation failed: {source}"))]
+    TokenStream {
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+
+    #[snafu(display("failed to read config: {source}"))]
+    ReadConfig { source: std::io::Error },
+
+    #[snafu(display("failed to parse config.json: {source}"))]
+    ParseConfig { source: serde_json::Error },
+
+    #[snafu(display("failed to build model: {source}"))]
+    ModelInit { source: candle_core::Error },
+
+    // New errors used by classification::actor
+    #[snafu(display("task join failed: {source}"))]
+    Join { source: tokio::task::JoinError },
+
+    #[snafu(display("failed to parse model output JSON: {source}"))]
+    ParseResult { source: serde_json::Error },
+
+    #[snafu(display("pipeline failed: {source}"))]
+    Pipeline { source: WhateverAsync },
 }
 
-struct TextGeneration {
+// https://github.com/shepmaster/snafu/pull/448#issuecomment-3554318299
+#[derive(Debug, Snafu)]
+#[snafu(whatever)]
+#[snafu(display("{message}"))]
+#[snafu(provide(opt, ref, chain, dyn std::error::Error + Send + Sync => source.as_deref()))]
+pub struct WhateverAsync {
+    #[snafu(source(from(Box<dyn std::error::Error + Send + Sync>, Some)))]
+    #[snafu(provide(false))]
+    source: Option<Box<dyn std::error::Error + Send + Sync>>,
+    message: String,
+    backtrace: Backtrace,
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+impl From<tokio::task::JoinError> for Error {
+    fn from(source: tokio::task::JoinError) -> Self {
+        Self::Join { source }
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(source: serde_json::Error) -> Self {
+        Self::ParseResult { source }
+    }
+}
+
+pub struct TextGeneration {
     model: Model,
     device: Device,
     tokenizer: TokenOutputStream,
@@ -49,8 +133,8 @@ impl TextGeneration {
         device: &Device,
     ) -> Self {
         let logits_processor = {
-            let temperature = temp.unwrap_or(0.);
-            let sampling = if temperature <= 0. {
+            let temperature = temp.unwrap_or(0.0);
+            let sampling = if temperature <= 0.0 {
                 Sampling::ArgMax
             } else {
                 match (top_k, top_p) {
@@ -65,55 +149,55 @@ impl TextGeneration {
 
         Self {
             model,
-            tokenizer: TokenOutputStream::new(tokenizer),
             logits_processor,
             repeat_penalty,
             repeat_last_n,
             device: device.clone(),
+            tokenizer: TokenOutputStream::new(tokenizer),
         }
     }
 
-    fn reset(&mut self) {
-        match &mut self.model {
-            Model::Quantized(m) => m.clear_kv_cache(),
-            Model::Mistral(m) => m.clear_kv_cache(),
-        }
-        self.tokenizer.clear();
-    }
-
-    fn run(&mut self, prompt: &str, sample_len: usize) -> Result<()> {
-        use std::io::Write;
-        self.tokenizer.clear();
-        let mut tokens = self
+    fn run(&mut self, prompt: &str, sample_len: usize) -> Result<String, WhateverAsync> {
+        let encoding = self
             .tokenizer
             .tokenizer()
             .encode(prompt, true)
-            .map_err(E::msg)?
-            .get_ids()
-            .to_vec();
+            .map_err(|e| e.to_string())
+            .whatever_context("encode prompt")?;
+        self.model.clear_kv_cache();
+        let mut tokens = encoding.get_ids().to_vec();
+        let mut input_tokens = String::new();
         for &t in tokens.iter() {
-            if let Some(t) = self.tokenizer.next_token(t)? {
-                print!("{t}")
+            if let Some(t) = self.tokenizer.next_token(t).unwrap() {
+                input_tokens += &t;
             }
         }
-        std::io::stdout().flush()?;
 
-        let mut generated_tokens = 0usize;
         let eos_token = match self.tokenizer.get_token("</s>") {
             Some(token) => token,
-            None => anyhow::bail!("cannot find the </s> token"),
+            None => whatever!("cannot find the </s> token"),
         };
-        let start_gen = std::time::Instant::now();
+        self.tokenizer.clear();
+        let mut output = String::new();
         for index in 0..sample_len {
             let context_size = if index > 0 { 1 } else { tokens.len() };
             let start_pos = tokens.len().saturating_sub(context_size);
             let ctxt = &tokens[start_pos..];
-            let input = Tensor::new(ctxt, &self.device)?.unsqueeze(0)?;
-            let logits = match &mut self.model {
-                Model::Mistral(m) => m.forward(&input, start_pos)?,
-                Model::Quantized(m) => m.forward(&input, start_pos)?,
-            };
-            let logits = logits.squeeze(0)?.squeeze(0)?.to_dtype(DType::F32)?;
+            let input = Tensor::new(ctxt, &self.device)
+                .whatever_context("create input tensor")?
+                .unsqueeze(0)
+                .whatever_context("unsqueeze batch dim")?;
+            let logits = self
+                .model
+                .forward(&input, start_pos)
+                .whatever_context("model forward")?;
+            let logits = logits
+                .squeeze(0)
+                .whatever_context("squeeze time dim")?
+                .squeeze(0)
+                .whatever_context("squeeze seq dim")?
+                .to_dtype(DType::F32)
+                .whatever_context("cast logits to f32")?;
             let logits = if self.repeat_penalty == 1. {
                 logits
             } else {
@@ -122,440 +206,170 @@ impl TextGeneration {
                     &logits,
                     self.repeat_penalty,
                     &tokens[start_at..],
-                )?
+                )
+                .whatever_context("apply_repeat_penalty")?
             };
 
-            let next_token = self.logits_processor.sample(&logits)?;
+            let next_token = self
+                .logits_processor
+                .sample(&logits)
+                .whatever_context("sample next token")?;
             tokens.push(next_token);
-            generated_tokens += 1;
             if next_token == eos_token {
                 break;
             }
-            if let Some(t) = self.tokenizer.next_token(next_token)? {
-                print!("{t}");
-                std::io::stdout().flush()?;
+            if let Some(t) = self
+                .tokenizer
+                .next_token(next_token)
+                .whatever_context("stream next token")?
+            {
+                output.push_str(&t);
             }
         }
-        let dt = start_gen.elapsed();
-        if let Some(rest) = self.tokenizer.decode_rest().map_err(E::msg)? {
-            print!("{rest}");
+        if let Some(rest) = self
+            .tokenizer
+            .decode_rest()
+            .whatever_context("decode remaining tokens")?
+        {
+            output.push_str(&rest);
         }
-        std::io::stdout().flush()?;
-        println!(
-            "\n{generated_tokens} tokens generated ({:.2} token/s)",
-            generated_tokens as f64 / dt.as_secs_f64(),
-        );
-        Ok(())
+
+        debug!(output, "finished running ML");
+        Ok(output)
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, clap::ValueEnum, Default)]
-enum Which {
-    #[default]
-    #[value(name = "7b-v0.1")]
-    Mistral7bV01,
-    #[value(name = "7b-v0.2")]
-    Mistral7bV02,
-    #[value(name = "7b-instruct-v0.1")]
-    Mistral7bInstructV01,
-    #[value(name = "7b-instruct-v0.2")]
-    Mistral7bInstructV02,
-    #[value(name = "7b-instruct-v0.3")]
-    Mistral7bInstructV03,
-    #[value(name = "7b-maths-v0.1")]
-    Mathstral7bV01,
-    #[value(name = "nemo-2407")]
-    MistralNemo2407,
-    #[value(name = "nemo-instruct-2407")]
-    MistralNemoInstruct2407,
+/// The text replacement cases were things I ran into during development, the
+/// '{' search is an effort to protect against prompt repeating by the model.
+pub fn sanitise_output(string: String) -> String {
+    let nothing = "";
+    let string = &string[string.find('{').unwrap_or_default()..];
+    string
+        .replace("<br>", nothing)
+        .replace("###", nothing)
+        .replace(">", nothing)
+        .replace("```json", nothing)
+        .replace("```", nothing)
+        .replace("Output:", nothing)
 }
 
-#[derive(Parser, Debug, Default)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Run on CPU rather than on GPU.
-    #[arg(long)]
-    cpu: bool,
-
-    /// Enable tracing (generates a trace-timestamp.json file).
-    #[arg(long)]
-    tracing: bool,
-
-    #[arg(long)]
-    use_flash_attn: bool,
-
-    #[arg(long)]
-    prompt: String,
-
-    /// The temperature used to generate samples.
-    #[arg(long)]
-    temperature: Option<f64>,
-
-    /// Nucleus sampling probability cutoff.
-    #[arg(long)]
-    top_p: Option<f64>,
-
-    /// Only sample among the top K samples.
-    #[arg(long)]
-    top_k: Option<usize>,
-
-    /// The seed to use when generating random samples.
-    #[arg(long, default_value_t = 299792458)]
-    seed: u64,
-
-    /// The length of the sample to generate (in tokens).
-    #[arg(long, short = 'n', default_value_t = 10000)]
-    sample_len: usize,
-
-    /// The model size to use.
-    #[arg(long, default_value = "7b-v0.1")]
-    which: Which,
-
-    #[arg(long)]
-    model_id: Option<String>,
-
-    #[arg(long, default_value = "main")]
-    revision: String,
-
-    #[arg(long)]
-    tokenizer_file: Option<String>,
-
-    #[arg(long)]
-    config_file: Option<String>,
-
-    #[arg(long)]
-    weight_files: Option<String>,
-
-    #[arg(long)]
-    quantized: bool,
-
-    /// Penalty to be applied for repeating tokens, 1. means no penalty.
-    #[arg(long, default_value_t = 1.1)]
-    repeat_penalty: f32,
-
-    /// The context size to consider for the repeat penalty.
-    #[arg(long, default_value_t = 64)]
-    repeat_last_n: usize,
-
-    /// Use the slower dmmv cuda kernel.
-    #[arg(long)]
-    force_dmmv: bool,
+/// This took a lot longer to develop than expected, because, having a tab
+/// character at the end would sometimes cause the model to just repeat the end
+/// of its prompt.
+pub fn populate_prompt(prompt: &str, title: &str, description: &str) -> String {
+    prompt
+        .replace("[TITLE]", title)
+        .replace("[DESCRIPTION]", description)
+        .replace("\t", "")
 }
 
-fn run(args: Args) -> Result<()> {
-    use tracing_chrome::ChromeLayerBuilder;
-    use tracing_subscriber::prelude::*;
-
-    #[cfg(feature = "cuda")]
-    candle::quantized::cuda::set_force_dmmv(args.force_dmmv);
-
-    let _guard = if args.tracing {
-        let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
-        tracing_subscriber::registry().with(chrome_layer).init();
-        Some(guard)
-    } else {
-        None
-    };
-    println!(
-        "avx: {}, neon: {}, simd128: {}, f16c: {}",
-        candle::utils::with_avx(),
-        candle::utils::with_neon(),
-        candle::utils::with_simd128(),
-        candle::utils::with_f16c()
-    );
-    println!(
-        "temp: {:.2} repeat-penalty: {:.2} repeat-last-n: {}",
-        args.temperature.unwrap_or(0.),
-        args.repeat_penalty,
-        args.repeat_last_n
-    );
-
-    let start = std::time::Instant::now();
-    let api = Api::new()?;
-    let model_id = match args.model_id {
-        Some(model_id) => model_id,
-        None => {
-            if args.quantized {
-                if args.which != Which::Mistral7bV01 {
-                    anyhow::bail!("only 7b-v0.1 is available as a quantized model for now")
-                }
-                "lmz/candle-mistral".to_string()
-            } else {
-                let name = match args.which {
-                    Which::Mistral7bV01 => "mistralai/Mistral-7B-v0.1",
-                    Which::Mistral7bV02 => "mistralai/Mistral-7B-v0.3",
-                    Which::Mistral7bInstructV01 => "mistralai/Mistral-7B-Instruct-v0.1",
-                    Which::Mistral7bInstructV02 => "mistralai/Mistral-7B-Instruct-v0.2",
-                    Which::Mistral7bInstructV03 => "mistralai/Mistral-7B-Instruct-v0.3",
-                    Which::Mathstral7bV01 => "mistralai/mathstral-7B-v0.1",
-                    Which::MistralNemo2407 => "mistralai/Mistral-Nemo-Base-2407",
-                    Which::MistralNemoInstruct2407 => "mistralai/Mistral-Nemo-Instruct-2407",
-                };
-                name.to_string()
-            }
-        }
-    };
-    let repo = api.repo(Repo::with_revision(
-        model_id,
-        RepoType::Model,
-        args.revision,
-    ));
-    let tokenizer_filename = match args.tokenizer_file {
-        Some(file) => std::path::PathBuf::from(file),
-        None => repo.get("tokenizer.json")?,
-    };
-    let filenames = match args.weight_files {
-        Some(files) => files
-            .split(',')
-            .map(std::path::PathBuf::from)
-            .collect::<Vec<_>>(),
-        None => {
-            if args.quantized {
-                vec![repo.get("model-q4k.gguf")?]
-            } else {
-                candle_examples::hub_load_safetensors(&repo, "model.safetensors.index.json")?
-            }
-        }
-    };
-    println!("retrieved the files in {:?}", start.elapsed());
-    let tokenizer = Tokenizer::from_file(tokenizer_filename).map_err(E::msg)?;
-
-    let start = std::time::Instant::now();
-    let config = match args.config_file {
-        Some(config_file) => serde_json::from_slice(&std::fs::read(config_file)?)?,
-        None => {
-            if args.quantized {
-                Config::config_7b_v0_1(args.use_flash_attn)
-            } else {
-                let config_file = repo.get("config.json")?;
-                serde_json::from_slice(&std::fs::read(config_file)?)?
-            }
-        }
-    };
-    let device = candle_examples::device(args.cpu)?;
-    let (model, device) = if args.quantized {
-        let filename = &filenames[0];
-        let vb =
-            candle_transformers::quantized_var_builder::VarBuilder::from_gguf(filename, &device)?;
-        let model = QMistral::new(&config, vb)?;
-        (Model::Quantized(model), device)
-    } else {
-        let dtype = if device.is_cuda() {
-            DType::BF16
-        } else {
-            DType::F32
-        };
-        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&filenames, dtype, &device)? };
-        let model = Mistral::new(&config, vb)?;
-        (Model::Mistral(model), device)
-    };
-
-    println!("loaded the model in {:?}", start.elapsed());
-
-    let mut pipeline = TextGeneration::new(
-        model,
-        tokenizer,
-        args.seed,
-        args.temperature,
-        args.top_p,
-        args.top_k,
-        args.repeat_penalty,
-        args.repeat_last_n,
-        &device,
-    );
-    println!("{:?}", std::env::current_dir());
-    let prompt1 = std::fs::read_to_string("prompt1.txt")?;
-    let prompt2 = std::fs::read_to_string("prompt2.txt")?;
-    for i in 0..=4 {
-        let prompt1 = prompt1.clone();
-        let data: Data =
-            serde_json::from_str(&std::fs::read_to_string(format!("test_data/data{i}.json"))?)?;
-        let prompt1 = prompt1.replace("[GAME]", &data.game);
-        let prompt1 = prompt1.replace("[TITLE]", &data.title);
-        let prompt1 = prompt1.replace("[DESCRIPTION]", &data.description);
-        pipeline.run(&prompt1, args.sample_len)?;
-        pipeline.reset();
-        let prompt2 = prompt2.clone();
-        let prompt2 = prompt2.replace("[GAME]", &data.game);
-        let prompt2 = prompt2.replace("[TITLE]", &data.title);
-        let prompt2 = prompt2.replace("[DESCRIPTION]", &data.description);
-        pipeline.run(&prompt2, args.sample_len)?;
-        pipeline.reset();
-    }
-    Ok(())
-}
-// fn main() -> Result<()> {
-//     let args = Args::parse();
-//     run(args)
-// }
-
-#[derive(Deserialize)]
-struct Data {
-    game: String,
-    title: String,
-    description: String,
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MLProperties {
+    #[serde(default)]
+    pub genres: Vec<String>,
+    #[serde(default)]
+    pub themes: Vec<String>,
+    #[serde(default)]
+    pub types: Vec<String>,
+    #[serde(default)]
+    pub features: Vec<String>,
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{Args, Which, run};
+    use std::{fs::read_to_string, process::Output};
 
-    // Baseline test, should be ran with the release profile. Probably with
-    // cranelift in the future
+    use candle_core::{DType, Device};
+    use candle_examples::hub_load_safetensors;
+    use candle_nn::VarBuilder;
+    use candle_transformers::models::mistral::Model;
+    use hf_hub::{Repo, RepoType, api::sync::Api};
+    use snafu::ResultExt;
+    use tokenizers::Tokenizer;
+
+    use crate::{
+        Error, MLProperties, MODEL_ID, ModelInitSnafu, ParseConfigSnafu, ReadConfigSnafu,
+        TextGeneration, TokenizerLoadSnafu, VarBuilderLoadSnafu, populate_prompt, sanitise_output,
+    };
+    const DMS_T: &str = "The Dead Man's Switch";
+    const DMS_D: &str = r#"<a href="https://steamcommunity.com/id/FUJIKENGAWA/myworkshopfiles/?appid=294100&amp;sort=score&amp;browsefilter=myfiles&amp;view=imagewall" target="_blank"><img src="https://i.imgur.com/kvppfWO.png"></a><br><br>Millennia earlier, the threat of archotech war machines, pirates, and awry bio-organic weapons arose. Nara an Interstellar Industries Complex initiated the project of semi-automated war-machines, which aimed at creating a legion of war-machines with low technology and maintenance requirements to aid humans in all galaxies in the war against all those threats.<br><br>It was a quite successful project, and as countless fleets of unknown generations of ships marched toward the borders of human civilization, the production technology of these weapons also spread in the edge world... until today.<br><br><h1>Introduction</h1>This is a large-scale mod that was created around the cyberpunk theme of the 1990s. It has a lot of content, including heavy metallic weapons, industrial-tactical robots, and bio-mech bionic, so I don’t intend to teach you how to play it. You experience the story you want to play with the new choices! I believe you will find the joy you want.<br><br><h1>Content</h1><img src="https://i.imgur.com/Z61a1rv.png"><br>A new Scenario<br>A standalone technology tree<br>An Ideology style pack<br>A well-prepared interstellar colonization company<br>A royalty Title system based on military organization<br>A cargo load of heavy weapons and more than 20 types of military-industrial-style killing machines.<br>Mechanoids that have customizable weapons.<br>Cheap but costly bionic<br>lots of new clothes<br>CE compatibility<br><br>Try it for yourself, I guarantee it&#x27;s worth a try.<br><br><h1>FAQ</h1>Q:how to equip mech weapon? (For mech)<br>A:Select Mech and right-click the weapon, if the weapon is supported it will be available to equip.<br><br>Q:how to equip mech weapon? (For Colonists)<br>A:They need an exo-skelton suit before equip it.<br><br>Q:What weapon did a mech supported<br>A: you can find the supported weapon inside the info card.<br><br>Q: how to get ____ compoment<br>A: defeat boss group,or trading<br><br>Q: can i disable some of mech&#x27;s worktype?<br>A: <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3268299107" target="_blank">https://steamcommunity.com/sharedfiles/filedetails/?id=3268299107</a><br><h1>Warning - A new game is highly recommended</h1><br><h1>Known Issues</h1>work mech will get error loading with Rebound.<br><br><h1>Author’s words</h1>This is my fourth year modding in the Rimworld community, also my first year of studying for a master&#x27;s degree after college. I apologize to everyone who has been waiting for this mod for a long time (it’s been a while). Making such a big project is well-challenged.<br><br>DMS is a response that condenses my experience and understanding of countless works to the world and those works and creators who have profoundly affected my life.<br>Completing this project, which included my understanding of Rimworld art and those coolish Science Fiction styles, is also the realization of my dream of creating cool mecha works since I was a child.<br>Therefore, it is quite a torment in terms of technology, time, development enthusiasm, and progress management.<br>From the beginning of the project to the release, it spanned two game versions. Countless setbacks and subversions made me doubt my motivation to continue doing it more than once and questioned whether my work and abilities met expectations...<br><br>But this has all passed, and I have reached a reconciliation between my heavy academic workload and my pursuit of excellence. It was unanimously decided to release the mod before the end of 2023. which is today.<br>Although there may still be some minor problems, anyway still hope you enjoy it. _AOBA 2023/12/25<br><br>If you find any problems or have any ideas while playing, you can give feedback to the Discord group<br><a href="https://discord.gg/Pvj5Xj3yBm" target="_blank"><img src="https://i.ibb.co/CHY91mx/discord-Icon.png"></a><br><a href="https://www.paypal.com/paypalme/AobaKuma" target="_blank"><img src="https://i.ibb.co/cLqX4rv/Paypal-Icon.png"></a><br><a href="https://ko-fi.com/aobakuma" target="_blank"><img src="https://i.ibb.co/KhN0Tgp/Ko-Fi-Icon.png"></a><br><br><br>	"#;
+
     #[test]
-    fn test_prompts() {
-        let args = Args {
-            sample_len: 5000,
-            which: Which::Mistral7bInstructV03,
-            prompt: String::new(), // Ignored
-            revision: String::from("main"),
-            ..Default::default()
-        };
+    fn test_dms() {
+        let themes_prompt = read_to_string("../../prompts/features.txt").unwrap();
+        let themes_replaced = populate_prompt(&themes_prompt, DMS_T, DMS_D);
 
-        run(args).unwrap();
+        let themes_json = sanitise_output(run(&themes_replaced).unwrap());
+        println!("{themes_json}");
+        let output: MLProperties = serde_json::from_slice(themes_json.as_bytes()).unwrap();
+        dbg!(output);
+
+        let features_prompt = read_to_string("../prompts/genres.txt").unwrap();
+        let features_replaced = populate_prompt(&features_prompt, DMS_T, DMS_D);
+        println!("{features_replaced:?}");
+        let features_json = sanitise_output(run(&features_replaced).unwrap());
+        println!("Features:{features_json}");
+        let output: MLProperties = serde_json::from_slice(features_json.as_bytes()).unwrap();
+        dbg!(output);
+    }
+    #[test]
+    fn test_xeno() {
+        let title = r#"Euglena Expanded - Euglena Xenotype (Continued)"#;
+        let description = r#"<br>Original mod by DemonRoka<br><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2975005239" target="_blank">https://steamcommunity.com/sharedfiles/filedetails/?id=2975005239</a><br>If the original author requests it, I will remove this update.<br><br>--<br><br>Original mod notes (1.5):<br><br>Description:<br>	<br>&quot;A unique tree-like race. These pawns are a symbiosis of plant and animal life, capable of photosynthesis and enhancing their characteristics while in the open sun.<br><br>Mod Features:<br><br>A new race of pawns: the Euglena.<br>Pawns of this race can perform photosynthesis, converting sunlight into nutrients.<br>Eugenes are endowed with the ability to regenerate, allowing them to regenerate lost body parts over time.<br>Euglens require light to maintain their health and can do the work of absorbing light on their own to replenish their energy.<br>Discover this unique race and make the most of their abilities!<br><br>Note: The mod &quot;Euglena Expanded - Euglena Xenotype&quot; is compatible with most other mods and requires only the official add-ons, and the Euglena Framework to work. However, we always recommend that you first check the compatibility of mods in a test game.<br><br>Описание:<br><br>&quot;Уникальную древоподобная раса. Эти пешки - симбиоз растительной и животной жизни, способные осуществлять фотосинтез и улучшать свои характеристики находясь под открытым солнцем.<br><br>Особенности мода:<br><br>Новая раса пешек: Евглена.<br>Пешки этой расы могут осуществлять фотосинтез, превращая солнечный свет в питательные вещества.<br>Евглены наделены способностью регенерации, что позволяет им восстанавливать утраченные части тела со временем.<br>Евглены требуют освещения для поддержания своего здоровья и могут самостоятельно выполнять работу по поглощению света для восполнения своей энергии.<br>Откройте для себя эту уникальную расу и используйте их способности по максимуму!<br><br>Примечание: Мод &quot;Euglena Expanded - Euglena Xenotype&quot; совместим с большинством других модов и требует для своей работы лишь официальные дополнения, и Euglena Framework. Однако мы всегда рекомендуем сначала проверить совместимость модов в тестовой игре. <br>	"#;
+        let themes_prompt = read_to_string("../prompts/features.txt").unwrap();
+        let themes_replaced = populate_prompt(&themes_prompt, title, description);
+
+        let themes_json = sanitise_output(run(&themes_replaced).unwrap());
+        println!("{themes_json}");
+        let output: MLProperties = serde_json::from_slice(themes_json.as_bytes()).unwrap();
+        dbg!(output);
+
+        let features_prompt = read_to_string("../prompts/genres.txt").unwrap();
+        let features_replaced = populate_prompt(&features_prompt, title, description);
+        println!("{features_replaced:?}");
+        let features_json = sanitise_output(run(&features_replaced).unwrap());
+        println!("Features:{features_json}");
+        let output: MLProperties = serde_json::from_slice(features_json.as_bytes()).unwrap();
+        dbg!(output);
     }
 
-    // Alpha Animals:
-    //  {
-    //   "types": ["addon", "expansion"],
-    //   "genres": [],
-    //   "themes": [],
-    //   "compatible_items": ["VFE Insectoids 2", "VRE Insectors", "Alpha
-    // Biomes"] }
-    //  {
-    //   "features": [
-    //     "new creatures",
-    //     "unique animals",
-    //     "vanilla-friendly creatures",
-    //     "new mechanic",
-    //     "walking tanks",
-    //     "living resource farm",
-    //     "indestructible plant monsters",
-    //     "night time stalkers",
-    //     "giant spiders",
-    //     "new alien biomes",
-    //     "black hive faction",
-    //     "new insects",
-    //     "black hive raids (mod options)",
-    //     "new animals (future plans)"
-    //   ]
-    // }
-    // DMS:
-    // {
-    // "types": ["mod", "expansion", "graphics", "texture", "audio", "ui"],
-    // "genres": ["cyberpunk"],
-    // "themes": ["science fiction", "mecha"],
-    // "compatible_items": []
-    // }
-    // {
-    // "features": [
-    // "heavy metallic weapons",
-    // "industrial-tactical robots",
-    // "bio-mech bionic",
-    // "new scenario",
-    // "standalone technology tree",
-    // "ideology style pack",
-    // "interstellar colonization company",
-    // "royalty title system",
-    // "military-industrial-style killing machines",
-    // "customizable mechanoid weapons",
-    // "new clothes",
-    // "CE compatibility"
-    // ]
-    // }
-    // VFE:
-    // {
-    // "types": ["mod", "graphics", "ui"],
-    // "genres": [],
-    // "themes": [],
-    // "compatible_items": []
-    // }
-    // {
-    // "features": [
-    // "vehicle framework for modders",
-    // "equal treatment for land, sea, aerial vehicles",
-    // "vehicle health system",
-    // "external and internal components",
-    // "physical hitboxes on vehicles",
-    // "custom pathfinding for vehicles",
-    // "multi-cell pathfinding",
-    // "3 shaders for patterns and skins",
-    // "turrets with custom positions",
-    // "aerial vehicles with separate skyfaller launching system",
-    // "animation editor for vehicles",
-    // "graphic overlay system",
-    // "mod settings page",
-    // "c# attribute for modder's ThingComps",
-    // "long-term features: raiders and traders use vehicles, aerial vehicle
-    // events, air defense, joint warfare, combined arms tactics" ]
-    // }
-    // A Rimworld of Magic
-    //  {
-    //   "types": ["mod", "expansion", "graphics", "texture", "audio", "ui",
-    // "bugfix", "patch"],   "genres": ["fantasy"],
-    //   "themes": ["magic", "role-playing"],
-    //   "compatible_items": []
-    // }
-    //  {
-    //   "features": [
-    //     "unique classes",
-    //     "unique abilities",
-    //     "unique development tree",
-    //     "unique apparel/equipment",
-    //     "gem crafting",
-    //     "enchantments",
-    //     "magical buildings",
-    //     "new events",
-    //     "unique research tree",
-    //     "magic faction",
-    //     "ai classes with abilities",
-    //     "mod options",
-    //     "unique power balance"
-    //   ]
-    // }
-    // Save Our Ship 2
-    // {
-    // "types": ["expansion", "mod"],
-    // "genres": [],
-    // "themes": ["space", "scifi", "shipbuilding", "combat", "adventure"],
-    // "compatible_items": ["Harmony", "Vehicle Framework"]
-    // }
-    // {
-    // "features": [
-    // "custom endings",
-    // "ship-to-ship combat",
-    // "derelict searching",
-    // "cosmic secret discovery",
-    // "machine godhood evolution",
-    // "new features",
-    // "stability upgrades",
-    // "ship building",
-    // "pre-flight checklist",
-    // "ship lifting off",
-    // "vanilla expanded textures",
-    // "heat system overhaul",
-    // "shields",
-    // "reactors",
-    // "weapons",
-    // "travel to new world",
-    // "new game plus",
-    // "final end game quest",
-    // "shuttle upgrades",
-    // "mod options",
-    // "ship physics",
-    // "boarding party hard mode",
-    // "Save Our Ship Wiki",
-    // "community wiki volunteering",
-    // "ship creation kit",
-    // "workshop sharing",
-    // "compatibility sheet",
-    // "mod compatibility reporting",
-    // "developed by Kentington and Thain",
-    // "testers",
-    // "submod support",
-    // "contributors",
-    // "shipwrights",
-    // "OG Testing Squad"
-    // ]
-    // }
+    fn run(prompt: &str) -> crate::Result<String> {
+        let api = Api::new().map_err(|e| Error::ApiInit {
+            message: e.to_string(),
+        })?;
+        let revision = "main".to_string();
+        let repo = api.repo(Repo::with_revision(
+            MODEL_ID.to_string(),
+            RepoType::Model,
+            revision,
+        ));
+        let filenames =
+            hub_load_safetensors(&repo, "model.safetensors.index.json").map_err(|e| {
+                Error::HubLoadIndex {
+                    message: e.to_string(),
+                }
+            })?;
+        let tokenizer_filename = repo.get("tokenizer.json").map_err(|e| Error::RepoGet {
+            filename: "tokenizer.json",
+            message: e.to_string(),
+        })?;
+        let device = Device::Cpu;
+        let vb = unsafe {
+            VarBuilder::from_mmaped_safetensors(&filenames, DType::F32, &device)
+                .context(VarBuilderLoadSnafu)?
+        };
+        let tokenizer = Tokenizer::from_file(tokenizer_filename).context(TokenizerLoadSnafu)?;
+        let config_file = repo.get("config.json").map_err(|e| Error::RepoGet {
+            filename: "config.json",
+            message: e.to_string(),
+        })?;
+        let config = serde_json::from_slice(&std::fs::read(config_file).context(ReadConfigSnafu)?)
+            .context(ParseConfigSnafu)?;
+        let model = Model::new(&config, vb).context(ModelInitSnafu)?;
+        let mut pipeline = TextGeneration::new(
+            model, tokenizer, 299792458, None, None, None, 1.1, 64, &device,
+        );
+
+        Ok(pipeline.run(prompt, 10000).map(sanitise_output).unwrap())
+    }
 }

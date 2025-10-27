@@ -5,14 +5,15 @@ use surrealdb::{
     engine::local::Db,
     sql::{Data, Value, statements::InsertStatement, to_value},
 };
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     db::model::{Dependencies, WorkshopItem},
     processing::{
         bb_actor::BBMsg,
         join_process_actor::{JoinProcessActor, JoinProcessArgs, JoinProcessMsg},
-        language_actor::LanguageMsg,
+        language_actor::{DetectedLanguage, LanguageMsg},
+        ml_queue_actor::MLQueueMsg,
     },
     steam::model::{Child, IPublishedResponse, IPublishedStruct, SteamRoot},
 };
@@ -23,17 +24,20 @@ pub struct ItemUpdateArgs {
     pub language_actor: ActorRef<LanguageMsg>,
     pub bb_actor: ActorRef<BBMsg>,
     pub database: Surreal<Db>,
+    pub ml_queue: Option<ActorRef<MLQueueMsg>>, // optional ML queue actor
 }
 pub struct ItemUpdateState {
     language_actor: ActorRef<LanguageMsg>,
     bb_actor: ActorRef<BBMsg>,
     database: Surreal<Db>,
+    ml_queue: Option<ActorRef<MLQueueMsg>>,
 }
 
 pub enum ItemUpdateMsg {
-    RawProcess(SteamRoot<IPublishedResponse>),
-    Process(IPublishedStruct),
+    DeserializeRawFiles(SteamRoot<IPublishedResponse>),
+    MainlineProcessing(IPublishedStruct),
     Upsert((WorkshopItem<RecordId>, Vec<Child>)),
+    MaybeQueueMl((WorkshopItem<RecordId>, Vec<Child>)),
 }
 #[async_trait]
 impl Actor for ItemUpdateActor {
@@ -50,6 +54,7 @@ impl Actor for ItemUpdateActor {
             database: args.database,
             language_actor: args.language_actor,
             bb_actor: args.bb_actor,
+            ml_queue: args.ml_queue,
         })
     }
 
@@ -60,7 +65,19 @@ impl Actor for ItemUpdateActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            ItemUpdateMsg::Process(data) => {
+            ItemUpdateMsg::DeserializeRawFiles(steam_root) => {
+                for file in steam_root.response.publishedfiledetails {
+                    match serde_json::from_value(file) {
+                        Ok(file) => {
+                            myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
+                        }
+                        Err(error) => {
+                            error!(?error, "deserializing raw files");
+                        }
+                    }
+                }
+            }
+            ItemUpdateMsg::MainlineProcessing(data) => {
                 let (join_process_actor, _) = Actor::spawn(
                     None,
                     JoinProcessActor {},
@@ -74,27 +91,70 @@ impl Actor for ItemUpdateActor {
 
                 join_process_actor.send_message(JoinProcessMsg::Process(data))?;
             }
-            ItemUpdateMsg::Upsert((item, children)) => {
-                if let Err(e) = insert_data(&state.database, item, children).await {
-                    error!("{e:?}");
+            ItemUpdateMsg::MaybeQueueMl((item, children)) => {
+                if let Err(error) = maybe_queue_ml(&state.database, &state.ml_queue, &item).await {
+                    error!(?error, id = %item.id, "queuing ML work (message)");
+                }
+                if myself
+                    .send_message(ItemUpdateMsg::Upsert((item, children)))
+                    .is_err()
+                {
+                    error!("forwarding work to upsert");
                 }
             }
-            ItemUpdateMsg::RawProcess(steam_root) => {
-                for file in steam_root.response.publishedfiledetails {
-                    match serde_json::from_value(file) {
-                        Ok(file) => {
-                            myself.send_message(ItemUpdateMsg::Process(file))?;
-                        }
-                        Err(error) => {
-                            error!(?error, "deserializing raw files");
-                        }
-                    }
+            ItemUpdateMsg::Upsert((item, children)) => {
+                let title = item.title.clone();
+                let item_id = item.id.clone();
+                if let Err(error) = insert_data(&state.database, item, children).await {
+                    error!(?error, title, %item_id, "upserting item");
                 }
             }
         }
 
         Ok(())
     }
+}
+/// Attempt to extract data from posts text using an LLM under the following
+/// conditions:
+///
+/// 1. We've enabled the functionality
+/// 2. The detected languages include english, as the model doesn't work well
+///    otherwise
+/// 3. The item's `last_updated` has changed, using this as a cheap proxy for
+///    detecting changes
+/// 4. Finally, the description has changed, we'll likely get the same result
+///    for the same input
+async fn maybe_queue_ml(
+    db: &Surreal<Db>,
+    ml_queue: &Option<ActorRef<MLQueueMsg>>,
+    item: &WorkshopItem<RecordId>,
+) -> crate::Result<(), Whatever> {
+    if let Some(queue) = ml_queue {
+        let mut resp = db
+            .query("SELECT last_updated, description FROM $id")
+            .bind(("id", item.id.clone()))
+            .await
+            .whatever_context("querying last_updated for ML queue check")?;
+        let old_last_updated: Option<u64> = resp
+            .take((0, "last_updated"))
+            .whatever_context("taking last_updated for ML queue check")?;
+        let old_description: Option<String> = resp
+            .take((0, "description"))
+            .whatever_context("taking description for ML queue check")?;
+        let old_description = old_description.unwrap_or_default();
+        let outdated = old_last_updated != Some(item.last_updated);
+        let description_changed = &old_description != &item.description;
+        let viable_language = item.languages.contains(&DetectedLanguage::English);
+        // We don't want to waste our resources on extracting
+        if viable_language && outdated && description_changed {
+            debug!(
+                name = item.title,
+                outdated, description_changed, "Item is being processed for extraction"
+            );
+            let _ = queue.send_message(MLQueueMsg::Process(item.id.clone()));
+        }
+    }
+    Ok(())
 }
 
 async fn insert_data(
@@ -164,9 +224,7 @@ async fn insert_data(
 
     let errors = response.take_errors();
     if !errors.is_empty() {
-        error!("{sql}");
-        error!("{errors:#?}");
-        panic!("Errors: ")
+        error!(query = sql, ?errors, "inserting data");
     }
 
     Ok(())

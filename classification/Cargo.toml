@@ -1,29 +1,23 @@
 [package]
 name = "classification"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-serde = { version = "1.0.219", features = ["derive"] }
-anyhow = "1.0.98"
-clap = { version = "4.5.39", features = ["derive"] }
-tracing-subscriber = "0.3.19"
-serde_json = "1.0.140"
-
-#candle-core = { git = "https://github.com/huggingface/candle.git", features = [] }
-#candle-transformers =  { git = "https://github.com/huggingface/candle.git"}
-#candle-nn = { git = "https://github.com/huggingface/candle.git"}
-#candle-examples = { git = "https://github.com/huggingface/candle.git"}
-#intel-mkl-src = { version = "0.8.1", features = ["mkl-static-lp64-iomp", ], optional = true }
-#hf-hub = { version = "0.4", features = ["tokio"] }
-#tokenizers = { version = "0.21", features = ["onig"] }
-#tracing-chrome = "0.7"
+snafu.workspace = true
+candle-core.workspace = true
+intel-mkl-src = { workspace = true, optional = true }
+candle-transformers.workspace = true
+candle-nn.workspace = true
+hf-hub.workspace = true
+tokenizers.workspace = true
+serde_json.workspace = true
+candle-examples.workspace = true
+serde = { workspace = true, features = ["derive"] }
+tracing.workspace = true
+ractor.workspace = true
+tokio.workspace = true
 
 [features]
+default = ["mkl"]
 mkl = ["dep:intel-mkl-src", "candle-core/mkl"]
-
-[dev-dependencies]
-surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls"] }
-tokio = {version = "1.45", features = ["macros"]}
-indicatif = "0.17.11"
-humantime = "2.2"

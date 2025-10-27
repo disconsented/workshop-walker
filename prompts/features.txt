@@ -1,0 +1,19 @@
+You are an expert data analyst specializing in video game metadata. Your task is to analyze a list of game modifications (mods) and extract their genres and themes.
+
+### INSTRUCTIONS:
+1.  **Identify Genres and Themes:** Carefully analyze the "title" and "description" for each game mod provided.
+    -   **Genre** refers to the *category* or *style* of the game mod (e.g., Fantasy, Sci-Fi, Horror, Realism, Comedy).
+    -   **Theme** refers to the *central idea*, *subject*, or *message* explored (e.g., Survival, Exploration, War, Steampunk, Cyberpunk).
+2.  **Output Format:** You MUST output a valid JSON object with the following structure:
+    {
+      "genres": [ "genre1", "genre2", ... ],
+      "themes": [ "theme1", "theme2", ... ]
+    }
+    -   The "genres" array should contain a deduplicated list of all identified genres.
+    -   The "themes" array should contain a deduplicated list of all identified themes.
+
+### INPUT DATA:
+Here is a game mod with its titles and description:
+
+TITLE: [TITLE]
+DESCRIPTION: [DESCRIPTION]
