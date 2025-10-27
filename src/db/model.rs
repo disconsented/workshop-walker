@@ -6,6 +6,8 @@ use std::{
 use chrono::{DateTime, Utc};
 use salvo::prelude::ToSchema;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
+use serde_content::{Value, ValueVisitor};
+use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb::{RecordId, RecordIdKey};
 
@@ -197,45 +199,37 @@ impl<T> serde::Serialize for Source<T>
 where
     T: serde::Serialize,
 {
-    fn serialize<__S>(&self, __serializer: __S) -> Result<__S::Ok, __S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        __S: Serializer,
+        S: Serializer,
     {
-        match *self {
-            Source::System => __serializer.serialize_str("system"),
-            Source::User(ref __field0) => (*__field0).serialize(__serializer),
+        match self {
+            Source::System => serializer.serialize_str("System"),
+            Source::User(t) => t.serialize(serializer),
         }
     }
 }
 
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for Source<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Source<T>, D::Error>
+impl<'de, T> serde::Deserialize<'de> for Source<T>
+where
+    T: serde::Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let __content =
-            <serde::__private::de::Content as serde::Deserialize>::deserialize(deserializer)?;
-        let __deserializer =
-            serde::__private::de::ContentRefDeserializer::<D::Error>::new(&__content);
+        let value = <Value as serde::Deserialize>::deserialize(deserializer)?;
+        let deserializer = ValueRefDeserializer::<D::Error>::new(&value);
+        let value = deserializer.deserialize_any(ValueVisitor)?;
 
-        if let Ok(__ok) = match String::deserialize(__deserializer) {
-            Ok(str) if str == "system" => Ok(Source::System),
-
-            Err(__err) => Err(__err),
-            Ok(variant) => Err(D::Error::unknown_variant(&variant, &["system"])),
-        } {
-            return Ok(__ok);
+        match value {
+            Value::String(str) if str == "System" => Ok(Source::System),
+            _ => <T as serde::Deserialize>::deserialize(deserializer)
+                .map(Source::User)
+                .map_err(|_| {
+                    Error::custom("data did not match any variant of untagged enum Source")
+                }),
         }
-        if let Ok(__ok) = Result::map(
-            <T as serde::Deserialize>::deserialize(__deserializer),
-            Source::User,
-        ) {
-            return Ok(__ok);
-        }
-
-        Err(D::Error::custom(
-            "Expected either T or 'system' got neither",
-        ))
     }
 }
 

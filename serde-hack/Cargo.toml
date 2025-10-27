@@ -1,0 +1,8 @@
+[package]
+name = "serde-hack"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde.workspace = true
+serde-content.workspace = true

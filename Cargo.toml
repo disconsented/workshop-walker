@@ -1,7 +1,6 @@
 [workspace]
 default-members = []
-members = ["macros"]
-
+members = ["macros", "serde-hack"]
 
 [features]
 keywords = []
@@ -38,6 +37,7 @@ rs-snowflake = "0.6"
 macros = { path = "./macros" }
 log = "0.4.27"
 ractor = {version = "0.15", features = ["monitors", "async-trait"]}
+serde-hack = { path = "./serde-hack" }
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
