@@ -2,16 +2,14 @@
 default-members = []
 members = ["macros", "serde-hack"]
 
-[features]
-keywords = []
 
-[package]
+[workspace.package]
 name = "workshop-walker"
 version = "0.2.0"
 edition = "2024"
 license = "MPL-2"
 
-[dependencies]
+[workspace.dependencies]
 tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
 surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
 reqwest = { version = "0.12", features = ["json", ] }
@@ -19,7 +17,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.8"
-salvo = { version = "0.80", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
+salvo = { version = "0.84", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 config = "0.15"
 veil = "0.2"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
@@ -35,13 +33,45 @@ chrono = "0.4"
 biscuit-auth = "6.0.0-beta.3"
 rs-snowflake = "0.6"
 macros = { path = "./macros" }
-log = "0.4.27"
-ractor = {version = "0.15", features = ["monitors", "async-trait"]}
+ractor = { version = "0.15", features = ["monitors", "async-trait"] }
+multimap = "0.10"
+serde-content = "0.1"
 serde-hack = { path = "./serde-hack" }
+
+[dependencies]
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
+surrealdb = { workspace = true, features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+reqwest = { workspace = true, features = ["json", ] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_repr.workspace = true
+snafu.workspace = true
+salvo = { workspace = true, features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
+config.workspace = true
+veil.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+lingua = { workspace = true, features = ["english", "russian", "chinese", "japanese", "korean"] }
+itertools.workspace = true
+str-macro.workspace = true
+bbscope.workspace = true
+humantime.workspace = true
+tracing.workspace = true
+surrealdb-migrations.workspace = true
+serde-xml-rs.workspace = true
+chrono.workspace = true
+biscuit-auth.workspace = true
+rs-snowflake.workspace = true
+macros.workspace = true
+ractor = { workspace = true, features = ["monitors", "async-trait"] }
+multimap.workspace = true
+serde-hack.workspace = true
+serde-content.workspace = true
+
+
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
-surrealdb = {git = "https://github.com/disconsented/surrealdb.git", tag = "v2.3.8"}
+surrealdb = { git = "https://github.com/disconsented/surrealdb.git", tag = "v2.3.8" }
 
 
 [profile.release]
