@@ -14,17 +14,17 @@ use crate::{
 
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     let (language_actor, _) = Actor::spawn(
-        Some("/language-actor".to_string()),
+        Some("/language".to_string()),
         LanguageActor {},
         LanguageArgs {},
     )
     .await
     .whatever_context("Spawning language actor")?;
-    let (bb_actor, _) = Actor::spawn(Some("/bb-actor".to_string()), BBActor {}, BBArgs {})
+    let (bb_actor, _) = Actor::spawn(Some("/bb".to_string()), BBActor {}, BBArgs {})
         .await
         .whatever_context("Spawning bb actor")?;
     let (item_update_actor, _) = Actor::spawn(
-        Some("/item_update-actor".to_string()),
+        Some("/item_updater".to_string()),
         ItemUpdateActor {},
         ItemUpdateArgs {
             language_actor,
