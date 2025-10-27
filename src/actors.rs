@@ -13,6 +13,7 @@ use crate::{
 };
 
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
+    let client = Client::new();
     let (language_actor, _) = Actor::spawn(
         Some("/language".to_string()),
         LanguageActor {},
@@ -43,6 +44,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
                 item_processing_actor_ref: item_update_actor,
                 database: db.clone(),
                 app_id: config.steam.appid,
+                client,
             },
         )
         .await
