@@ -1,5 +1,5 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
-use snafu::{OptionExt, ResultExt, Whatever};
+use snafu::{ResultExt, Whatever};
 use surrealdb::{
     RecordId, Surreal,
     engine::local::Db,
@@ -65,9 +65,9 @@ impl Actor for ItemUpdateActor {
                     None,
                     JoinProcessActor {},
                     JoinProcessArgs {
-                        item_update_actor: myself.clone(),
-                        language_actor: state.language_actor.clone(),
-                        bb_actor: state.bb_actor.clone(),
+                        item_update: myself.clone(),
+                        language: state.language_actor.clone(),
+                        bb: state.bb_actor.clone(),
                     },
                 )
                 .await?;

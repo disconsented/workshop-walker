@@ -49,7 +49,7 @@ pub enum EPublishedFileQueryType {
 #[expect(non_camel_case_types, clippy::missing_docs_in_private_items)] // Can't control the _ and steam requires it
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone)]
 #[repr(u8)]
-enum EPublishedFileInfoMatchingFileType {
+pub enum EPublishedFileInfoMatchingFileType {
     MatchingFileType_Items = 0,
     MatchingFileType_Collections = 1,
     MatchingFileType_Art = 2,
@@ -162,6 +162,7 @@ pub struct Tag {
     clippy::missing_docs_in_private_items,
     reason = "Largely unused, exists for serde's sake"
 )]
+#[expect(clippy::struct_excessive_bools, reason = "Steam defined")]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IPublishedStruct {
     pub file_type: Option<EPublishedFileInfoMatchingFileType>,

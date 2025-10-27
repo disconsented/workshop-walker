@@ -315,7 +315,6 @@ impl salvo::oapi::ToSchema for Id {
 
 #[cfg(test)]
 mod test {
-
     use serde::{Deserialize, Serialize};
     use surrealdb::RecordId;
 
@@ -337,6 +336,7 @@ mod test {
         let system_text = serde_json::to_string(&system).unwrap();
         let system2 = serde_json::from_str(&system_text).unwrap();
         assert_eq!(system, system2);
+
         let user = Source::User("a".to_string());
         let user_text = serde_json::to_string(&user).unwrap();
         let user2 = serde_json::from_str(&user_text).unwrap();

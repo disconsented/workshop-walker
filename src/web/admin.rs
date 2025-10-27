@@ -1,4 +1,3 @@
-use log::error;
 use reqwest::StatusCode;
 use salvo::{
     Depot, Response, Writer, handler,
@@ -7,6 +6,7 @@ use salvo::{
 };
 use serde::{Deserialize, Serialize};
 use surrealdb::{Surreal, engine::local::Db};
+use tracing::error;
 
 use crate::db::{
     ItemID, UserID,
