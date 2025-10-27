@@ -22,6 +22,7 @@ pub struct SteamDownloadArgs {
     pub item_processing_actor_ref: ActorRef<ItemUpdateMsg>,
     pub database: Surreal<Db>,
     pub app_id: u32,
+    pub client: Client,
 }
 pub struct SteamDownloadState {
     client: Client,
@@ -70,7 +71,7 @@ impl Actor for SteamDownloadActor {
 
         myself.send_interval(h12, message_builder);
         Ok(Self::State {
-            client: Client::new(),
+            client: args.client,
             steam_token: args.steam_token,
             item_processing_actor_ref: args.item_processing_actor_ref,
         })
