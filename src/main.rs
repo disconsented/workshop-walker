@@ -7,8 +7,9 @@ use surrealdb_migrations::MigrationRunner;
 
 mod actors;
 mod app_config;
-mod auth;
+mod application;
 mod db;
+mod domain;
 mod processing;
 mod steam;
 mod web;
@@ -60,7 +61,7 @@ async fn main() -> Result<()> {
         .whatever_context("Failed to apply migrations")?;
     debug!("migrations finished");
     actors::spawn(&settings, &db).await?;
-    web::start(db, Arc::new(settings)).await;
+    web::start(Arc::new(settings)).await;
     Ok(())
 }
 

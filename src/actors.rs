@@ -1,7 +1,8 @@
+use classification::actor::{ExtractionActor, ExtractionArgs};
 use ractor::Actor;
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 
 use crate::{
     app_config::Config,
@@ -9,17 +10,19 @@ use crate::{
     processing::{
         bb_actor::{BBActor, BBArgs},
         language_actor::{LanguageActor, LanguageArgs},
+        ml_queue_actor::{MLQueueActor, MLQueueArgs},
     },
     steam::steam_download_actor::{SteamDownloadActor, SteamDownloadArgs},
     web::{
         auth::{AuthActor, AuthArgs},
         item::{ItemActor, ItemArgs},
-        properties::{PropertiesActor, PropertiesArgs},
     },
 };
+use crate::db::properties_actor::{PropertiesActor, PropertiesArgs};
 
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
-    let client = Client::new();
+    let reqwest_client = Client::new();
+
     let (language_actor, _) = Actor::spawn(
         Some("/language".to_string()),
         LanguageActor {},
@@ -30,6 +33,36 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     let (bb_actor, _) = Actor::spawn(Some("/bb".to_string()), BBActor {}, BBArgs {})
         .await
         .whatever_context("Spawning bb actor")?;
+
+    let (extraction_actor, _) = Actor::spawn(
+        Some("/ml_extractor".to_string()),
+        ExtractionActor,
+        ExtractionArgs {},
+    )
+    .await
+    .whatever_context("Spawning ML extraction actor")?;
+
+    let (property_actor, _) = Actor::spawn(
+        Some("/properties".to_string()),
+        PropertiesActor,
+        PropertiesArgs {
+            database: db.clone(),
+        },
+    )
+    .await
+    .whatever_context("Spawning properties actor")?;
+
+    let (ml_queue_actor, _) = Actor::spawn(
+        Some("/ml_queue".to_string()),
+        MLQueueActor,
+        MLQueueArgs {
+            database: db.clone(),
+            extractor: extraction_actor,
+            property_actor,
+        },
+    )
+    .await
+    .whatever_context("Spawning ML queue actor")?;
     let (item_update_actor, _) = Actor::spawn(
         Some("/item_updater".to_string()),
         ItemUpdateActor {},
@@ -37,6 +70,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             language_actor,
             bb_actor,
             database: db.clone(),
+            ml_queue: config.ml_extraction.then_some(ml_queue_actor),
         },
     )
     .await
@@ -46,7 +80,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         AuthActor {},
         AuthArgs {
             database: db.clone(),
-            client: client.clone(),
+            client: reqwest_client.clone(),
             base_url: config.base_url.clone(),
             biscuit: config.biscuit.clone(),
         },
@@ -62,7 +96,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
                 item_processing_actor_ref: item_update_actor,
                 database: db.clone(),
                 app_id: config.steam.appid,
-                client,
+                client: reqwest_client,
             },
         )
         .await
@@ -78,16 +112,6 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     )
     .await
     .whatever_context("Spawning item actor")?;
-
-    let (..) = Actor::spawn(
-        Some("/properties".to_string()),
-        PropertiesActor,
-        PropertiesArgs {
-            database: db.clone(),
-        },
-    )
-    .await
-    .whatever_context("Spawning properties actor")?;
 
     Ok(())
 }

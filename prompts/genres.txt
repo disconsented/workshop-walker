@@ -1,0 +1,50 @@
+Analyze the game mod title and description to extract:
+
+1. **Mod Types** - Identify the type(s) of mod. Common types include but are not limited to:
+   - overhaul (major gameplay/system changes)
+   - patch (bug fixes, compatibility updates)
+   - media (visual/audio content: textures, models, sounds, music)
+   - QOL (quality of life improvements)
+   - expansion (adds significant new content/areas)
+   - utility (tools/helpers for players or modders)
+   - cheat (gives player advantages)
+   - translation (language localization)
+   - library (software libraries, frameworks, dependencies)
+   - other (any other relevant type)
+
+2. **Features** - Extract core features mentioned, but:
+   - Remove all quantities, numbers, and measurements
+   - Use plural form when appropriate
+   - Focus on the core concept/noun only
+   - Be specific but concise
+
+**Output Requirements:**
+- Return valid JSON only
+- Use this exact structure:
+{
+  "types": ["array", "of", "types"],
+  "features": ["array", "of", "features"]
+}
+
+**Transformation Rules for Features:**
+- "50 new weapons" → "weapons"
+- "Improved graphics and 4K textures" → ["graphics", "textures"]
+- "Adds 3 new characters and 15 quests" → ["characters", "quests"]
+- "Fixes various bugs and crashes" → ["bug fixes", "crash fixes"]
+- "Better UI with new inventory system" → ["UI", "inventory system"]
+- "Adds a new weapon type" → "weapons"
+- "Library for other modders" → ["library"] (in types)
+
+**Examples:**
+Input: "HD Texture Pack - 4K resolution textures and improved lighting"
+Output: {"types": ["media"], "features": ["textures", "lighting"]}
+
+Input: "Survival Overhaul - Adds hunger system, 25 new items, and weather effects"
+Output: {"types": ["overhaul"], "features": ["hunger system", "items", "weather effects"]}
+
+Input: "Modding Library - Framework for other mod developers"
+Output: {"types": ["library", "utility"], "features": []}
+
+Now analyze this mod:
+TITLE: [TITLE]
+DESCRIPTION: [DESCRIPTION]

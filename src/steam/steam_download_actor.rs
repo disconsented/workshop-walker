@@ -135,10 +135,10 @@ async fn download(
         page = GetPage::try_from(&json)?;
         downloaded += json.response.publishedfiledetails.len() as i64;
         database_writer_actor_ref
-            .send_message(ItemUpdateMsg::RawProcess(json))
+            .send_message(ItemUpdateMsg::DeserializeRawFiles(json))
             .whatever_context("forwarding to the database actor")?;
         debug!(
-            progress = (downloaded / total) * 100,
+            progress = (downloaded * 100 / total * 100),
             downloaded,
             expected = total,
             app_id,

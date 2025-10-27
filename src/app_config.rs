@@ -9,6 +9,7 @@ pub struct Config {
     pub steam: Steam,
     pub database: Database,
     pub updater: bool,
+    pub ml_extraction: bool,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
 }

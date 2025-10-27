@@ -1,9 +1,8 @@
 use std::sync::OnceLock;
-use salvo::Writer;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
 use salvo::{
-    Depot,
+    Depot, Writer,
     oapi::{endpoint, extract::PathParam},
     prelude::{Json, StatusCode, StatusError},
 };
