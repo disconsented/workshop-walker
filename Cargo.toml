@@ -12,7 +12,7 @@ macros = { path = "./macros" }
 serde-hack = { path = "./serde-hack" }
 
 bbscope = "0.2"
-biscuit-auth = "6.0.0-beta.3"
+biscuit-auth = "6.0.0"
 candle-core = { version = "0.9" }
 candle-examples = "0.9"
 candle-nn = "0.9"
@@ -27,8 +27,7 @@ lingua = { version = "1.7", features = ["english", "russian", "chinese", "japane
 multimap = "0.10"
 ractor = { version = "0.15", features = ["monitors", "async-trait"] }
 reqwest = { version = "0.12", features = ["json", ] }
-rs-snowflake = "0.6"
-salvo = { version = "0.84", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
+salvo = { version = "0.85", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-content = "0.1"
 serde-xml-rs = "0.8.1"
@@ -63,7 +62,6 @@ macros.workspace = true
 multimap.workspace = true
 ractor = { workspace = true, features = ["monitors", "async-trait"] }
 reqwest = { workspace = true, features = ["json", ] }
-rs-snowflake.workspace = true
 salvo = { workspace = true, features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 serde = { workspace = true, features = ["derive"] }
 serde-content.workspace = true

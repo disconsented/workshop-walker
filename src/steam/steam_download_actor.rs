@@ -138,7 +138,7 @@ async fn download(
             .send_message(ItemUpdateMsg::DeserializeRawFiles(json))
             .whatever_context("forwarding to the database actor")?;
         debug!(
-            progress = (downloaded * 100 / total * 100),
+            progress = (downloaded * 100 / total * 100) / 100,
             downloaded,
             expected = total,
             app_id,
