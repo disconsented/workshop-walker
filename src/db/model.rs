@@ -92,6 +92,7 @@ pub fn into_string(key: &RecordIdKey) -> String {
 }
 
 /// A steam workshop app
+#[expect(unused, reason = "To be used soon")]
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct App {
     /// The steam ID for an app
@@ -172,6 +173,7 @@ pub struct WorkshopItemProperties<CHILD, PROP> {
 
 /// Crowdsourced relationships for an item, used for "soft" dependencies not
 /// supplied by steam, private version
+#[expect(unused, reason = "To be used soon")]
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct Companion<R, S> {
     /// Snowflake generated ID
@@ -188,6 +190,7 @@ pub struct Companion<R, S> {
 
 /// A voting record
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[expect(unused, reason = "To be used soon")]
 pub struct Vote {
     /// The app this is associated with, for possible filtering
     pub app_id: String,
@@ -212,7 +215,7 @@ where
         S: Serializer,
     {
         match self {
-            Source::System => serializer.serialize_str("System"),
+            Source::System => serializer.serialize_str("system"),
             Source::User(t) => t.serialize(serializer),
         }
     }
@@ -231,7 +234,7 @@ where
         let value = deserializer.deserialize_any(ValueVisitor)?;
 
         match value {
-            Value::String(str) if str == "System" => Ok(Source::System),
+            Value::String(str) if str == "system" => Ok(Source::System),
             _ => <T as serde::Deserialize>::deserialize(deserializer)
                 .map(Source::User)
                 .map_err(|_| {

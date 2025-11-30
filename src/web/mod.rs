@@ -5,30 +5,23 @@ pub mod item;
 pub mod properties;
 mod query;
 
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
 use salvo::{
-    Router,
     oapi::{Components, Operation},
     prelude::*,
+    Router,
 };
 use snafu::Whatever;
-use snowflake::SnowflakeIdGenerator;
-use surrealdb::{Surreal, engine::local::Db};
-use tokio::sync::{Mutex, OnceCell};
+use surrealdb::{engine::local::Db, Surreal};
+use tokio::sync::OnceCell;
 
 use crate::app_config::Config;
 
 /// Global
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
-static ID_GENERATOR: OnceLock<Arc<Mutex<SnowflakeIdGenerator>>> = OnceLock::new();
-
-fn get_gen() -> Arc<Mutex<SnowflakeIdGenerator>> {
-    Arc::clone(ID_GENERATOR.get_or_init(|| Arc::new(Mutex::new(SnowflakeIdGenerator::new(1, 1)))))
-}
 ///  Start the webserver returning once it exists
-pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
-    let _ = DB_POOL.get_or_init(|| async { db }).await.clone();
+pub async fn start(config: Arc<Config>) {
     let router = Router::new().push(
         Router::with_path("api")
             .hoop(max_size(1024 * 1024))
