@@ -3547,21 +3547,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "librocksdb-sys"
-version = "0.17.3+10.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef2a00ee60fe526157c9023edab23943fae1ce2ab6f4abb2a807c1746835de9"
-dependencies = [
- "bindgen",
- "bzip2-sys",
- "cc",
- "libc",
- "libz-sys",
- "lz4-sys",
- "zstd-sys",
-]
-
-[[package]]
 name = "libz-sys"
 version = "1.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6200,16 +6185,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e27ee8bb91ca0adcf0ecb116293afa12d393f9c2b9b9cd54d33e8078fe19839"
 
 [[package]]
-name = "rocksdb"
-version = "0.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddb7af00d2b17dbd07d82c0063e25411959748ff03e8d4f96134c2ff41fce34f"
-dependencies = [
- "libc",
- "librocksdb-sys",
-]
-
-[[package]]
 name = "ron"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7388,8 +7363,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb"
-version = "2.3.8"
-source = "git+https://github.com/disconsented/surrealdb.git?tag=v2.3.8#d4bed699cc9a8aab300265c0e27213389dff5037"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4636ac0af4dd619a66d55d8b5c0d1a0965ac1fe417c6a39dbc1d3db16588b969"
 dependencies = [
  "arrayvec",
  "async-channel",
@@ -7429,8 +7405,9 @@ dependencies = [
 
 [[package]]
 name = "surrealdb-core"
-version = "2.3.8"
-source = "git+https://github.com/disconsented/surrealdb.git?tag=v2.3.8#d4bed699cc9a8aab300265c0e27213389dff5037"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b99720b7f5119785b065d235705ca95f568a9a89745d1221871e845eedf424d"
 dependencies = [
  "addr",
  "affinitypool",
@@ -7467,7 +7444,6 @@ dependencies = [
  "lexicmp 0.1.0",
  "linfa-linalg",
  "md-5",
- "mimalloc",
  "nanoid",
  "ndarray",
  "ndarray-stats",
@@ -7490,7 +7466,6 @@ dependencies = [
  "ring",
  "rmpv",
  "roaring",
- "rocksdb",
  "rust-stemmers",
  "rust_decimal",
  "scrypt",
@@ -7504,6 +7479,7 @@ dependencies = [
  "storekey",
  "strsim",
  "subtle",
+ "surrealdb-rocksdb",
  "surrealkv",
  "sysinfo",
  "tempfile",
@@ -7520,6 +7496,21 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasmtimer",
  "ws_stream_wasm",
+]
+
+[[package]]
+name = "surrealdb-librocksdb-sys"
+version = "0.17.3+10.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db194f1cf601bb6f2d0f4cbf0931bc3e5a602bac41ef2e9a87eccdfb28b7fed2"
+dependencies = [
+ "bindgen",
+ "bzip2-sys",
+ "cc",
+ "libc",
+ "libz-sys",
+ "lz4-sys",
+ "zstd-sys",
 ]
 
 [[package]]
@@ -7547,6 +7538,16 @@ dependencies = [
  "sha2 0.10.9",
  "surrealdb",
  "tokio",
+]
+
+[[package]]
+name = "surrealdb-rocksdb"
+version = "0.24.0-surreal.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "057727f56d48825ddbe45e4e7401cda6e99d864fbc004e7474b4689a5e72c86d"
+dependencies = [
+ "libc",
+ "surrealdb-librocksdb-sys",
 ]
 
 [[package]]
