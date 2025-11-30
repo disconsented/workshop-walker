@@ -36,7 +36,7 @@ serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.8"
 str-macro = "1"
-surrealdb = { version = "2.3", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+surrealdb = { version = "2.4", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
 surrealdb-migrations = "2.2"
 tokenizers = "0.21"
 tokio = { version = "1.48", features = ["full"] }
@@ -87,7 +87,6 @@ ml-classification = ["classification", "classification/mkl"]
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
-surrealdb = { git = "https://github.com/disconsented/surrealdb.git", tag = "v2.3.8" }
 
 [profile.release]
 lto = true
