@@ -244,7 +244,8 @@ impl TextGeneration {
 /// '{' search is an effort to protect against prompt repeating by the model.
 pub fn sanitise_output(string: String) -> String {
     let nothing = "";
-    let string = &string[string.find('{').unwrap_or_default()..];
+    let string =
+        &string[string.find('{').unwrap_or_default()..string.find('}').unwrap_or(string.len())];
     string
         .replace("<br>", nothing)
         .replace("###", nothing)
