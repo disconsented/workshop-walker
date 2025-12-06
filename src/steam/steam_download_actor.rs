@@ -23,6 +23,7 @@ pub struct SteamDownloadArgs {
     pub database: Surreal<Db>,
     pub app_id: u32,
     pub client: Client,
+    pub force: bool,
 }
 pub struct SteamDownloadState {
     client: Client,
@@ -64,9 +65,9 @@ impl Actor for SteamDownloadActor {
                 ..Default::default()
             },
         };
-        if time_since > h12 {
+        if time_since > h12 || args.force {
             myself.send_message(message_builder())?;
-            info!("last_updated: {}", humantime::Duration::from(time_since));
+            info!(period = %humantime::Duration::from(time_since), "newest mod is at least 12 hours out of date; running update now");
         }
 
         myself.send_interval(h12, message_builder);
