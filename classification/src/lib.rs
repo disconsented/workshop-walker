@@ -18,7 +18,7 @@ use candle_transformers::{
 };
 use serde::{Deserialize, Serialize};
 use tokenizers::Tokenizer;
-use tracing::debug;
+use tracing::{debug, instrument};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -157,6 +157,7 @@ impl TextGeneration {
         }
     }
 
+    #[instrument(skip_all)]
     fn run(&mut self, prompt: &str, sample_len: usize) -> Result<String, WhateverAsync> {
         let encoding = self
             .tokenizer

@@ -1,6 +1,6 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use tokio::fs::read_to_string;
-use tracing::debug;
+use tracing::{debug, instrument};
 
 use crate::{Error, MLProperties, populate_prompt, runner::PipelineRunner, sanitise_output};
 
@@ -14,6 +14,7 @@ pub struct ExtractionState {
 }
 
 impl ExtractionState {
+    #[instrument(skip_all)]
     async fn run_pipeline(
         &self,
         title: String,

@@ -4,6 +4,8 @@ use salvo::__private::tracing::debug;
 use snafu::{Whatever, prelude::*};
 use surrealdb::{Surreal, engine::local::RocksDb, opt::auth::Root};
 use surrealdb_migrations::MigrationRunner;
+use tracing::{Instrument, info_span};
+use tracing_subscriber::fmt::format::FmtSpan;
 
 mod actors;
 mod app_config;
@@ -20,6 +22,7 @@ pub type Error = Whatever;
 async fn main() -> Result<()> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(env::var("RUST_LOG").unwrap_or_default())
+        .with_span_events(FmtSpan::CLOSE)
         .try_init();
     let settings: app_config::Config = config::Config::builder()
         .add_source(config::File::with_name("config/config.toml"))
@@ -27,7 +30,7 @@ async fn main() -> Result<()> {
         .whatever_context("finding config")?
         .try_deserialize()
         .whatever_context("deserializing config")?;
-
+    let span = info_span!("spawn");
     let db = Surreal::new::<RocksDb>("./workshopdb")
         .await
         .whatever_context("connecting to db")?;
@@ -57,11 +60,14 @@ async fn main() -> Result<()> {
     // Run migrations
     MigrationRunner::new(&db)
         .up()
+        .instrument(info_span!(parent: &span, "run migrations"))
         .await
         .whatever_context("Failed to apply migrations")?;
     debug!("migrations finished");
-    actors::spawn(&settings, &db).await?;
-    web::start(Arc::new(settings)).await;
+    actors::spawn(&settings, &db)
+        .instrument(info_span!(parent: &span, "spawn actors"))
+        .await?;
+    web::start(db, Arc::new(settings)).await;
     Ok(())
 }
 

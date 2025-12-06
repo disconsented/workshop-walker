@@ -8,7 +8,7 @@ use tokio::{
     sync::{mpsc, oneshot},
     task::{JoinHandle, spawn_blocking},
 };
-use tracing::warn;
+use tracing::{Instrument, info_span, warn};
 
 use crate::{
     Error, MODEL_ID, ModelInitSnafu, ParseConfigSnafu, ReadConfigSnafu, TextGeneration,
@@ -21,6 +21,8 @@ pub struct PipelineRunner {
 }
 impl PipelineRunner {
     pub async fn setup() -> Result<Self, Error> {
+        let span = info_span!("PipelineRunner::setup");
+        let _g = span.enter();
         let api = Api::new().map_err(|e| Error::ApiInit {
             message: e.to_string(),
         })?;
@@ -31,12 +33,14 @@ impl PipelineRunner {
             revision,
         ));
         let filenames = hub_load_safetensors(&repo, "model.safetensors.index.json")
+            .instrument(info_span!(parent: &span, "load safe tensors"))
             .await
             .map_err(|e| Error::HubLoadIndex {
                 message: e.to_string(),
             })?;
         let tokenizer_filename = repo
             .get("tokenizer.json")
+            .instrument(info_span!(parent: &span, "load tokenizer"))
             .await
             .map_err(|e| Error::RepoGet {
                 filename: "tokenizer.json",
@@ -48,11 +52,20 @@ impl PipelineRunner {
                 .context(VarBuilderLoadSnafu)?
         };
         let tokenizer = Tokenizer::from_file(tokenizer_filename).context(TokenizerLoadSnafu)?;
-        let config_file = repo.get("config.json").await.map_err(|e| Error::RepoGet {
-            filename: "config.json",
-            message: e.to_string(),
-        })?;
-        let config = serde_json::from_slice(&std::fs::read(config_file).context(ReadConfigSnafu)?)
+        let config_file = repo
+            .get("config.json")
+            .instrument(info_span!(parent: &span, "get config"))
+            .await
+            .map_err(|e| Error::RepoGet {
+                filename: "config.json",
+                message: e.to_string(),
+            })?;
+        let file_bytes = tokio::fs::read(config_file)
+            .instrument(info_span!(parent: &span, "read config"))
+            .await
+            .context(ReadConfigSnafu)?;
+        let config = info_span!(parent: &span, "parse config")
+            .in_scope(|| serde_json::from_slice(&file_bytes))
             .context(ParseConfigSnafu)?;
         let model = Model::new(&config, vb).context(ModelInitSnafu)?;
         let (pipeline_tx, mut pipeline_rx) =
@@ -63,7 +76,8 @@ impl PipelineRunner {
             );
 
             while let Some((task, reply)) = pipeline_rx.blocking_recv() {
-                let _ = reply.send(pipeline.run(task.as_str(), 100_000));
+                let _ = info_span!("run model")
+                    .in_scope(|| reply.send(pipeline.run(task.as_str(), 100_000)));
             }
 
             warn!("Channel has dropped; exiting");
