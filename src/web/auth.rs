@@ -178,9 +178,9 @@ pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Res
             let authorizer = call!(actor, |reply| {
                 AuthMessage::ValidateToken(token.clone(), reply)
             })
-            .map_err(|_| InnerError::InternalError)?;
+            .map_err(|_| InnerError::InternalError)??;
 
-            depot.inject(authorizer);
+            depot.inject::<Authorizer>(authorizer);
             Ok(())
         }
     }
