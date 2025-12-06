@@ -2,7 +2,7 @@ use classification::actor::{ExtractionActor, ExtractionArgs};
 use ractor::Actor;
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{Instrument, info_span, instrument};
 
 use crate::{

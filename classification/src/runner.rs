@@ -11,8 +11,8 @@ use tokio::{
 use tracing::{Instrument, info_span, warn};
 
 use crate::{
-    Error, MODEL_ID, ModelInitSnafu, ParseConfigSnafu, ReadConfigSnafu, TextGeneration,
-    TokenizerLoadSnafu, VarBuilderLoadSnafu, WhateverAsync, hub::hub_load_safetensors,
+    Error, MODEL_ID, ParseConfigSnafu, ReadConfigSnafu, TextGeneration, TokenizerLoadSnafu,
+    VarBuilderLoadSnafu, WhateverAsync, hub::hub_load_safetensors,
 };
 
 pub struct PipelineRunner {
@@ -67,10 +67,11 @@ impl PipelineRunner {
         let config = info_span!(parent: &span, "parse config")
             .in_scope(|| serde_json::from_slice(&file_bytes))
             .context(ParseConfigSnafu)?;
-        let model = Model::new(&config, vb).context(ModelInitSnafu)?;
         let (pipeline_tx, mut pipeline_rx) =
             mpsc::channel::<(String, oneshot::Sender<Result<String, WhateverAsync>>)>(1);
         let pipeline_task: JoinHandle<()> = spawn_blocking(move || {
+            let model = Model::new(&config, vb).unwrap();
+
             let mut pipeline = TextGeneration::new(
                 model, tokenizer, 299792458, None, None, None, 1.1, 64, &device,
             );

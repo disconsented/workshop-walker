@@ -1,17 +1,19 @@
-use ractor::{call, ActorProcessingErr, RactorErr};
+use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
-    oapi::extract::JsonBody, prelude::{endpoint, StatusCode, StatusError},
-    Depot,
-    Writer,
+    Depot, Writer,
+    oapi::extract::JsonBody,
+    prelude::{StatusCode, StatusError, endpoint},
 };
-use snafu::{prelude::*, ErrorCompat};
+use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
-    db::model::Source,
+    db::{
+        model::Source,
+        properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
+    },
     domain::properties::{NewProperty, PropertiesError, VoteData},
     web::auth,
 };
-use crate::db::properties_actor::{PropertiesMsg, PROPERTIES_ACTOR};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -145,7 +147,7 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Resu
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{engine::local::Mem, Surreal};
+    use surrealdb::{Surreal, engine::local::Mem};
 
     use crate::db::model::{Class, Property};
 
