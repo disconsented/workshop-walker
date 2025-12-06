@@ -2,7 +2,7 @@ use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 
-use crate::db::model::{Class, Source};
+use crate::db::model::{Class, Source, Status};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -42,6 +42,7 @@ pub trait PropertiesPort: Send + Sync + 'static {
         &self,
         new_prop: NewProperty,
         source: Source<String>,
+        status: Status,
     ) -> Result<(), PropertiesError>;
     async fn vote(&self, vote: VoteData, userid: String) -> Result<(), PropertiesError>;
     async fn remove_vote(&self, vote: VoteData, userid: String) -> Result<(), PropertiesError>;

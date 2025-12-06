@@ -1,5 +1,5 @@
 use crate::{
-    db::model::Source,
+    db::model::{Source, Status},
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
 };
 
@@ -16,6 +16,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         &self,
         mut new_property: NewProperty,
         source: Source<String>,
+        status: Status,
     ) -> Result<(), PropertiesError> {
         new_property.value = new_property.value.to_ascii_lowercase();
 
@@ -42,7 +43,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         }
 
         self.repo
-            .create_or_link_property(new_property, source)
+            .create_or_link_property(new_property, source, status)
             .await
     }
 
