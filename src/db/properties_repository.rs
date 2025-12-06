@@ -6,7 +6,7 @@ use tracing::{debug, error};
 use crate::{
     db::{
         ItemID, UserID,
-        model::{Property, Source, WorkshopItemProperties},
+        model::{Property, Source, Status, WorkshopItemProperties},
     },
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
 };
@@ -26,6 +26,7 @@ impl PropertiesPort for PropertiesSilo {
         &self,
         new_property: NewProperty,
         source: Source<String>,
+        status: Status,
     ) -> Result<(), PropertiesError> {
         let workshop_id = ItemID::from(new_property.workshop_item).into_recordid();
 
@@ -88,7 +89,7 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("value", test_prop.value))
             .query(
                 "RELATE $workshop_id->workshop_item_properties->properties:{class: $class, \
-                 value:$value} SET note=$note, source=$source;",
+                 value:$value} SET note=$note, source=$source, status=$status;",
             )
             .bind(("workshop_id", workshop_id))
             .bind(("note", new_property.note))
@@ -99,6 +100,7 @@ impl PropertiesPort for PropertiesSilo {
                     Source::User(userid) => Source::<RecordId>::User(UserID::from(userid).into()),
                 },
             ))
+            .bind(("status", status))
             .await
             .map(surrealdb::Response::check)
         {

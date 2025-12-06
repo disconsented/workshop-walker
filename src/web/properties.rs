@@ -8,7 +8,7 @@ use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
-        model::Source,
+        model::{Source, Status},
         properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
     },
     domain::properties::{NewProperty, PropertiesError, VoteData},
@@ -138,7 +138,8 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Resu
     call!(actor, |reply| PropertiesMsg::NewProperty(
         new_property.0,
         Source::User(userid),
-        reply
+        Status::Pending,
+        reply,
     ))
     .map_err(InnerError::from)?
     .map_err(InnerError::from)?;

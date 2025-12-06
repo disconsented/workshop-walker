@@ -6,7 +6,7 @@ use tracing::{debug, error, info};
 
 use crate::{
     db::{
-        model::{Class, Source},
+        model::{Class, Source, Status},
         properties_actor::PropertiesMsg,
     },
     domain::properties::NewProperty,
@@ -110,6 +110,7 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
                         note: None,
                     },
                     Source::System,
+                    Status::Accepted,
                     reply
                 )) {
                     Ok(Ok(..)) => {

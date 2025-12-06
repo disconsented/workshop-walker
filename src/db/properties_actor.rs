@@ -5,9 +5,13 @@ use surrealdb::{Surreal, engine::local::Db};
 
 use crate::{
     application::properties_service::PropertiesService,
-    db::{model::Source, properties_repository::PropertiesSilo},
+    db::{
+        model::{Source, Status},
+        properties_repository::PropertiesSilo,
+    },
     domain::properties::{NewProperty, PropertiesError, VoteData},
 };
+
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
 
 /// Actor responsible for handling workshop item properties operations
@@ -29,6 +33,7 @@ pub enum PropertiesMsg {
     NewProperty(
         NewProperty,
         Source<String>,
+        Status,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),
     Vote(VoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
@@ -59,8 +64,8 @@ impl Actor for PropertiesActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            PropertiesMsg::NewProperty(prop, source, reply) => {
-                let res = state.service.new_property(prop, source).await;
+            PropertiesMsg::NewProperty(prop, source, status, reply) => {
+                let res = state.service.new_property(prop, source, status).await;
                 let _ = reply.send(res);
             }
             PropertiesMsg::Vote(vote, userid, reply) => {
