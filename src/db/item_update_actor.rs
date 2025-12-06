@@ -3,7 +3,11 @@ use snafu::{ResultExt, Whatever};
 use surrealdb::{
     RecordId, Surreal,
     engine::local::Db,
-    sql::{Data, Value, statements::InsertStatement, to_value},
+    sql::{
+        Data, Value,
+        statements::{InsertStatement, UpsertStatement},
+        to_value,
+    },
 };
 use tracing::{debug, error};
 
@@ -92,7 +96,9 @@ impl Actor for ItemUpdateActor {
                 join_process_actor.send_message(JoinProcessMsg::Process(data))?;
             }
             ItemUpdateMsg::MaybeQueueMl((item, children)) => {
-                if let Err(error) = maybe_queue_ml(&state.database, &state.ml_queue, &item).await {
+                if let Err(error) =
+                    maybe_queue_ml(&state.database, state.ml_queue.as_ref(), &item).await
+                {
                     error!(?error, id = %item.id, "queuing ML work (message)");
                 }
                 if myself
@@ -126,7 +132,7 @@ impl Actor for ItemUpdateActor {
 ///    for the same input
 async fn maybe_queue_ml(
     db: &Surreal<Db>,
-    ml_queue: &Option<ActorRef<MLQueueMsg>>,
+    ml_queue: Option<&ActorRef<MLQueueMsg>>,
     item: &WorkshopItem<RecordId>,
 ) -> crate::Result<(), Whatever> {
     if let Some(queue) = ml_queue {
@@ -143,7 +149,7 @@ async fn maybe_queue_ml(
             .whatever_context("taking description for ML queue check")?;
         let old_description = old_description.unwrap_or_default();
         let outdated = old_last_updated != Some(item.last_updated);
-        let description_changed = &old_description != &item.description;
+        let description_changed = old_description != item.description;
         let viable_language = item.languages.contains(&DetectedLanguage::English);
         // We don't want to waste our resources on extracting
         if viable_language && outdated && description_changed {
@@ -198,17 +204,16 @@ async fn insert_data(
     };
 
     let upsert_item = {
-        let mut stmt = InsertStatement::default();
-        stmt.data = Data::SingleExpression(to_value(item).unwrap());
-        stmt.into = Some(Value::Table("workshop_items".into()));
-        stmt.ignore = true;
+        let mut stmt = UpsertStatement::default();
+        stmt.data = Some(Data::ReplaceExpression(to_value(item.clone()).unwrap()));
+        stmt.what = vec![Value::Table("workshop_items".into())].into();
         stmt
     };
 
     let query = db
         .query("BEGIN TRANSACTION")
         .query(insert_tags)
-        .query(upsert_item)
+        .query(upsert_item.to_string()) // Missing impl for into query
         .query(insert_item_deps)
         .query("UPDATE $id SET tags=$tags")
         .bind(("id", id))

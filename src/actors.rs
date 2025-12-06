@@ -7,7 +7,10 @@ use tracing::{Instrument, info_span, instrument};
 
 use crate::{
     app_config::Config,
-    db::item_update_actor::{ItemUpdateActor, ItemUpdateArgs},
+    db::{
+        item_update_actor::{ItemUpdateActor, ItemUpdateArgs},
+        properties_actor::{PropertiesActor, PropertiesArgs},
+    },
     processing::{
         bb_actor::{BBActor, BBArgs},
         language_actor::{LanguageActor, LanguageArgs},
@@ -19,7 +22,6 @@ use crate::{
         item::{ItemActor, ItemArgs},
     },
 };
-use crate::db::properties_actor::{PropertiesActor, PropertiesArgs};
 
 #[instrument(skip_all)]
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {

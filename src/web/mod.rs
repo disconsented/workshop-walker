@@ -8,9 +8,9 @@ mod query;
 use std::sync::Arc;
 
 use salvo::{
+    Router,
     oapi::{Components, Operation},
     prelude::*,
-    Router,
 };
 use snafu::Whatever;
 use surrealdb::{engine::local::Db, Surreal};

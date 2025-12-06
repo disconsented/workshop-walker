@@ -1,7 +1,7 @@
 use classification::actor::ExtractionMsg;
-use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, RecordId, Surreal};
+use surrealdb::{RecordId, Surreal, engine::local::Db};
 use tracing::{debug, error, info};
 
 use crate::{
@@ -113,13 +113,13 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
                     reply
                 )) {
                     Ok(Ok(..)) => {
-                        debug!(%class, %value, "Inserted new property")
+                        debug!(%class, %value, "Inserted new property");
                     }
                     Ok(Err(error)) => {
-                        error!(?error,%class, %value,  "Inserting new property")
+                        error!(?error,%class, %value,  "Inserting new property");
                     }
                     Err(_) => (),
-                };
+                }
             }
         }
         Ok(Err(err)) => {
