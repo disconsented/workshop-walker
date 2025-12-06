@@ -92,7 +92,7 @@ opt-level = 3
 panic = 'abort'
 #codegen-units = 1
 
-[profile.dev.package.surrealdb]
+[profile.dev.package."*"]
 opt-level = 3
 
 [lints.clippy]
