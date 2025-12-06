@@ -68,7 +68,6 @@ impl PropertiesPort for PropertiesSilo {
                 debug!(?similar_properties, "Similar properties exist");
                 return Err(PropertiesError::Conflict);
             }
-            debug!("Succeeded similar_properties test");
             let existing_properties: Vec<WorkshopItemProperties<String, Property>> =
                 res.take(1).unwrap_or_default();
             existing_properties
