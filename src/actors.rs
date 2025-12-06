@@ -108,6 +108,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
                 database: db.clone(),
                 app_id: config.steam.appid,
                 client: reqwest_client,
+                force: config.force_update,
             },
         )
         .instrument(info_span!("spawn::steam_download"))

@@ -10,6 +10,7 @@ pub struct Config {
     pub database: Database,
     pub updater: bool,
     pub ml_extraction: bool,
+    pub force_update: bool,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
 }
