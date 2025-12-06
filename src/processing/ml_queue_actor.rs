@@ -104,7 +104,7 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
             {
                 match call!(state.property_actor, |reply| PropertiesMsg::NewProperty(
                     NewProperty {
-                        workshop_item: id.key().to_string(),
+                        workshop_item: id.key().to_string().replace("⟩", "").replace("⟨", ""),
                         class: class.clone(),
                         value: value.clone(),
                         note: None,
