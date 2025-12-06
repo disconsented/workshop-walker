@@ -140,7 +140,7 @@ impl PropertiesPort for PropertiesSilo {
             } else if !$changed_score{
                 UPDATE ONLY workshop_item_properties SET vote_count += 1, upvote_count += $score WHERE in = $item AND out = $link;
             } else {
-                return {chnaged_score: $changed_score, score: $score};
+                return {changed_score: $changed_score, score: $score};
             };",
             )
             .bind(("class", vote_data.class))

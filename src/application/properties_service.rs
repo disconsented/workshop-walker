@@ -24,7 +24,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         if !(2..=32).contains(&new_property.value.len()){
             return Err(PropertiesError::BadRequest {
                 msg: format!(
-                    "Property be between 2 and 32 characters in length; is {}",
+                    "Property must be between 2 and 32 characters in length; is {}",
                     new_property.value.len()
                 ),
             });
