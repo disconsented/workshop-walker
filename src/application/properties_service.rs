@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use crate::{
     db::model::Source,
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
@@ -21,7 +20,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         new_property.value = new_property.value.to_ascii_lowercase();
 
         // Some short/valid entries include UI and art
-        if !(2..=32).contains(&new_property.value.len()){
+        if !(2..=32).contains(&new_property.value.len()) {
             return Err(PropertiesError::BadRequest {
                 msg: format!(
                     "Property be between 2 and 32 characters in length; is {}",
@@ -33,10 +32,12 @@ impl<R: PropertiesPort> PropertiesService<R> {
         if !new_property
             .value
             .chars()
-            .all(|c| c.is_alphabetic() || c == ' ')
+            .all(|c| c.is_alphabetic() || c.is_ascii_whitespace() || c.is_ascii_punctuation())
         {
             return Err(PropertiesError::BadRequest {
-                msg: "Property value must be alphabetic characters only".into(),
+                msg: "Property value must be ascii alphabetic, whitespace or punctuation \
+                      characters only"
+                    .into(),
             });
         }
 
