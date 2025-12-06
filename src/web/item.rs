@@ -235,7 +235,7 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
 /// GET /api/item/{id}
 /// Retrieves a full workshop item by id, including dependencies and dependants.
 #[endpoint]
-#[instrument]
+#[instrument(skip_all)]
 pub async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWorkshopItem>> {
     // Lazily spawn the actor on first use and keep a global reference like auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;

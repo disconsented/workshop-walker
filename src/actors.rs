@@ -3,6 +3,7 @@ use ractor::Actor;
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{engine::local::Db, Surreal};
+use tracing::{Instrument, info_span, instrument};
 
 use crate::{
     app_config::Config,
@@ -20,6 +21,7 @@ use crate::{
 };
 use crate::db::properties_actor::{PropertiesActor, PropertiesArgs};
 
+#[instrument(skip_all)]
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     let reqwest_client = Client::new();
 
@@ -28,9 +30,11 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         LanguageActor {},
         LanguageArgs {},
     )
+    .instrument(info_span!("spawn::language"))
     .await
     .whatever_context("Spawning language actor")?;
     let (bb_actor, _) = Actor::spawn(Some("/bb".to_string()), BBActor {}, BBArgs {})
+        .instrument(info_span!("spawn::language"))
         .await
         .whatever_context("Spawning bb actor")?;
 
@@ -39,6 +43,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         ExtractionActor,
         ExtractionArgs {},
     )
+    .instrument(info_span!("spawn::extraction"))
     .await
     .whatever_context("Spawning ML extraction actor")?;
 
@@ -49,6 +54,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             database: db.clone(),
         },
     )
+    .instrument(info_span!("spawn::properties"))
     .await
     .whatever_context("Spawning properties actor")?;
 
@@ -61,6 +67,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             property_actor,
         },
     )
+    .instrument(info_span!("spawn::ml_queue"))
     .await
     .whatever_context("Spawning ML queue actor")?;
     let (item_update_actor, _) = Actor::spawn(
@@ -73,6 +80,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             ml_queue: config.ml_extraction.then_some(ml_queue_actor),
         },
     )
+    .instrument(info_span!("spawn::item_update"))
     .await
     .whatever_context("Spawning item_update actor")?;
     let (..) = Actor::spawn(
@@ -85,6 +93,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             biscuit: config.biscuit.clone(),
         },
     )
+    .instrument(info_span!("spawn::auth"))
     .await
     .whatever_context("Spawning auth actor")?;
     if config.updater {
@@ -99,6 +108,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
                 client: reqwest_client,
             },
         )
+        .instrument(info_span!("spawn::steam_download"))
         .await
         .whatever_context("Spawning steam download actor")?;
     }
@@ -110,6 +120,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             database: db.clone(),
         },
     )
+    .instrument(info_span!("spawn::item"))
     .await
     .whatever_context("Spawning item actor")?;
 
