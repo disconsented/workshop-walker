@@ -48,7 +48,7 @@ impl PipelineRunner {
             })?;
         let device = Device::Cpu;
         let vb = unsafe {
-            VarBuilder::from_mmaped_safetensors(&filenames, DType::F32, &device)
+            VarBuilder::from_mmaped_safetensors(&filenames, DType::F16, &device)
                 .context(VarBuilderLoadSnafu)?
         };
         let tokenizer = Tokenizer::from_file(tokenizer_filename).context(TokenizerLoadSnafu)?;
@@ -70,8 +70,7 @@ impl PipelineRunner {
         let (pipeline_tx, mut pipeline_rx) =
             mpsc::channel::<(String, oneshot::Sender<Result<String, WhateverAsync>>)>(1);
         let pipeline_task: JoinHandle<()> = spawn_blocking(move || {
-            let model = Model::new(&config, vb).unwrap();
-
+            let model = info_span!("Model setup").in_scope(|| Model::new(&config, vb).unwrap());
             let mut pipeline = TextGeneration::new(
                 model, tokenizer, 299792458, None, None, None, 1.1, 64, &device,
             );

@@ -278,7 +278,7 @@ pub struct MLProperties {
 
 #[cfg(test)]
 mod test {
-    use std::{fs::read_to_string, process::Output};
+    use std::fs::read_to_string;
 
     use candle_core::{DType, Device};
     use candle_examples::hub_load_safetensors;
@@ -297,7 +297,7 @@ mod test {
 
     #[test]
     fn test_dms() {
-        let themes_prompt = read_to_string("../../prompts/features.txt").unwrap();
+        let themes_prompt = read_to_string("../prompts/features.txt").unwrap();
         let themes_replaced = populate_prompt(&themes_prompt, DMS_T, DMS_D);
 
         let themes_json = sanitise_output(run(&themes_replaced).unwrap());
@@ -356,7 +356,7 @@ mod test {
         })?;
         let device = Device::Cpu;
         let vb = unsafe {
-            VarBuilder::from_mmaped_safetensors(&filenames, DType::F32, &device)
+            VarBuilder::from_mmaped_safetensors(&filenames, DType::F16, &device)
                 .context(VarBuilderLoadSnafu)?
         };
         let tokenizer = Tokenizer::from_file(tokenizer_filename).context(TokenizerLoadSnafu)?;
