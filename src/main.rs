@@ -10,6 +10,7 @@ use tracing_subscriber::fmt::format::FmtSpan;
 mod actors;
 mod app_config;
 mod application;
+mod apps;
 mod db;
 mod domain;
 mod processing;

@@ -1,3 +1,4 @@
+
 use crate::{
     db::model::{Source, Status},
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
