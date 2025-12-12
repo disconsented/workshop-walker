@@ -1,3 +1,5 @@
+pub mod admin_actor;
+pub mod admin_repository;
 pub mod item_update_actor;
 pub mod model;
 pub mod properties_actor;

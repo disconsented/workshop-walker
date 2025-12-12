@@ -10,6 +10,7 @@ use crate::{
     db::{
         item_update_actor::{ItemUpdateActor, ItemUpdateArgs},
         properties_actor::{PropertiesActor, PropertiesArgs},
+        admin_actor::{AdminActor, AdminArgs},
     },
     processing::{
         bb_actor::{BBActor, BBArgs},
@@ -59,6 +60,16 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .instrument(info_span!("spawn::properties"))
     .await
     .whatever_context("Spawning properties actor")?;
+
+    let (..) = Actor::spawn(
+        Some("/admin".to_string()),
+        AdminActor,
+        AdminArgs {
+            database: db.clone(),
+        },
+    )
+    .await
+    .whatever_context("Spawning admin actor")?;
 
     let (ml_queue_actor, _) = Actor::spawn(
         Some("/ml_queue".to_string()),
