@@ -4,7 +4,7 @@ use tracing::error;
 use crate::{
     db::{
         ItemID, UserID,
-        model::{Property, Status, User, WorkshopItemProperties},
+        model::{Property, User, WorkshopItemProperties},
     },
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
@@ -36,7 +36,7 @@ impl AdminPort for AdminSilo {
     }
 
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
-        let id = UserID::from(patch.id);
+        let id = UserID::from(patch.id).into_recordid();
         if let Some(banned) = patch.banned {
             if let Err(e) = self
                 .db

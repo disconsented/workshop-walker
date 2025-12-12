@@ -4,8 +4,10 @@ use salvo::__private::tracing::debug;
 use snafu::{Whatever, prelude::*};
 use surrealdb::{Surreal, engine::local::RocksDb, opt::auth::Root};
 use surrealdb_migrations::MigrationRunner;
-use tracing::{Instrument, info_span};
+use tracing::{Instrument, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
+
+use crate::{application::admin_service::AdminService, db::admin_repository::AdminSilo};
 
 mod actors;
 mod app_config;
@@ -65,6 +67,21 @@ async fn main() -> Result<()> {
         .await
         .whatever_context("Failed to apply migrations")?;
     debug!("migrations finished");
+    {
+        let admin_service = AdminService::new(AdminSilo::new(db.clone()));
+        for user in &settings.admin_users {
+            debug!(%user, "Setting admin flag for user");
+            let _ = admin_service
+                .patch_user(domain::admin::PatchUserData {
+                    id: user.clone(),
+                    banned: None,
+                    admin: Some(true),
+                })
+                .await
+                .inspect_err(|error| error!(?error, %user, "Failed to set admin flag for user"));
+        }
+    }
+
     actors::spawn(&settings, &db)
         .instrument(info_span!(parent: &span, "spawn actors"))
         .await?;

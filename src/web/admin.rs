@@ -8,7 +8,6 @@ use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
-        UserID,
         admin_actor::{ADMIN_ACTOR, AdminMsg},
         model::{Property, User, WorkshopItemProperties},
     },

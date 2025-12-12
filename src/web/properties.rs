@@ -10,10 +10,7 @@ use crate::{
     db::{
         model::{Source, Status},
         properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
-    }, db::{
-    model::Source,
-    properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
-},
+    },
     domain::properties::{NewProperty, PropertiesError, VoteData},
     web::auth,
 };
