@@ -58,7 +58,7 @@
 	async function toggleUserBan(id: number, value: boolean) {
 		users = users.map((u) => (u.id === id ? { ...u, banned: !u.banned } : u));
 		let res = await fetch('/api/admin/users', {
-			method: 'patch',
+			method: 'put',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				id: id,
