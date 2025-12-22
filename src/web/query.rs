@@ -27,6 +27,7 @@ use crate::{
 #[endpoint]
 pub async fn list(
     _: &mut Request,
+    app: QueryParam<u64, true>,
     page: QueryParam<u64, false>,
     limit: QueryParam<u64, false>,
     languages: QueryParam<DetectedLanguage, false>,
@@ -40,6 +41,7 @@ pub async fn list(
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     #[instrument(skip_all)]
     async fn query(
+        app: u64,
         page: u64,
         limit: u64,
         languages: Option<DetectedLanguage>,
@@ -169,6 +171,11 @@ pub async fn list(
                         Value::Strand(title_query.into()),
                     )
                 }),
+                Some(Expression::new(
+                    Value::Idiom("appid".into()),
+                    Operator::Equal,
+                    Value::Number(app.into()),
+                )),
             ]
             .into_iter()
             .flatten()
@@ -267,6 +274,7 @@ pub async fn list(
             .collect())
     }
     let results = query(
+        app.into_inner(),
         page,
         limit,
         *languages,

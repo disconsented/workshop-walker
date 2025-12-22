@@ -8,9 +8,10 @@ use tracing::{Instrument, info_span, instrument};
 use crate::{
     app_config::Config,
     db::{
+        admin_actor::{AdminActor, AdminArgs},
+        apps_actor::{AppsActor, AppsArgs},
         item_update_actor::{ItemUpdateActor, ItemUpdateArgs},
         properties_actor::{PropertiesActor, PropertiesArgs},
-        admin_actor::{AdminActor, AdminArgs},
     },
     processing::{
         bb_actor::{BBActor, BBArgs},
@@ -61,16 +62,6 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .await
     .whatever_context("Spawning properties actor")?;
 
-    let (..) = Actor::spawn(
-        Some("/admin".to_string()),
-        AdminActor,
-        AdminArgs {
-            database: db.clone(),
-        },
-    )
-    .await
-    .whatever_context("Spawning admin actor")?;
-
     let (ml_queue_actor, _) = Actor::spawn(
         Some("/ml_queue".to_string()),
         MLQueueActor,
@@ -83,6 +74,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .instrument(info_span!("spawn::ml_queue"))
     .await
     .whatever_context("Spawning ML queue actor")?;
+
     let (item_update_actor, _) = Actor::spawn(
         Some("/item_updater".to_string()),
         ItemUpdateActor {},
@@ -96,6 +88,48 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .instrument(info_span!("spawn::item_update"))
     .await
     .whatever_context("Spawning item_update actor")?;
+
+    let (..) = Actor::spawn(
+        Some("/admin".to_string()),
+        AdminActor,
+        AdminArgs {
+            database: db.clone(),
+        },
+    )
+    .await
+    .whatever_context("Spawning admin actor")?;
+
+    let steam_download_actor = if config.updater {
+        let (actor, _) = Actor::spawn(
+            Some("/steam-download".to_string()),
+            SteamDownloadActor {},
+            SteamDownloadArgs {
+                steam_token: config.steam.api_token.clone(),
+                item_processing_actor_ref: item_update_actor,
+                database: db.clone(),
+                client: reqwest_client.clone(),
+                force: config.force_update,
+            },
+        )
+        .instrument(info_span!("spawn::steam_download"))
+        .await
+        .whatever_context("Spawning steam download actor")?;
+        Some(actor)
+    } else {
+        None
+    };
+
+    let (..) = Actor::spawn(
+        Some("/apps".to_string()),
+        AppsActor,
+        AppsArgs {
+            database: db.clone(),
+            download_actor: steam_download_actor,
+        },
+    )
+    .await
+    .whatever_context("Spawning apps actor")?;
+
     let (..) = Actor::spawn(
         Some("/auth".to_string()),
         AuthActor {},
@@ -109,23 +143,6 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .instrument(info_span!("spawn::auth"))
     .await
     .whatever_context("Spawning auth actor")?;
-    if config.updater {
-        let (..) = Actor::spawn(
-            Some("/steam-download".to_string()),
-            SteamDownloadActor {},
-            SteamDownloadArgs {
-                steam_token: config.steam.api_token.clone(),
-                item_processing_actor_ref: item_update_actor,
-                database: db.clone(),
-                app_id: config.steam.appid,
-                client: reqwest_client,
-                force: config.force_update,
-            },
-        )
-        .instrument(info_span!("spawn::steam_download"))
-        .await
-        .whatever_context("Spawning steam download actor")?;
-    }
 
     let (..) = Actor::spawn(
         Some("/item".to_string()),

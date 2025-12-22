@@ -27,6 +27,8 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	if (lastUpdated.v) {
 		paramList.push(['last_updated', Date.parse(lastUpdated.v) / 1000]);
 	}
+
+	paramList.push(['app', params.id]);
 	const searchParams = new URLSearchParams(paramList);
 
 	return {

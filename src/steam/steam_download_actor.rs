@@ -1,13 +1,19 @@
 use std::{
+    collections::HashMap,
     ops::Add,
-    sync::Arc,
+    sync::{Arc, OnceLock},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{
+    Surreal,
+    engine::local::Db,
+    sql::{Cond, Expression, Field, Operator, Value, statements::SelectStatement},
+};
+use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
 use crate::{
@@ -15,13 +21,14 @@ use crate::{
     steam::model::{EPublishedFileQueryType, GetPage, IPublishedResponse, SteamRoot},
 };
 
+pub static DOWNLOAD_ACTOR: OnceLock<ActorRef<SteamDownloadMsg>> = OnceLock::new();
+
 pub struct SteamDownloadActor {}
 
 pub struct SteamDownloadArgs {
     pub steam_token: Arc<String>,
     pub item_processing_actor_ref: ActorRef<ItemUpdateMsg>,
     pub database: Surreal<Db>,
-    pub app_id: u32,
     pub client: Client,
     pub force: bool,
 }
@@ -29,10 +36,14 @@ pub struct SteamDownloadState {
     client: Client,
     steam_token: Arc<String>,
     item_processing_actor_ref: ActorRef<ItemUpdateMsg>,
+    apps: HashMap<u32, JoinHandle<()>>,
+    database: Surreal<Db>,
 }
 
 pub enum SteamDownloadMsg {
     Download { app_id: u32, first_page: GetPage },
+    AddApp(u32),
+    RemoveApp(u32),
 }
 #[async_trait]
 impl Actor for SteamDownloadActor {
@@ -45,48 +56,48 @@ impl Actor for SteamDownloadActor {
         myself: ActorRef<Self::Msg>,
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
-        // ToDo: do this per app
-        let timestamp: Option<u64> = args
-            .database
-            .query("SELECT last_updated FROM workshop_items ORDER BY last_updated DESC LIMIT 1")
-            .await
-            .unwrap()
-            .take((0, "last_updated"))
-            .unwrap();
-        let timestamp = timestamp.unwrap_or(0);
-        let time_since = SystemTime::now()
-            .duration_since(UNIX_EPOCH.add(Duration::from_secs(timestamp)))
-            .unwrap();
-        let h12 = Duration::from_secs(60 * 60 * 12);
-        let message_builder = move || SteamDownloadMsg::Download {
-            app_id: args.app_id,
-            first_page: GetPage {
-                query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
-                ..Default::default()
-            },
+        let apps: Vec<u32> = {
+            let mut stmt = SelectStatement::default();
+            stmt.expr.0 = vec![Field::Single {
+                expr: "id".into(),
+                alias: None,
+            }];
+            stmt.what = vec![Value::Table("apps".into())].into();
+            let mut cond = Cond::default();
+            cond.0 = Expression::new(
+                Value::Idiom("enabled".into()),
+                Operator::Equal,
+                Value::Bool(true),
+            )
+            .into();
+            stmt.cond = Some(cond);
+            args.database.query(stmt).await?.take(0)?
         };
-        if time_since > h12 || args.force {
-            myself.send_message(message_builder())?;
-            info!(period = %humantime::Duration::from(time_since), "newest mod is at least 12 hours out of date; running update now");
-        }
 
-        myself.send_interval(h12, message_builder);
-        Ok(Self::State {
+        let mut state = Self::State {
             client: args.client,
             steam_token: args.steam_token,
             item_processing_actor_ref: args.item_processing_actor_ref,
-        })
+            apps: HashMap::new(),
+            database: args.database,
+        };
+        for app_id in apps {
+            start_downloader(&myself, &mut state, app_id, args.force).await;
+        }
+
+        DOWNLOAD_ACTOR.get_or_init(|| myself);
+        Ok(state)
     }
 
     async fn handle(
         &self,
-        _: ActorRef<Self::Msg>,
+        myself: ActorRef<Self::Msg>,
         message: Self::Msg,
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
             SteamDownloadMsg::Download { app_id, first_page } => {
-                if let Err(e) = download(
+                if let Err(error) = download(
                     state,
                     app_id,
                     first_page,
@@ -94,7 +105,18 @@ impl Actor for SteamDownloadActor {
                 )
                 .await
                 {
-                    error!("Downloading workshop items for {app_id} with err: {e:?}");
+                    error!(app_id, ?error, "Downloading workshop items");
+                }
+            }
+            SteamDownloadMsg::AddApp(app_id) => {
+                if !state.apps.contains_key(&app_id) {
+                    start_downloader(&myself, state, app_id, false).await;
+                }
+            }
+            SteamDownloadMsg::RemoveApp(app_id) => {
+                if let Some(handle) = state.apps.remove(&app_id) {
+                    handle.abort();
+                    info!(app_id, "Stopped downloading workshop items");
                 }
             }
         }
@@ -147,4 +169,47 @@ async fn download(
         );
     }
     Ok(())
+}
+
+async fn start_downloader(
+    myself: &ActorRef<SteamDownloadMsg>,
+    state: &mut SteamDownloadState,
+    app_id: u32,
+    force: bool,
+) {
+    let timestamp: Option<u64> = state
+        .database
+        .query(
+            "SELECT last_updated FROM workshop_items WHERE appid = $appid ORDER BY last_updated \
+             DESC LIMIT 1",
+        )
+        .bind(("appid", app_id))
+        .await
+        .unwrap()
+        .take((0, "last_updated"))
+        .unwrap();
+    let timestamp = timestamp.unwrap_or(0);
+    let time_since = SystemTime::now()
+        .duration_since(UNIX_EPOCH.add(Duration::from_secs(timestamp)))
+        .unwrap();
+    let h12 = Duration::from_hours(12);
+    let message_builder = move || SteamDownloadMsg::Download {
+        app_id,
+        first_page: GetPage {
+            query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
+            ..Default::default()
+        },
+    };
+    if time_since > h12 || force {
+        let _ = myself.send_message(message_builder());
+        info!(period = %humantime::Duration::from(time_since),app = app_id, "newest mod is at least 12 hours out of date; running update now");
+    }
+
+    if let Some(old) = state
+        .apps
+        .insert(app_id, myself.send_interval(h12, message_builder))
+    {
+        // Remember to abort the old timer
+        old.abort();
+    }
 }

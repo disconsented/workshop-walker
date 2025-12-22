@@ -1,4 +1,5 @@
 mod admin;
+mod apps;
 pub mod auth;
 mod companions;
 pub mod item;
@@ -59,8 +60,12 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                         Router::with_path("users")
                             .get(admin::get_users)
                             .put(admin::patch_user),
-                    ),
+                    )
+                    .push(Router::with_path("apps").get(apps::list).post(apps::upsert))
+                    .push(Router::with_path("app").delete(apps::remove)),
             )
+            .push(Router::with_path("app/{id}").get(apps::get))
+            .push(Router::with_path("apps").get(apps::list_available))
             .hoop(affix_state::inject(config))
             .push(Router::with_path("login").get(auth::redirect_to_steam_auth))
             .push(Router::with_path("verify").get(auth::verify_token_from_steam))

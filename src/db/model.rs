@@ -92,7 +92,6 @@ pub fn into_string(key: &RecordIdKey) -> String {
 }
 
 /// A steam workshop app
-#[expect(unused, reason = "To be used soon")]
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct App {
     /// The steam ID for an app
@@ -109,7 +108,7 @@ pub struct App {
     /// Whether the app is visible on the index
     pub available: bool,
     /// List of tags to select by default
-    pub default_tags: Vec<()>,
+    pub default_tags: Vec<Tag>,
 }
 
 /// A workshop walker user

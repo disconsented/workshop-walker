@@ -19,7 +19,6 @@ pub struct Config {
 pub struct Steam {
     #[redact]
     pub api_token: Arc<String>,
-    pub appid: u32,
 }
 #[derive(Deserialize, Redact)]
 pub struct Database {

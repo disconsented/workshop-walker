@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Tabs } from '@skeletonlabs/skeleton-svelte';
+	import AppCard from '$lib/app_card.svelte';
 
 	let { data }: { data } = $props();
 	console.log(data);
@@ -71,6 +72,67 @@
 	}
 
 	let group = $state('properties');
+
+	import { onMount } from 'svelte';
+	import AdminApps from './AdminApps.svelte';
+
+	export type Game = {
+		appid: string;
+		image_url: string;
+		description: string;
+		developer: string;
+		name: string;
+	};
+
+	let games: Game[] = $state([]);
+
+	// Example initial data
+	onMount(() => {
+		games = [
+			{
+				appid: '294100',
+				image_url:
+					'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189',
+				description:
+					' A sci-fi colony sim driven by an intelligent AI storyteller. Generates stories by simulating psychology, ecology, gunplay, melee combat, climate, biomes, diplomacy, interpersonal relationships, art, medicine, trade, and more.',
+				developer: 'Ludeon Studios',
+				name: 'Rimworld'
+			},
+			{
+				appid: '1133870',
+				image_url:
+				'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1133870/f5fb2e294898df4d3bf28b195f277d3df3511792/header.jpg?t=1764615043',
+				description:
+					'Space Engineers 2 is a sandbox about engineering and colonization where you build ships, stations, and planetary bases in a fully destructible world. Begin the story of Miro and Ivan Sokol, expand humanity’s foothold in the Almagest system, and fight to survive. ',
+				developer: '\n' +
+					'Keen Software House\t',
+				name: 'Space Engineers 2'
+			},
+			{
+				appid: '262060',
+				image_url:
+					'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/262060/header.jpg?t=1756404119',
+				description:
+					' Darkest Dungeon is a challenging gothic roguelike turn-based RPG about the psychological stresses of adventuring. Recruit, train, and lead a team of flawed heroes against unimaginable horrors, stress, disease, and the ever-encroaching dark. Can you keep your heroes together when all hope is lost?',
+				developer: 'Red Hook Studios',
+				name: 'Darkest Dungeon®'
+			},
+			{
+				appid: '108600',
+				image_url:
+					'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/108600/header.jpg?t=1762369969',
+				description:
+					'Project Zomboid is the ultimate in zombie survival. Alone or in MP: you loot, build, craft, fight, farm and fish in a struggle to survive. A hardcore RPG skillset, a vast map, massively customisable sandbox and a cute tutorial raccoon await the unwary. So how will you die? All it takes is a bite.. ',
+				developer: 'The Indie Stone',
+				name: 'Project Zomboid'
+			}
+		];
+	});
+
+	let isDirty = false;
+	let isSaving = false;
+	let saveError: string | null = null;
+
 </script>
 
 <div class="mx-auto my-8 max-w-6xl">
@@ -80,6 +142,7 @@
 		{#snippet list()}
 			<Tabs.Control value="properties">Properties</Tabs.Control>
 			<Tabs.Control value="users">Users</Tabs.Control>
+			<Tabs.Control value="apps">Apps</Tabs.Control>
 		{/snippet}
 		{#snippet content()}
 			<!-- Properties Tab -->
@@ -90,6 +153,11 @@
 			<!-- Users Tab -->
 			<Tabs.Panel value="users">
 				{@render usersPanel()}
+			</Tabs.Panel>
+
+			<!-- Apps Tab -->
+			<Tabs.Panel value="apps">
+				{@render appsPanel()}
 			</Tabs.Panel>
 		{/snippet}
 	</Tabs>
@@ -216,4 +284,100 @@
 		{/each}
 		</tbody>
 	</table>
+{/snippet}
+
+{#snippet appsPanel()}
+	<AdminApps></AdminApps>
+<!--	<div class="space-y-6 p-4">-->
+<!--		<div class="flex items-center justify-between">-->
+<!--			<h2 class="text-2xl font-bold">Games</h2>-->
+
+<!--			<button-->
+<!--				class="btn variant-filled-primary"-->
+<!--				disabled={!isDirty || isSaving}-->
+<!--				onclick={saveAll}-->
+<!--			>-->
+<!--				{isSaving ? "Saving…" : "Save Changes"}-->
+<!--			</button>-->
+<!--		</div>-->
+
+<!--		{#if saveError}-->
+<!--			<div class="alert variant-filled-error">-->
+<!--				{saveError}-->
+<!--			</div>-->
+<!--		{/if}-->
+
+<!--		{#each games as game, i (game.appid + i)}-->
+<!--			<div class="card border p-4 space-y-4">-->
+<!--				<div class="flex justify-between items-center">-->
+<!--					<h3 class="text-lg font-semibold">-->
+<!--						{game.name || "New Game"}-->
+<!--					</h3>-->
+
+<!--					<button-->
+<!--						type="button"-->
+<!--						class="btn variant-outline error"-->
+<!--					>-->
+<!--						Delete-->
+<!--					</button>-->
+<!--				</div>-->
+
+<!--				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">-->
+<!--					<div>-->
+<!--						<label class="label">Name</label>-->
+<!--						<input-->
+<!--							class="input w-full"-->
+<!--							bind:value={game.name}-->
+<!--						/>-->
+<!--					</div>-->
+
+<!--					<div>-->
+<!--						<label class="label">App ID</label>-->
+<!--						<input-->
+<!--							class="input w-full"-->
+<!--							bind:value={game.appid}-->
+<!--						/>-->
+<!--					</div>-->
+
+<!--					<div class="col-span-full">-->
+<!--						<label class="label">Image URL</label>-->
+<!--						<input-->
+<!--							class="input w-full"-->
+<!--							bind:value={game.image_url}-->
+<!--						/>-->
+
+<!--						{#if game.image_url}-->
+<!--							<img-->
+<!--								src={game.image_url}-->
+<!--								alt={game.name}-->
+<!--								class="mt-2 max-w-xs rounded"-->
+<!--							/>-->
+<!--						{/if}-->
+<!--					</div>-->
+
+<!--					<div>-->
+<!--						<label class="label">Developer</label>-->
+<!--						<input-->
+<!--							class="input w-full"-->
+<!--							bind:value={game.developer}-->
+<!--						/>-->
+<!--					</div>-->
+
+<!--					<div class="col-span-full">-->
+<!--						<label class="label">Description</label>-->
+<!--						<textarea-->
+<!--							class="textarea w-full"-->
+<!--							bind:value={game.description}-->
+<!--						/>-->
+<!--					</div>-->
+<!--				</div>-->
+<!--			</div>-->
+<!--		{/each}-->
+
+<!--		<button-->
+<!--			class="btn variant-outline w-full"-->
+<!--		>-->
+<!--			Add New Game-->
+<!--		</button>-->
+<!--	</div>-->
 {/snippet}
