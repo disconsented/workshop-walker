@@ -1,6 +1,6 @@
 use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
-    Depot, Writer,
+    Writer,
     oapi::extract::JsonBody,
     prelude::{Json, StatusCode, StatusError, endpoint},
 };
@@ -75,19 +75,19 @@ impl From<AdminError> for InnerError {
 }
 
 #[endpoint]
-pub async fn get_users(_: &mut Depot) -> Result<Json<Vec<User<String>>>> {
+pub async fn get_users() -> Result<Json<Vec<User<String>>>> {
     let actor = ADMIN_ACTOR
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
-    let users: Vec<User<String>> = call!(actor, |reply| AdminMsg::ListUsers(reply))
+    let users: Vec<User<String>> = call!(actor, AdminMsg::ListUsers)
         .map_err(InnerError::from)?
         .map_err(InnerError::from)?;
     Ok(Json(users))
 }
 
 #[endpoint]
-pub async fn patch_user(data: JsonBody<PatchUserData>, _: &mut Depot) -> Result<()> {
+pub async fn patch_user(data: JsonBody<PatchUserData>) -> Result<()> {
     let actor = ADMIN_ACTOR
         .get()
         .cloned()
@@ -99,24 +99,20 @@ pub async fn patch_user(data: JsonBody<PatchUserData>, _: &mut Depot) -> Result<
 }
 
 #[endpoint]
-pub async fn get_workshop_item_properties(
-    _: &mut Depot,
-) -> Result<Json<Vec<WorkshopItemProperties<String, Property>>>> {
+pub async fn get_workshop_item_properties()
+-> Result<Json<Vec<WorkshopItemProperties<String, Property>>>> {
     let actor = ADMIN_ACTOR
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
-    let list = call!(actor, |reply| AdminMsg::ListWorkshopItemProperties(reply))
+    let list = call!(actor, AdminMsg::ListWorkshopItemProperties)
         .map_err(InnerError::from)?
         .map_err(InnerError::from)?;
     Ok(Json(list))
 }
 
 #[endpoint]
-pub async fn patch_workshop_item_properties(
-    data: JsonBody<PatchRelationshipData>,
-    _: &mut Depot,
-) -> Result<()> {
+pub async fn patch_workshop_item_properties(data: JsonBody<PatchRelationshipData>) -> Result<()> {
     let actor = ADMIN_ACTOR
         .get()
         .cloned()
