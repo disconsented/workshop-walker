@@ -23,7 +23,7 @@ impl AdminPort for AdminSilo {
     async fn list_users(&self) -> Result<Vec<User<String>>, AdminError> {
         match self
             .db
-            .query("SELECT id.to_string() as id, * FROM users")
+            .query("SELECT id.id().to_string() as id, * FROM users")
             .await
             .map(|mut q| q.take(0))
         {
@@ -37,29 +37,27 @@ impl AdminPort for AdminSilo {
 
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
         let id = UserID::from(patch.id).into_recordid();
-        if let Some(banned) = patch.banned {
-            if let Err(e) = self
+        if let Some(banned) = patch.banned
+            && let Err(e) = self
                 .db
                 .query("UPDATE $user SET banned=$banned")
                 .bind(("user", id.clone()))
                 .bind(("banned", banned))
                 .await
-            {
-                error!(?e, "failed to update banned flag");
-                return Err(AdminError::Internal);
-            }
+        {
+            error!(?e, "failed to update banned flag");
+            return Err(AdminError::Internal);
         }
-        if let Some(admin) = patch.admin {
-            if let Err(e) = self
+        if let Some(admin) = patch.admin
+            && let Err(e) = self
                 .db
                 .query("UPDATE $user SET admin=$admin")
                 .bind(("user", id))
                 .bind(("admin", admin))
                 .await
-            {
-                error!(?e, "failed to update admin flag");
-                return Err(AdminError::Internal);
-            }
+        {
+            error!(?e, "failed to update admin flag");
+            return Err(AdminError::Internal);
         }
         Ok(())
     }
