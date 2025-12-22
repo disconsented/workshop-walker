@@ -245,6 +245,31 @@ pub struct VoteData {
     pub votes_down: usize,
 }
 
+#[derive(Serialize, Deserialize)]
+struct SteamUser {
+    pub steamid: String,
+    pub communityvisibilitystate: i64,
+    pub profilestate: i64,
+    pub personaname: String,
+    pub profileurl: String,
+    pub avatar: String,
+    pub avatarmedium: String,
+    pub avatarfull: String,
+    pub avatarhash: String,
+    pub lastlogoff: i64,
+    pub personastate: i64,
+    pub realname: String,
+    pub primaryclanid: String,
+    pub timecreated: i64,
+    pub personastateflags: i64,
+    pub loccountrycode: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct SteamUserResponse {
+    pub players: Vec<SteamUser>,
+}
+
 #[cfg(test)]
 mod test {
     use std::fs::read_to_string;
