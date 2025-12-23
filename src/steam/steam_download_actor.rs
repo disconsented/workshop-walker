@@ -8,13 +8,9 @@ use std::{
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{
-    Surreal,
-    engine::local::Db,
-    sql::{Cond, Expression, Field, Operator, Value, statements::SelectStatement},
-};
+use surrealdb::{Surreal, engine::local::Db};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info};
+use tracing::{Instrument, debug, error, info, info_span};
 
 use crate::{
     db::item_update_actor::ItemUpdateMsg,
@@ -56,23 +52,12 @@ impl Actor for SteamDownloadActor {
         myself: ActorRef<Self::Msg>,
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
-        let apps: Vec<u32> = {
-            let mut stmt = SelectStatement::default();
-            stmt.expr.0 = vec![Field::Single {
-                expr: "id".into(),
-                alias: None,
-            }];
-            stmt.what = vec![Value::Table("apps".into())].into();
-            let mut cond = Cond::default();
-            cond.0 = Expression::new(
-                Value::Idiom("enabled".into()),
-                Operator::Equal,
-                Value::Bool(true),
-            )
-            .into();
-            stmt.cond = Some(cond);
-            args.database.query(stmt).await?.take(0)?
-        };
+        let apps: Vec<u32> = args
+            .database
+            .query("SELECT id.id() AS id FROM apps WHERE enabled = true")
+            // .instrument(info_span!("select enabled apps"))
+            .await?
+            .take((0, "id"))?;
 
         let mut state = Self::State {
             client: args.client,
@@ -82,7 +67,9 @@ impl Actor for SteamDownloadActor {
             database: args.database,
         };
         for app_id in apps {
-            start_downloader(&myself, &mut state, app_id, args.force).await;
+            start_downloader(&myself, &mut state, app_id, args.force)
+                .instrument(info_span!("start downloader", app_id))
+                .await;
         }
 
         DOWNLOAD_ACTOR.get_or_init(|| myself);
