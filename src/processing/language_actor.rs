@@ -2,7 +2,7 @@ use std::{collections::HashMap, convert::Into, fmt};
 
 use lingua::{
     Language,
-    Language::{Chinese, English, Japanese, Korean, Portuguese, Russian, Spanish},
+    Language::{Chinese, English, French, Japanese, Korean, Portuguese, Russian, Spanish},
     LanguageDetector, LanguageDetectorBuilder,
 };
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
@@ -38,6 +38,7 @@ pub enum DetectedLanguage {
     Korean = 5,
     Spanish = 6,
     Portuguese = 7,
+    French = 9,
     Unknown = 0,
 }
 
@@ -56,6 +57,7 @@ impl From<Language> for DetectedLanguage {
             English => Self::English,
             Spanish => Self::Spanish,
             Portuguese => Self::Portuguese,
+            French => Self::French,
             _ => Unknown,
         }
     }

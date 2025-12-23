@@ -23,7 +23,7 @@ hf-hub = "0.4"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
 itertools = "0.14"
-lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean"] }
+lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean", "french"] }
 multimap = "0.10"
 ractor = { version = "0.15", features = ["monitors", "async-trait"] }
 reqwest = { version = "0.12", features = ["json", ] }
