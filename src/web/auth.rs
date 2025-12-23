@@ -36,6 +36,7 @@ use tracing::{debug, error};
 use crate::{
     app_config::BiscuitConfig,
     db::{UserID, model::User},
+    steam::steam_user_actor::SteamUserMsg,
 };
 
 static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
@@ -249,12 +250,14 @@ pub struct AuthState {
     database: Surreal<Db>,
     base_url: Arc<String>,
     biscuit: Arc<BiscuitConfig>,
+    steam_user_actor_ref: ActorRef<SteamUserMsg>,
 }
 pub struct AuthArgs {
     pub database: Surreal<Db>,
     pub client: Client,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
+    pub steam_user_actor_ref: ActorRef<SteamUserMsg>,
 }
 #[async_trait]
 impl Actor for AuthActor {
@@ -273,6 +276,7 @@ impl Actor for AuthActor {
             database: args.database,
             base_url: args.base_url.clone(),
             biscuit: args.biscuit.clone(),
+            steam_user_actor_ref: args.steam_user_actor_ref,
         })
     }
 
@@ -477,6 +481,12 @@ impl AuthActor {
             .rsplit('/')
             .next()
             .ok_or(InnerError::PeerValidationFailed)?;
+
+        if let Ok(id) = user_id.parse::<u64>() {
+            let _ = state
+                .steam_user_actor_ref
+                .send_message(SteamUserMsg::Fetch(id));
+        }
 
         let keypair = &KeyPair::from(&state.biscuit.private_key);
 

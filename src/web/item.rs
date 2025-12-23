@@ -9,13 +9,7 @@ use salvo::{
 use surrealdb::{RecordId, Surreal, engine::local::Db};
 use tracing::{error, instrument};
 
-use crate::{
-    db::{
-        UserID,
-        model::{FullWorkshopItem, WorkshopItem, into_string},
-    },
-    web::auth,
-};
+use crate::{db::model::FullWorkshopItem, web::auth};
 
 static ITEM_ACTOR: OnceLock<ActorRef<ItemMsg>> = OnceLock::new();
 
@@ -103,133 +97,107 @@ impl Actor for ItemActor {
     }
 }
 
-// Core query logic extracted from the previous inline endpoint version.
 async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<FullWorkshopItem> {
     let id = RecordId::from_table_key("workshop_items", &id);
-    let mut response = db
-        .query(
-            "SELECT in.appid as appid, in.description as description, in.id as id, in.title
-             as title, in.author as author, in.languages as languages, in.last_updated as
-             last_updated, in.score as score, in.tags.{id: id.to_string(), app_id, display_name} \
-             as tags, in.preview_url as preview_url, [] as properties FROM \
-             $id<-item_dependencies.*;",
-        )
-        .query(
-            "SELECT out.appid as appid, out.description as description, out.id as id,
-             out.author as author, out.languages as languages, out.last_updated as
-             last_updated, out.title as title, out.score as score, out.tags.{id: id.to_string(), \
-             app_id, display_name} as tags, out.preview_url as preview_url, [] as properties
-             FROM $id->item_dependencies.*;",
-        )
-        .bind(("id", id.clone()))
-        .await
-        .map_err(|_| InnerError::InternalError)?;
 
-    let dependants: Vec<WorkshopItem<RecordId>> =
-        response.take(0).map_err(|_| InnerError::InternalError)?;
-    let dependencies: Vec<WorkshopItem<RecordId>> =
-        response.take(1).map_err(|_| InnerError::InternalError)?;
-
-    let result = {
-        let mut res = match user {
-            None => db
-                .query(
-                    r"SELECT *, tags.{id: id.to_string(), app_id, display_name} as tags,
-                ->workshop_item_properties.filter(|$prop|$prop.status == 1)[*].{
-                    id: id.to_string(),
-                    in: in.to_string(),
-                    out: out.id.{
-                        class,
-                        `value`
-                    },
-                    source: 'system',
-                    status,
-                    upvote_count,
-                    vote_count
-                } as properties FROM $id",
-                )
-                .bind(("id", id.clone()))
-                .await
-                .map_err(|_| InnerError::InternalError)?,
-            Some(user) => db
-                .query(format!(
-                    "SELECT *, tags.{{id: id.to_string(), app_id, display_name}} as tags,
-                                    ->workshop_item_properties.filter(|$prop|$prop.status == 1 || \
-                     $prop.source == {})[*].{{
-                                        id: id.to_string(),
-                                        in: in.to_string(),
-                                        out: out.id.{{
-                                            class,
-                                            `value`
-                                        }},
-                                        source: 'system',
-                                        status,
-                                        upvote_count,
-                                        vote_count,
-                                        vote_state: votes:{{item: $id, link: out, user: {0}}}.score
-                                    }} as properties FROM $id",
-                    UserID::from(user).into_recordid()
-                ))
-                .bind(("id", id))
-                .await
-                .map_err(|_| InnerError::InternalError)?,
-        };
-
-        let result: Option<WorkshopItem<RecordId>> =
-            res.take(0).map_err(|_| InnerError::InternalError)?;
-        result.ok_or(InnerError::NotFound)?
+    let properties = match user {
+        Some(user) => format!(
+            "filter(|$prop: any| $prop.status == 1 OR $prop.source == {user})[*].{{
+                        id: id.id(),
+                        in: in.to_string(),
+                        out: out.id.{{
+                            class,
+                            `value`
+                        }},
+                        source: 'system',
+                        status,
+                        upvote_count,
+                        vote_count,
+                        vote_state: votes:{{
+                            item: $id,
+                            link: out,
+                            user: {{ 0 }}
+                        }}.score
+                    }}"
+        ),
+        None => "filter(|$prop: any| $prop.status == 1)[*].{
+                        id: id.id(),
+                        in: in.to_string(),
+                        out: out.id.{
+                            class,
+                            `value`
+                        },
+                        source: 'system',
+                        status,
+                        upvote_count,
+                        vote_count
+                    }"
+        .to_string(),
     };
+    let query = "SELECT *,type::number(id.id()) as id, type::record('usernames:⟨' + author + \
+                 '⟩').{
+                id: type::number(id.id()),
+                name
+            } AS author, tags.{
+                id: id.id(),
+                app_id,
+                display_name
+            } AS tags, ->workshop_item_properties."
+        .to_string()
+        + &properties
+        + " AS properties, '' AS description, $id->item_dependencies[*].{
+                id: type::number(out.id.id()),
+                title: out.title,
+                appid: out.appid,
+                author: type::record('usernames:⟨' + out.author + '⟩').{
+                    id: type::number(id.id()),
+                    name
+                },
+                languages: out.languages,
+                last_updated: out.last_updated,
+                tags: out.tags.{
+                    id: id.to_string(),
+                    app_id,
+                    display_name
+                },
+                preview_url: out.preview_url,
+                score: out.score,
+                description: out.description,
+                properties: []
+            } AS dependencies, id<-item_dependencies[*].{
+                id: type::number(in.id.id()),
+                title: in.title,
+                appid: in.appid,
+                author: type::record('usernames:⟨' + in.author + '⟩').{
+                    id: type::number(id.id()),
+                    name
+                },
+                languages: in.languages,
+                last_updated: in.last_updated,
+                tags: in.tags.{
+                    id: id.to_string(),
+                    app_id,
+                    display_name
+                },
+                preview_url: in.preview_url,
+                score: in.score,
+                description: in.description,
+                properties: []
+            } AS dependants FROM $id;";
 
-    Ok(FullWorkshopItem {
-        appid: result.appid,
-        description: result.description,
-        id: into_string(result.id.key()),
-        title: result.title,
-        preview_url: result.preview_url,
-        languages: result.languages,
-        author: result.author,
-        last_updated: result.last_updated,
-        dependencies: dependencies
-            .into_iter()
-            .map(|e| FullWorkshopItem {
-                appid: e.appid,
-                author: e.author,
-                dependants: vec![],
-                dependencies: vec![],
-                description: e.description,
-                id: into_string(e.id.key()),
-                languages: e.languages,
-                title: e.title,
-                preview_url: e.preview_url,
-                last_updated: e.last_updated,
-                tags: e.tags,
-                score: e.score,
-                properties: e.properties,
-            })
-            .collect(),
-
-        dependants: dependants
-            .into_iter()
-            .map(|e| FullWorkshopItem {
-                appid: e.appid,
-                author: e.author,
-                dependants: vec![],
-                dependencies: vec![],
-                description: e.description,
-                id: into_string(e.id.key()),
-                languages: e.languages,
-                title: e.title,
-                preview_url: e.preview_url,
-                last_updated: e.last_updated,
-                tags: e.tags,
-                score: e.score,
-                properties: e.properties,
-            })
-            .collect(),
-        tags: result.tags,
-        score: result.score,
-        properties: result.properties,
-    })
+    let result: Option<_> = db
+        .query(query)
+        .bind(("id", id))
+        .await
+        .inspect_err(|error| error!(message = "get_item", ?error, "Failed to query database"))
+        .map_err(|_| InnerError::InternalError)?
+        // .inspect(|res| {
+        //     dbg!(res);
+        // })
+        .take(0)
+        .inspect_err(|error| error!(message = "get_item", ?error, "Failed to take result"))
+        .map_err(|_| InnerError::InternalError)?;
+    result.ok_or(Error::from(InnerError::NotFound))
 }
 
 /// GET /api/item/{id}

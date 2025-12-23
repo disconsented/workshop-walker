@@ -19,7 +19,10 @@ use crate::{
         language_actor::{DetectedLanguage, LanguageMsg},
         ml_queue_actor::MLQueueMsg,
     },
-    steam::model::{Child, IPublishedResponse, IPublishedStruct, SteamRoot},
+    steam::{
+        model::{Child, IPublishedResponse, IPublishedStruct, SteamRoot},
+        steam_user_actor::SteamUserMsg,
+    },
 };
 
 pub struct ItemUpdateActor {}
@@ -27,12 +30,14 @@ pub struct ItemUpdateActor {}
 pub struct ItemUpdateArgs {
     pub language_actor: ActorRef<LanguageMsg>,
     pub bb_actor: ActorRef<BBMsg>,
+    pub steam_user_actor: ActorRef<SteamUserMsg>,
     pub database: Surreal<Db>,
     pub ml_queue: Option<ActorRef<MLQueueMsg>>, // optional ML queue actor
 }
 pub struct ItemUpdateState {
     language_actor: ActorRef<LanguageMsg>,
     bb_actor: ActorRef<BBMsg>,
+    steam_user_actor: ActorRef<SteamUserMsg>,
     database: Surreal<Db>,
     ml_queue: Option<ActorRef<MLQueueMsg>>,
 }
@@ -58,6 +63,7 @@ impl Actor for ItemUpdateActor {
             database: args.database,
             language_actor: args.language_actor,
             bb_actor: args.bb_actor,
+            steam_user_actor: args.steam_user_actor,
             ml_queue: args.ml_queue,
         })
     }
@@ -111,6 +117,19 @@ impl Actor for ItemUpdateActor {
             ItemUpdateMsg::Upsert((item, children)) => {
                 let title = item.title.clone();
                 let item_id = item.id.clone();
+
+                match item.author.parse() {
+                    Ok(author_id) => {
+                        let _ = state
+                            .steam_user_actor
+                            .send_message(SteamUserMsg::Fetch(author_id));
+                    }
+
+                    Err(error) => {
+                        error!(?error, author = %item.author, "parsing author ID");
+                    }
+                }
+
                 if let Err(error) = insert_data(&state.database, item, children).await {
                     error!(?error, title, %item_id, "upserting item");
                 }

@@ -186,7 +186,6 @@
 		</thead>
 		<tbody>
 		{#each properties as property}
-			{@debug property}
 			<tr class="hover:preset-tonal-primary">
 				<td><a class="anchor" href="/item/{property.in}">{property.in}</a></td>
 				<td>{property.out.class}</td>

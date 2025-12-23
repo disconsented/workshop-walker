@@ -270,12 +270,12 @@
 		<div class="text-surface-600 dark:text-surface-400 flex flex-wrap items-center gap-4 text-sm">
 			<span
 				>Author: <a
-					href="https://steamcommunity.com/profiles/{item.author}"
+					href="https://steamcommunity.com/profiles/{item.author.id}"
 					target="_self"
 					rel=""
 					class="btn preset-tonal-primary"
 				>
-					Unknown Name
+					{item.author.name}
 					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 				</a></span
 			>
