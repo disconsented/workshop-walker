@@ -63,20 +63,36 @@ pub struct WorkshopItem<ID> {
 }
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FullWorkshopItem {
-    pub appid: i64,                          // The steam ID of the app this belongs to
-    pub author: String,                      // Authors steam ID
-    pub dependants: Vec<FullWorkshopItem>,   // A list of dependants found
-    pub dependencies: Vec<FullWorkshopItem>, // A list of dependencies found
-    pub description: String,                 // HTML encoded description from steam
-    pub id: String,                          // The item's ID
-    pub languages: Vec<DetectedLanguage>,    // All languages found in the items description
-    pub last_updated: u64,                   // Timestamp in milliseconds
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // Core identifiers
+    pub id: u64,    // The item's ID
+    pub appid: i64, // The steam ID of the app this belongs to
+
+    // Content information
+    pub title: String,       // The titles name
+    pub description: String, // HTML encoded description from steam
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>, // The URL to the banner image
-    pub title: String,                       // The titles name
-    pub tags: Vec<Tag>,                      // The list of tags found
-    pub score: f32,                          // The "quality" score assigned by steam
+
+    // Metadata and categorization
+    #[serde(default)]
+    pub tags: Vec<Tag>, // The list of tags found
+    #[serde(default)]
     pub properties: Vec<WorkshopItemProperties<String, Property>>, // Approved or owned properties
+    pub score: f32, // The "quality" score assigned by steam
+
+    // Author and timing
+    pub author: Option<DisplayUser>, // Authors steam ID
+    pub last_updated: u64,           // Timestamp in milliseconds
+
+    // Localization
+    #[serde(default)]
+    pub languages: Vec<DetectedLanguage>, // All languages found in the items description
+
+    // Dependencies
+    #[serde(default)]
+    pub dependencies: Vec<FullWorkshopItem>, // A list of dependencies found
+    #[serde(default)]
+    pub dependants: Vec<FullWorkshopItem>, // A list of dependants found
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dependencies {
@@ -124,10 +140,7 @@ pub struct User<T> {
     #[serde(serialize_with = "serialize_chrono_as_sql_datetime")]
     pub last_logged_in: DateTime<Utc>,
 }
-pub fn serialize_chrono_as_sql_datetime<S>(
-    x: &chrono::DateTime<Utc>,
-    s: S,
-) -> Result<S::Ok, S::Error>
+pub fn serialize_chrono_as_sql_datetime<S>(x: &DateTime<Utc>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -288,6 +301,11 @@ pub enum Status {
     Accepted = 1,
 }
 
+#[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct DisplayUser {
+    id: u64,
+    name: String,
+}
 #[derive(Serialize, Deserialize, PartialOrd, PartialEq, Eq, Debug)]
 #[serde(transparent)]
 struct Id(RecordId);

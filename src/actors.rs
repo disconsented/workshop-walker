@@ -18,7 +18,10 @@ use crate::{
         language_actor::{LanguageActor, LanguageArgs},
         ml_queue_actor::{MLQueueActor, MLQueueArgs},
     },
-    steam::steam_download_actor::{SteamDownloadActor, SteamDownloadArgs},
+    steam::{
+        steam_download_actor::{SteamDownloadActor, SteamDownloadArgs},
+        steam_user_actor::{SteamUserActor, SteamUserArgs},
+    },
     web::{
         auth::{AuthActor, AuthArgs},
         item::{ItemActor, ItemArgs},
@@ -75,12 +78,26 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .await
     .whatever_context("Spawning ML queue actor")?;
 
+    let (steam_user_actor, _) = Actor::spawn(
+        Some("/steam-user".to_string()),
+        SteamUserActor,
+        SteamUserArgs {
+            steam_token: config.steam.api_token.clone(),
+            database: db.clone(),
+            client: reqwest_client.clone(),
+        },
+    )
+    .instrument(info_span!("spawn::steam_user"))
+    .await
+    .whatever_context("Spawning steam user actor")?;
+
     let (item_update_actor, _) = Actor::spawn(
         Some("/item_updater".to_string()),
         ItemUpdateActor {},
         ItemUpdateArgs {
             language_actor,
             bb_actor,
+            steam_user_actor: steam_user_actor.clone(),
             database: db.clone(),
             ml_queue: config.ml_extraction.then_some(ml_queue_actor),
         },
@@ -138,6 +155,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             client: reqwest_client.clone(),
             base_url: config.base_url.clone(),
             biscuit: config.biscuit.clone(),
+            steam_user_actor_ref: steam_user_actor,
         },
     )
     .instrument(info_span!("spawn::auth"))

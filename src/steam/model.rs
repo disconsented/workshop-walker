@@ -245,8 +245,8 @@ pub struct VoteData {
     pub votes_down: usize,
 }
 
-#[derive(Serialize, Deserialize)]
-struct SteamUser {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SteamUser {
     pub steamid: String,
     pub communityvisibilitystate: i64,
     pub profilestate: i64,
@@ -256,17 +256,17 @@ struct SteamUser {
     pub avatarmedium: String,
     pub avatarfull: String,
     pub avatarhash: String,
-    pub lastlogoff: i64,
+    pub lastlogoff: Option<i64>,
     pub personastate: i64,
-    pub realname: String,
-    pub primaryclanid: String,
-    pub timecreated: i64,
-    pub personastateflags: i64,
-    pub loccountrycode: String,
+    pub realname: Option<String>,
+    pub primaryclanid: Option<String>,
+    pub timecreated: Option<i64>,
+    pub personastateflags: Option<i64>,
+    pub loccountrycode: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct SteamUserResponse {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SteamUserResponse {
     pub players: Vec<SteamUser>,
 }
 
