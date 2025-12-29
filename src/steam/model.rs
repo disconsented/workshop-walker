@@ -249,7 +249,7 @@ pub struct VoteData {
 pub struct SteamUser {
     pub steamid: String,
     pub communityvisibilitystate: i64,
-    pub profilestate: i64,
+    pub profilestate: Option<i64>,
     pub personaname: String,
     pub profileurl: String,
     pub avatar: String,

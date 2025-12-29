@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use itertools::Itertools;
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
-use reqwest::{Client, Response};
+use reqwest::{Client, Response, StatusCode};
 use surrealdb::{RecordId, Surreal, engine::local::Db};
-use tokio::{sync::mpsc, task::JoinHandle};
+use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
 use tracing::{debug, error};
 
 use crate::{
@@ -51,14 +51,33 @@ impl Actor for SteamUserActor {
 
         let user_names_service = UserNamesService::new(UserNamesSilo::new(args.database));
 
+        // Ractor doesn't really give us a good way to model this kind of work, hence
+        // why this is a task instead. It's desirable to batch this work here
+        // because we're trying to minimise calls to Steams API.
         let handle = tokio::spawn(async move {
             let mut total_processed = 0;
-            let mut user_ids = Vec::with_capacity(100);
+            let mut user_ids = HashSet::with_capacity(200);
             loop {
-                let _ = rx.recv_many(&mut user_ids, 100).await;
-                // Deduplicate as we fairly often get duplicates from the steam download process
-                user_ids.sort_unstable();
-                user_ids.dedup();
+                // Process the first message to ensure that we sleep the task until there is
+                // work
+                let Some(first) = rx.recv().await else { break };
+
+                if should_update_user(&user_names_service, first).await {
+                    user_ids.insert(first);
+                }
+
+                while let Ok(next) = rx.try_recv() {
+                    if should_update_user(&user_names_service, next).await {
+                        user_ids.insert(next);
+                    }
+                    if user_ids.len() == 100 {
+                        break;
+                    }
+                }
+
+                if user_ids.is_empty() {
+                    continue;
+                }
 
                 let id_string = user_ids.iter().join(",");
                 let url = format!(
@@ -67,33 +86,43 @@ impl Actor for SteamUserActor {
                 );
 
                 debug!(%total_processed, next_batch = user_ids.len(), "Fetching player summaries from Steam");
-                match args
-                    .client
-                    .get(&url)
-                    .send()
-                    .await
-                    .and_then(Response::error_for_status)
-                {
-                    Ok(resp) => match resp.json::<SteamRoot<SteamUserResponse>>().await {
-                        Ok(root) => {
-                            for users in root.response.players {
-                                if let Err(error) = user_names_service
-                                    .update_user_name(
-                                        RecordId::from_table_key("usernames", users.steamid),
-                                        users.personaname,
-                                    )
-                                    .await
-                                {
-                                    error!(?error, "Failed to update user name");
+                // Retry up to 3 times
+                for _ in 0..3 {
+                    match args
+                        .client
+                        .get(&url)
+                        .send()
+                        .await
+                        .and_then(Response::error_for_status)
+                    {
+                        Ok(resp) => match resp.json::<SteamRoot<SteamUserResponse>>().await {
+                            Ok(root) => {
+                                for users in root.response.players {
+                                    if let Err(error) = user_names_service
+                                        .update_user_name(
+                                            RecordId::from_table_key("usernames", users.steamid),
+                                            users.personaname,
+                                        )
+                                        .await
+                                    {
+                                        error!(?error, "Failed to update user name");
+                                        break;
+                                    }
                                 }
                             }
-                        }
+                            Err(error) => {
+                                error!(?error, "Failed to deserialize SteamUserResponse");
+                                break;
+                            }
+                        },
                         Err(error) => {
-                            error!(?error, "Failed to deserialize SteamUserResponse");
+                            // Back off and retry
+                            if error.status() == Some(StatusCode::TOO_MANY_REQUESTS) {
+                                sleep(Duration::from_secs(10)).await;
+                                continue;
+                            }
+                            error!(%error, "Failed to fetch player summaries from Steam");
                         }
-                    },
-                    Err(error) => {
-                        error!(?error, "Failed to fetch player summaries from Steam");
                     }
                 }
                 total_processed += user_ids.len();
@@ -120,4 +149,11 @@ impl Actor for SteamUserActor {
         }
         Ok(())
     }
+}
+
+async fn should_update_user(user_names_service: &UserNamesService<UserNamesSilo>, id: u64) -> bool {
+    user_names_service
+        .should_update_user(RecordId::from_table_key("usernames", id.to_string()))
+        .await
+        .unwrap_or(true)
 }

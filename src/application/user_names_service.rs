@@ -16,9 +16,6 @@ impl<R: UserNamesPort> UserNamesService<R> {
     pub async fn update_user_name(&self, id: RecordId, name: String) -> Result<(), UserNameError> {
         if match self.repo.get_by_id(id.clone()).await? {
             Some(existing) => {
-                // let elapsed = Utc::now().signed_duration_since(existing.last_updated);
-                // debug!(elapsed = elapsed.as_seconds_f32(), %name, update = elapsed >
-                // Duration::weeks(1),  "checking if username needs updating");
                 Utc::now().signed_duration_since(existing.last_updated) > Duration::weeks(1)
             }
             None => true,
@@ -34,5 +31,14 @@ impl<R: UserNamesPort> UserNamesService<R> {
         }
 
         Ok(())
+    }
+
+    pub async fn should_update_user(&self, id: RecordId) -> Result<bool, UserNameError> {
+        match self.repo.get_by_id(id.clone()).await? {
+            Some(existing) => {
+                Ok(Utc::now().signed_duration_since(existing.last_updated) > Duration::weeks(1))
+            }
+            None => Ok(true),
+        }
     }
 }
