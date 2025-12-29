@@ -145,7 +145,7 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
             } AS tags, ->workshop_item_properties."
         .to_string()
         + &properties
-        + " AS properties, '' AS description, $id->item_dependencies[*].{
+        + " AS properties, $id->item_dependencies[*].{
                 id: type::number(out.id.id()),
                 title: out.title,
                 appid: out.appid,

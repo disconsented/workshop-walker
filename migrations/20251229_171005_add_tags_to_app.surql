@@ -1,0 +1,12 @@
+DEFINE FIELD OVERWRITE default_tags ON apps TYPE set<record<tags>> DEFAULT []
+	PERMISSIONS FULL
+;
+DEFINE FIELD OVERWRITE default_tags[*] ON apps TYPE record<tags>
+	PERMISSIONS FULL
+;
+DEFINE FIELD OVERWRITE tags ON apps TYPE set<record<tags>> DEFAULT []
+	PERMISSIONS FULL
+;
+DEFINE FIELD OVERWRITE tags[*] ON apps TYPE record<tags>
+	PERMISSIONS FULL
+;

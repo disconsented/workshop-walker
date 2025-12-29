@@ -20,6 +20,7 @@ use crate::{
     },
     steam::{
         steam_download_actor::{SteamDownloadActor, SteamDownloadArgs},
+        steam_tag_actor::{SteamTagActor, SteamTagArgs},
         steam_user_actor::{SteamUserActor, SteamUserArgs},
     },
     web::{
@@ -135,6 +136,20 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     } else {
         None
     };
+
+    if config.updater {
+        Actor::spawn(
+            Some("/steam-tag".to_string()),
+            SteamTagActor,
+            SteamTagArgs {
+                database: db.clone(),
+                client: reqwest_client.clone(),
+            },
+        )
+        .instrument(info_span!("spawn::steam_tag"))
+        .await
+        .whatever_context("Spawning steam tag actor")?;
+    }
 
     let (..) = Actor::spawn(
         Some("/apps".to_string()),
