@@ -1,13 +1,10 @@
 <script lang="ts">
 	import Icon from 'svelte-awesome';
-	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import {
 		fa1,
 		faArrowLeft,
 		faArrowRight,
-		faChevronDown,
-		faChevronUp,
 		faCross,
 		faEllipsis,
 		faFilter,
@@ -26,7 +23,7 @@
 	import { Modal } from '@skeletonlabs/skeleton-svelte';
 	import { onNavigate } from '$app/navigation';
 
-	let { data }: { data: PageData } = $props();
+	let { data }: { data } = $props();
 	console.log('Hello, wolrd!', data);
 	let item = data;
 
