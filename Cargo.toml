@@ -27,7 +27,7 @@ lingua = { version = "1.7", features = ["english", "russian", "chinese", "japane
 multimap = "0.10"
 ractor = { version = "0.15", features = ["monitors", "async-trait"] }
 reqwest = { version = "0.12", features = ["json", ] }
-salvo = { version = "0.85", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
+salvo = { version = "0.86", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-content = "0.1"
 serde-xml-rs = "0.8.1"
@@ -41,7 +41,8 @@ tokenizers = "0.21"
 tokio = { version = "1.48", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-veil = "0.2"
+veil = "0.3"
+scraper = "0.25"
 
 [package]
 name = "workshop-walker"
@@ -77,6 +78,7 @@ tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs",
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 tracing.workspace = true
 veil.workspace = true
+scraper.workspace = true
 
 [features]
 default = ["ml-classification"]
