@@ -189,13 +189,6 @@ async fn insert_data(
 ) -> crate::Result<(), Whatever> {
     let tags = std::mem::take(&mut item.tags);
     let id = item.id.clone();
-    let insert_tags = {
-        let mut stmt = InsertStatement::default();
-        stmt.into = Some(Value::Table("tags".into()));
-        stmt.data = Data::SingleExpression(to_value(tags.clone()).unwrap());
-        stmt.ignore = true;
-        stmt
-    };
 
     let insert_item_deps = {
         let mut stmt = InsertStatement::default();
@@ -231,7 +224,6 @@ async fn insert_data(
 
     let query = db
         .query("BEGIN TRANSACTION")
-        .query(insert_tags)
         .query(upsert_item.to_string()) // Missing impl for into query
         .query(insert_item_deps)
         .query("UPDATE $id SET tags=$tags")
