@@ -101,7 +101,6 @@ mod test {
         #[derive(Serialize)]
         pub enum Ordering {
             Order(Vec<bool>),
-            Random,
         }
 
         dbg!(serde_json::to_string(&Ordering::Order(vec![true])).unwrap());
