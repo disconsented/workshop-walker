@@ -119,7 +119,9 @@ pub struct App {
     /// Whether the app is visible on the index
     pub available: bool,
     /// List of tags to select by default
-    pub default_tags: Vec<Tag>,
+    pub default_tags: Vec<String>,
+    /// List of known tags
+    pub tags: Vec<String>,
 }
 
 /// A workshop walker user

@@ -20,40 +20,39 @@ impl AppsPort for AppsSilo {
     async fn list_available(&self) -> Result<Vec<App>, AppError> {
         match self
             .db
-            .query("SELECT *, id.id() FROM apps WHERE available = true")
+            .query("SELECT *, tags.map(|$v|$v.id()), default_tags.map(|$v|$v.id()), id.id() FROM apps WHERE available = true")
             .await
             .map(|mut q| q.take(0))
         {
             Ok(Ok(results)) => Ok(results),
-            Ok(Err(e)) | Err(e) => {
-                error!(?e, "failed to list available apps");
+            Ok(Err(error)) | Err(error) => {
+                error!(?error, "failed to list available apps");
                 Err(AppError::Internal)
             }
         }
     }
 
     async fn upsert(&self, app: App) -> Result<(), AppError> {
-        if let Err(e) = self
+        if let Err(error) = self
             .db
             .query("UPSERT apps CONTENT $app")
             .bind(("app", app.clone()))
-            // .bind(("id", app.id))
             .await
         {
-            error!(?e, "failed to upsert app");
+            error!(?error, "failed to upsert app");
             return Err(AppError::Internal);
         }
         Ok(())
     }
 
     async fn remove(&self, id: u32) -> Result<(), AppError> {
-        if let Err(e) = self
+        if let Err(error) = self
             .db
             .query("DELETE $id")
             .bind(("id", RecordId::from_table_key("apps", i64::from(id))))
             .await
         {
-            error!(?e, "failed to remove app");
+            error!(?error, "failed to remove app");
             return Err(AppError::Internal);
         }
         Ok(())
@@ -62,7 +61,7 @@ impl AppsPort for AppsSilo {
     async fn list(&self) -> Result<Vec<App>, AppError> {
         match self
             .db
-            .query("SELECT *, id.id() FROM apps")
+            .query("SELECT *, tags.map(|$v|$v.id()), default_tags.map(|$v|$v.id()),  id.id() FROM apps")
             .await
             .map(|mut q| q.take(0))
         {
@@ -77,15 +76,18 @@ impl AppsPort for AppsSilo {
     async fn get(&self, id: u32) -> Result<App, AppError> {
         match self
             .db
-            .query("SELECT *, id.id() FROM apps WHERE id = $id")
-            .bind(("id", id))
+            .query(
+                "SELECT *, tags.map(|$v|$v.id()), default_tags.map(|$v|$v.id()), \
+                 id.id() FROM $id",
+            )
+            .bind(("id", RecordId::from_table_key("apps", i64::from(id))))
             .await
             .map(|mut q| q.take(0))
         {
             Ok(Ok(Some(app))) => Ok(app),
             Ok(Ok(None)) => Err(AppError::NotFound),
-            Ok(Err(e)) | Err(e) => {
-                error!(?e, "failed to get app");
+            Ok(Err(error)) | Err(error) => {
+                error!(?error, "failed to get app");
                 Err(AppError::Internal)
             }
         }

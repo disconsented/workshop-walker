@@ -25,8 +25,11 @@
 
 	let { data }: { data: PageData } = $props();
 
-	console.log(data);
+	if (tags.v.length === 0) {
+		tags.v = data.appRequest.default_tags;
+	}
 	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
+
 	let viewMode = $state('grid');
 	let showTableImages = $state(false);
 
@@ -51,7 +54,7 @@
 	<meta property="og:url" content={window.location.href} />
 </svelte:head>
 
-{#await data.req}
+{#await data.searchRequest}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
 	</div>
@@ -154,7 +157,7 @@
 			</div>
 
 			<div class="flex flex-wrap gap-2 md:col-span-4">
-				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6'] as tag}
+				{#each data.appRequest.tags as tag}
 					<span class="flex items-center space-x-2">
 						<input
 							name="tag"
@@ -191,90 +194,90 @@
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-				<tr>
-					{#if showTableImages === true}
-						<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
-					{/if}
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-						Last Updated
-					</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-						Description
-					</th>
-				</tr>
+			<tr>
+				{#if showTableImages === true}
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
+				{/if}
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+					Last Updated
+				</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+					Description
+				</th>
+			</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
-				{#each slicedSource(data) as item (item.id)}
-					<tr class="group hover:bg-gray-50">
-						{#if showTableImages === true}
-							<td class="w-52 p-0">
-								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
-									<img
-										class="aspect-video object-cover lg:h-32 lg:min-w-48"
-										class:hue-rotate-90={!item.preview_url}
-										class:grayscale={!item.preview_url}
-										src={item.preview_url ||
+			{#each slicedSource(data) as item (item.id)}
+				<tr class="group hover:bg-gray-50">
+					{#if showTableImages === true}
+						<td class="w-52 p-0">
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
+								<img
+									class="aspect-video object-cover lg:h-32 lg:min-w-48"
+									class:hue-rotate-90={!item.preview_url}
+									class:grayscale={!item.preview_url}
+									src={item.preview_url ||
 											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-										alt="banner"
-										loading="lazy"
-									/></a
-								>
-							</td>
-						{/if}
-						<td class="px-6 py-4 text-sm">
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class=""
+									alt="banner"
+									loading="lazy"
+								/></a
 							>
-								{item.title}
+						</td>
+					{/if}
+					<td class="px-6 py-4 text-sm">
+						<a
+							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class=""
+						>
+							{item.title}
+						</a>
+						<br />
+						<span class="text-xs text-gray-500"
+						>Lookup: <a
+							href="/item/{item.id}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+						></span
+						>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<a
+							href="https://steamcommunity.com/profiles/{item.author}"
+							class="anchor whitespace-nowrap"
+						>
+							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+							Author
+						</a>
+						<br />
+						<small class="text-gray-500">
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
+							>Details
+								<Icon data={faLink} class="fa-fw"></Icon>
 							</a>
-							<br />
-							<span class="text-xs text-gray-500"
-								>Lookup: <a
-									href="/item/{item.id}"
-									target="_self"
-									rel="noopener noreferrer"
-									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-								></span
-							>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<a
-								href="https://steamcommunity.com/profiles/{item.author}"
-								class="anchor whitespace-nowrap"
-							>
-								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-								Author
-							</a>
-							<br />
-							<small class="text-gray-500">
-								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
-									>Details
-									<Icon data={faLink} class="fa-fw"></Icon>
-								</a>
-							</small>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<TimeAgo date={item.last_updated}></TimeAgo>
-						</td>
-						<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
-							<div class="relative h-full">
-								<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
-								<div
-									class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
-								></div>
-							</div>
-						</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
-					</tr>
-				{/each}
+						</small>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<TimeAgo date={item.last_updated}></TimeAgo>
+					</td>
+					<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
+						<div class="relative h-full">
+							<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
+							<div
+								class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
+							></div>
+						</div>
+					</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+				</tr>
+			{/each}
 			</tbody>
 		</table>
 
@@ -325,7 +328,7 @@
 					</h6>
 					<div class="mb-2 flex items-center justify-between">
 						<span class="text-sm text-gray-500"
-							>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
+						>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
 						>
 						<small class="text-xs text-gray-500">
 							<a
@@ -333,7 +336,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="anchor hover:text-gray-700"
-								>Steam
+							>Steam
 								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 							</a>
 						</small>
