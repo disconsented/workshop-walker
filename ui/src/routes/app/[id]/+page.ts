@@ -32,7 +32,8 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	const searchParams = new URLSearchParams(paramList);
 
 	return {
-		req: fetch(`/api/list?` + searchParams.toString()).then((res) => {
+		appRequest: await fetch(`/api/app/${params.id}`).then(res => res.json()),
+		searchRequest: fetch(`/api/list?` + searchParams.toString()).then((res) => {
 			console.log('api/list Result', res);
 			if (res.ok) {
 				return res.json();

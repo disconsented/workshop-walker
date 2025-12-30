@@ -8,6 +8,7 @@ use salvo::{
     },
     prelude::*,
 };
+use salvo::oapi::extract::PathParam;
 use snafu::{ErrorCompat, Snafu};
 
 use crate::{
@@ -119,7 +120,7 @@ pub async fn list() -> Result<Json<Vec<App>>> {
 }
 
 #[endpoint]
-pub async fn get(id: QueryParam<u32, true>) -> Result<Json<App>> {
+pub async fn get(id: PathParam<u32>) -> Result<Json<App>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     let app = call!(actor, |reply| AppsMsg::Get(*id, reply))
         .map_err(InnerError::from)?
