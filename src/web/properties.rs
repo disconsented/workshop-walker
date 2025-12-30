@@ -54,7 +54,7 @@ impl From<InnerError> for StatusError {
             .unwrap_or_default()
             .to_string();
         error.brief = value.to_string();
-        error.detail = value.backtrace().map(std::string::ToString::to_string);
+        error.detail = value.backtrace().map(ToString::to_string);
         error
     }
 }
