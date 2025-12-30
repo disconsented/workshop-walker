@@ -121,7 +121,7 @@ async fn download(
     page.appid = app_id;
     let mut total = i64::MAX;
     let mut downloaded = 0;
-    while total >= downloaded {
+    while total > downloaded {
         page.appid = app_id;
         let request = page
             .into_request(&state.client, &state.steam_token)
