@@ -62,7 +62,7 @@ impl Actor for JoinProcessActor {
                 let languages = call!(state.language, LanguageMsg::Detect, description.clone())?;
                 let description = call!(state.bb, BBMsg::Process, description)?;
                 let children = take(&mut data.children);
-                match Self::new_item(data, languages, description) {
+                match WorkshopItem::try_new(data, languages, description) {
                     Ok(item) => {
                         state
                             .item_update
@@ -79,14 +79,17 @@ impl Actor for JoinProcessActor {
     }
 }
 
-impl JoinProcessActor {
-    fn new_item(
+impl WorkshopItem<RecordId> {
+    fn try_new(
         data: IPublishedStruct,
         languages: Vec<DetectedLanguage>,
         description: String,
-    ) -> Result<WorkshopItem<RecordId>, Whatever> {
-        let app_id = data.creator_appid.whatever_context("Missing app id")?;
-        let item: WorkshopItem<RecordId> = WorkshopItem {
+    ) -> Result<Self, Whatever> {
+        let app_id = data
+            .consumer_appid
+            .whatever_context("Missing app id")
+            .inspect_err(|_| error!(?data, "creating new item"))? as u64;
+        Ok(Self {
             appid: app_id,
             author: data.creator.whatever_context("Missing author")?,
             languages,
@@ -100,14 +103,13 @@ impl JoinProcessActor {
                 .iter()
                 .cloned()
                 .map(|tag| model::Tag {
-                    app_id: app_id as _,
+                    app_id,
                     display_name: tag.display_name,
                     tag: tag.tag,
                 })
                 .collect::<Vec<_>>(),
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
             properties: vec![],
-        };
-        Ok(item)
+        })
     }
 }
