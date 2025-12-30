@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use surrealdb::{RecordId, RecordIdKey};
+use surrealdb::RecordId;
 
 use crate::processing::language_actor::DetectedLanguage;
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
@@ -48,7 +48,7 @@ pub struct Tag {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct WorkshopItem<ID> {
-    pub appid: i64,
+    pub appid: u64,
     pub author: String,
     pub description: String,
     pub id: ID,
@@ -102,11 +102,6 @@ pub struct Dependencies {
     #[serde(rename = "out")]
     pub dependency: RecordId,
 }
-
-pub fn into_string(key: &RecordIdKey) -> String {
-    key.to_string().replace("⟩", "").replace("⟨", "")
-}
-
 /// A steam workshop app
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct App {
