@@ -101,11 +101,10 @@
 			{
 				appid: '1133870',
 				image_url:
-				'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1133870/f5fb2e294898df4d3bf28b195f277d3df3511792/header.jpg?t=1764615043',
+					'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1133870/f5fb2e294898df4d3bf28b195f277d3df3511792/header.jpg?t=1764615043',
 				description:
 					'Space Engineers 2 is a sandbox about engineering and colonization where you build ships, stations, and planetary bases in a fully destructible world. Begin the story of Miro and Ivan Sokol, expand humanity’s foothold in the Almagest system, and fight to survive. ',
-				developer: '\n' +
-					'Keen Software House\t',
+				developer: '\n' + 'Keen Software House\t',
 				name: 'Space Engineers 2'
 			},
 			{
@@ -132,7 +131,6 @@
 	let isDirty = false;
 	let isSaving = false;
 	let saveError: string | null = null;
-
 </script>
 
 <div class="mx-auto my-8 max-w-6xl">
@@ -175,69 +173,67 @@
 
 	<table class="table">
 		<thead>
-		<tr>
-			<th>Item ID</th>
-			<th>Class</th>
-			<th>Value</th>
-			<th>Submitted By</th>
-			<th>Status</th>
-			<th>Actions</th>
-		</tr>
+			<tr>
+				<th>Item ID</th>
+				<th>Class</th>
+				<th>Value</th>
+				<th>Submitted By</th>
+				<th>Status</th>
+				<th>Actions</th>
+			</tr>
 		</thead>
 		<tbody>
-		{#each properties as property}
-			<tr class="hover:preset-tonal-primary">
-				<td><a class="anchor" href="/item/{property.in}">{property.in}</a></td>
-				<td>{property.out.class}</td>
-				<td>{property.out.value}</td>
-				<td>{property.source}</td>
-				<td>
-					{#if property.status === -1}
-						<span class="text-red-500">Denied</span>
-					{:else if property.status === 0}
-						<span class="text-yellow-500">Pending</span>
-					{:else}
-						<span class="text-green-500">Approved</span>
-					{/if}
-				</td>
-				<td class="flex gap-2">
-					<nav
-						class="btn-group btn-sm preset-outlined-surface-200-800 flex-col p-2 md:flex-row"
-					>
-						<button
-							type="button"
-							class={[
-												'btn btn-sm',
-												property.status === -1 ? 'preset-filled' : 'hover:preset-tonal'
-											]}
-							onclick={() => togglePropertyStatus(property, -1)}
-							disabled={property.status === -1}
-						>Deny
-						</button>
-						<button
-							type="button"
-							class={[
-												'btn btn-sm',
-												property.status === 0 ? 'preset-filled' : 'hover:preset-tonal'
-											]}
-							onclick={() => togglePropertyStatus(property, 0)}
-							disabled={property.status === 0}
-						>Pending
-						</button>
-						<button
-							type="button"
-							class={[
-												'btn btn-sm',
-												property.status === 1 ? 'preset-filled' : 'hover:preset-tonal'
-											]}
-							onclick={() => togglePropertyStatus(property, 1)}
-							disabled={property.status === 1}
-						>Approve
-						</button>
-					</nav>
-				</td>
-			</tr>
-		{/each}
+			{#each properties as property}
+				<tr class="hover:preset-tonal-primary">
+					<td><a class="anchor" href="/item/{property.in}">{property.in}</a></td>
+					<td>{property.out.class}</td>
+					<td>{property.out.value}</td>
+					<td>{property.source}</td>
+					<td>
+						{#if property.status === -1}
+							<span class="text-red-500">Denied</span>
+						{:else if property.status === 0}
+							<span class="text-yellow-500">Pending</span>
+						{:else}
+							<span class="text-green-500">Approved</span>
+						{/if}
+					</td>
+					<td class="flex gap-2">
+						<nav class="btn-group btn-sm preset-outlined-surface-200-800 flex-col p-2 md:flex-row">
+							<button
+								type="button"
+								class={[
+									'btn btn-sm',
+									property.status === -1 ? 'preset-filled' : 'hover:preset-tonal'
+								]}
+								onclick={() => togglePropertyStatus(property, -1)}
+								disabled={property.status === -1}
+								>Deny
+							</button>
+							<button
+								type="button"
+								class={[
+									'btn btn-sm',
+									property.status === 0 ? 'preset-filled' : 'hover:preset-tonal'
+								]}
+								onclick={() => togglePropertyStatus(property, 0)}
+								disabled={property.status === 0}
+								>Pending
+							</button>
+							<button
+								type="button"
+								class={[
+									'btn btn-sm',
+									property.status === 1 ? 'preset-filled' : 'hover:preset-tonal'
+								]}
+								onclick={() => togglePropertyStatus(property, 1)}
+								disabled={property.status === 1}
+								>Approve
+							</button>
+						</nav>
+					</td>
+				</tr>
+			{/each}
 		</tbody>
 	</table>
 {/snippet}
@@ -245,138 +241,138 @@
 {#snippet usersPanel()}
 	<table class="table">
 		<thead>
-		<tr>
-			<th>ID</th>
-			<th>Name</th>
-			<th>Admin</th>
-			<th>Banned</th>
-			<th>Last Logged In</th>
-		</tr>
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<th>Admin</th>
+				<th>Banned</th>
+				<th>Last Logged In</th>
+			</tr>
 		</thead>
 		<tbody>
-		{#each users as user}
-			<tr class="hover:preset-tonal-primary">
-				<td>{user.id}</td>
-				<td>{user.name ?? "unpopulated" } </td>
-				<td>
-					<input
-						type="checkbox"
-						class="checkbox"
-						checked={user.admin}
-						onchange={(e) => toggleUserAdmin(user.id, e.target.checked)}
-					/>
-				</td>
-				<td>
-					<input
-						type="checkbox"
-						class="checkbox"
-						checked={user.banned}
-						onchange={(e) => {
-											toggleUserBan(user.id, e.target.checked);
-										}}
-					/>
-				</td>
-				<td>
-					{user.last_logged_in}
-				</td>
-			</tr>
-		{/each}
+			{#each users as user}
+				<tr class="hover:preset-tonal-primary">
+					<td>{user.id}</td>
+					<td>{user.name ?? 'unpopulated'} </td>
+					<td>
+						<input
+							type="checkbox"
+							class="checkbox"
+							checked={user.admin}
+							onchange={(e) => toggleUserAdmin(user.id, e.target.checked)}
+						/>
+					</td>
+					<td>
+						<input
+							type="checkbox"
+							class="checkbox"
+							checked={user.banned}
+							onchange={(e) => {
+								toggleUserBan(user.id, e.target.checked);
+							}}
+						/>
+					</td>
+					<td>
+						{user.last_logged_in}
+					</td>
+				</tr>
+			{/each}
 		</tbody>
 	</table>
 {/snippet}
 
 {#snippet appsPanel()}
 	<AdminApps></AdminApps>
-<!--	<div class="space-y-6 p-4">-->
-<!--		<div class="flex items-center justify-between">-->
-<!--			<h2 class="text-2xl font-bold">Games</h2>-->
+	<!--	<div class="space-y-6 p-4">-->
+	<!--		<div class="flex items-center justify-between">-->
+	<!--			<h2 class="text-2xl font-bold">Games</h2>-->
 
-<!--			<button-->
-<!--				class="btn variant-filled-primary"-->
-<!--				disabled={!isDirty || isSaving}-->
-<!--				onclick={saveAll}-->
-<!--			>-->
-<!--				{isSaving ? "Saving…" : "Save Changes"}-->
-<!--			</button>-->
-<!--		</div>-->
+	<!--			<button-->
+	<!--				class="btn variant-filled-primary"-->
+	<!--				disabled={!isDirty || isSaving}-->
+	<!--				onclick={saveAll}-->
+	<!--			>-->
+	<!--				{isSaving ? "Saving…" : "Save Changes"}-->
+	<!--			</button>-->
+	<!--		</div>-->
 
-<!--		{#if saveError}-->
-<!--			<div class="alert variant-filled-error">-->
-<!--				{saveError}-->
-<!--			</div>-->
-<!--		{/if}-->
+	<!--		{#if saveError}-->
+	<!--			<div class="alert variant-filled-error">-->
+	<!--				{saveError}-->
+	<!--			</div>-->
+	<!--		{/if}-->
 
-<!--		{#each games as game, i (game.appid + i)}-->
-<!--			<div class="card border p-4 space-y-4">-->
-<!--				<div class="flex justify-between items-center">-->
-<!--					<h3 class="text-lg font-semibold">-->
-<!--						{game.name || "New Game"}-->
-<!--					</h3>-->
+	<!--		{#each games as game, i (game.appid + i)}-->
+	<!--			<div class="card border p-4 space-y-4">-->
+	<!--				<div class="flex justify-between items-center">-->
+	<!--					<h3 class="text-lg font-semibold">-->
+	<!--						{game.name || "New Game"}-->
+	<!--					</h3>-->
 
-<!--					<button-->
-<!--						type="button"-->
-<!--						class="btn variant-outline error"-->
-<!--					>-->
-<!--						Delete-->
-<!--					</button>-->
-<!--				</div>-->
+	<!--					<button-->
+	<!--						type="button"-->
+	<!--						class="btn variant-outline error"-->
+	<!--					>-->
+	<!--						Delete-->
+	<!--					</button>-->
+	<!--				</div>-->
 
-<!--				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">-->
-<!--					<div>-->
-<!--						<label class="label">Name</label>-->
-<!--						<input-->
-<!--							class="input w-full"-->
-<!--							bind:value={game.name}-->
-<!--						/>-->
-<!--					</div>-->
+	<!--				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">-->
+	<!--					<div>-->
+	<!--						<label class="label">Name</label>-->
+	<!--						<input-->
+	<!--							class="input w-full"-->
+	<!--							bind:value={game.name}-->
+	<!--						/>-->
+	<!--					</div>-->
 
-<!--					<div>-->
-<!--						<label class="label">App ID</label>-->
-<!--						<input-->
-<!--							class="input w-full"-->
-<!--							bind:value={game.appid}-->
-<!--						/>-->
-<!--					</div>-->
+	<!--					<div>-->
+	<!--						<label class="label">App ID</label>-->
+	<!--						<input-->
+	<!--							class="input w-full"-->
+	<!--							bind:value={game.appid}-->
+	<!--						/>-->
+	<!--					</div>-->
 
-<!--					<div class="col-span-full">-->
-<!--						<label class="label">Image URL</label>-->
-<!--						<input-->
-<!--							class="input w-full"-->
-<!--							bind:value={game.image_url}-->
-<!--						/>-->
+	<!--					<div class="col-span-full">-->
+	<!--						<label class="label">Image URL</label>-->
+	<!--						<input-->
+	<!--							class="input w-full"-->
+	<!--							bind:value={game.image_url}-->
+	<!--						/>-->
 
-<!--						{#if game.image_url}-->
-<!--							<img-->
-<!--								src={game.image_url}-->
-<!--								alt={game.name}-->
-<!--								class="mt-2 max-w-xs rounded"-->
-<!--							/>-->
-<!--						{/if}-->
-<!--					</div>-->
+	<!--						{#if game.image_url}-->
+	<!--							<img-->
+	<!--								src={game.image_url}-->
+	<!--								alt={game.name}-->
+	<!--								class="mt-2 max-w-xs rounded"-->
+	<!--							/>-->
+	<!--						{/if}-->
+	<!--					</div>-->
 
-<!--					<div>-->
-<!--						<label class="label">Developer</label>-->
-<!--						<input-->
-<!--							class="input w-full"-->
-<!--							bind:value={game.developer}-->
-<!--						/>-->
-<!--					</div>-->
+	<!--					<div>-->
+	<!--						<label class="label">Developer</label>-->
+	<!--						<input-->
+	<!--							class="input w-full"-->
+	<!--							bind:value={game.developer}-->
+	<!--						/>-->
+	<!--					</div>-->
 
-<!--					<div class="col-span-full">-->
-<!--						<label class="label">Description</label>-->
-<!--						<textarea-->
-<!--							class="textarea w-full"-->
-<!--							bind:value={game.description}-->
-<!--						/>-->
-<!--					</div>-->
-<!--				</div>-->
-<!--			</div>-->
-<!--		{/each}-->
+	<!--					<div class="col-span-full">-->
+	<!--						<label class="label">Description</label>-->
+	<!--						<textarea-->
+	<!--							class="textarea w-full"-->
+	<!--							bind:value={game.description}-->
+	<!--						/>-->
+	<!--					</div>-->
+	<!--				</div>-->
+	<!--			</div>-->
+	<!--		{/each}-->
 
-<!--		<button-->
-<!--			class="btn variant-outline w-full"-->
-<!--		>-->
-<!--			Add New Game-->
-<!--		</button>-->
-<!--	</div>-->
+	<!--		<button-->
+	<!--			class="btn variant-outline w-full"-->
+	<!--		>-->
+	<!--			Add New Game-->
+	<!--		</button>-->
+	<!--	</div>-->
 {/snippet}

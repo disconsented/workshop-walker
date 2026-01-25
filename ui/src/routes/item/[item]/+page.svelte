@@ -74,8 +74,8 @@
 		).map((e) => whichLang(e));
 	}
 
-	const tags = get_tags(data);
-	const languages = get_languages(data);
+	const tags = get_tags(data.data);
+	const languages = get_languages(data.data);
 
 	let selectedTags = $state(['tags:Mod', 'tags:⟨1.6⟩']);
 	let selectedLangs = $state(['English']);
@@ -93,7 +93,13 @@
 
 	let compact = $state(false);
 	let filterPanel = $state(['open']);
-	let filteredDependents = $derived(data.dependants.filter((e) => !filter(e)));
+	let filteredDependents = $derived(
+		data.data.dependants
+			.filter((e) => !filter(e))
+			.sort((b, a) => a.lastUpdated - b.lastUpdated)
+			.toReversed()
+	);
+	console.log(filteredDependents);
 	let page = $state(1);
 	let size = $state(20);
 	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
@@ -290,7 +296,12 @@
 		<!-- Preview Image -->
 		{#if item.preview_url}
 			<div class="pt-6">
-				<img src={item.preview_url} alt={item.title} class="h-auto max-w-full rounded-lg" loading="lazy"/>
+				<img
+					src={item.preview_url}
+					alt={item.title}
+					class="h-auto max-w-full rounded-lg"
+					loading="lazy"
+				/>
 			</div>
 		{:else}
 			<div class="pt-6 text-xs opacity-60">No preview image available</div>
@@ -377,7 +388,7 @@
 		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#description">Description</a></h2>
-		<p class="whitespace-pre-wrap prose prose-invert max-w-none">{@html data.description}</p>
+		<p class="prose prose-invert max-w-none whitespace-pre-wrap">{@html data.data.description}</p>
 	</div>
 {/snippet}
 
@@ -847,8 +858,8 @@
 					/>
 				</a>
 				<button type="button" class="btn preset-tonal" onclick={() => (loginModalState = false)}
-					>Cancel</button
-				>
+					>Cancel
+				</button>
 			</footer>
 		{/snippet}
 	</Modal>
