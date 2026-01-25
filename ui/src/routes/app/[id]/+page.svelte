@@ -135,7 +135,7 @@
 			<div>
 				<span class="mb-2 block text-sm font-medium">Language:</span>
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
-					<option>None</option>
+					<option>Any</option>
 					<option value="1">English</option>
 					<option value="2">Russian</option>
 					<option value="3">Chinese</option>
@@ -341,7 +341,12 @@
 							</a>
 						</small>
 					</div>
-					<p class="mb-2 truncate text-sm text-gray-600">{item.description}</p>
+					<div
+						class="mb-2 max-h-[3lh] overflow-hidden text-sm text-wrap text-ellipsis
+						text-gray-600 transition-[height] duration-150 ease-in-out hover:max-h-[30lh]"
+					>
+						{@html item.description}
+					</div>
 				</article>
 				<footer class="m-2">
 					<div class="flex flex-wrap gap-1">
