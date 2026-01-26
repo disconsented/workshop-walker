@@ -10,10 +10,9 @@
 		faCross,
 		faEllipsis,
 		faLink,
-		faSearch,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit, title } from './store.svelte';
+	import { tags, orderBy, language, limit, title, app } from './store.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
@@ -25,10 +24,10 @@
 
 	let { data }: { data: PageData } = $props();
 
-	if (tags.v.length === 0) {
-		tags.v = data.appRequest.default_tags;
+	$inspect(tags.v, app.v);
+	if (tags.v.length === 0 && app.v.tags) {
+		tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e.id === tag.id));
 	}
-	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
 
 	let viewMode = $state('grid');
 	let showTableImages = $state(false);
@@ -157,16 +156,10 @@
 			</div>
 
 			<div class="flex flex-wrap gap-2 md:col-span-4">
-				{#each data.appRequest.tags as tag}
+				{#each app.v.tags as tag}
 					<span class="flex items-center space-x-2">
-						<input
-							name="tag"
-							class="checkbox"
-							type="checkbox"
-							value={tag}
-							bind:group={storeTags.v}
-						/>
-						<p>{tag}</p>
+						<input name="tag" class="checkbox" type="checkbox" value={tag} bind:group={tags.v} />
+						<p>{tag.display_name}</p>
 					</span>
 				{/each}
 			</div>
@@ -343,7 +336,7 @@
 					</div>
 					<div
 						class="mb-2 max-h-[3lh] overflow-hidden text-sm text-wrap text-ellipsis
-						text-gray-600 transition-[height] duration-150 ease-in-out hover:max-h-[30lh]"
+						text-gray-600 transition-[height] duration-150 ease-in-out hover:max-h-[10lh]"
 					>
 						{@html item.description}
 					</div>

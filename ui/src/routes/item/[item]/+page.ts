@@ -1,8 +1,8 @@
-import type { PageLoad } from '../../../../.svelte-kit/types/src/routes';
-
 export const prerender = false;
-export const load: PageLoad = async ({ fetch, params }) => {
-	const res = await fetch(`/api/item/${params.item}`);
-
-	return await res.json();
+export const load = async ({ fetch, params }) => {
+	let request = {
+		data: await fetch(`/api/item/${params.item}`).then((res) => res.json())
+		// app: await fetch(`/api/item/${params.item}/app`).then((res) => res.json())
+	};
+	return request;
 };

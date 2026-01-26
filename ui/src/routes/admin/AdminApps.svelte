@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	type Tag = {
-		app_id: number;
-		display_name: string;
-		tag: string;
-	};
+	type Record = {};
 
 	type App = {
 		id: number;
@@ -15,7 +11,8 @@
 		banner: string;
 		enabled: boolean;
 		available: boolean;
-		default_tags: Tag[];
+		default_tags: Record[];
+		tags: Record[];
 	};
 
 	type AppState = {
@@ -46,12 +43,14 @@
 			if (!res.ok) throw new Error('Failed to load apps');
 			const data: App[] = await res.json();
 
-			apps = data.map(app => ({
-				localKey: crypto.randomUUID(),
-				app,
-				original: snapshot(app),
-				collapsed: true
-			}));
+			apps = data.map((app) => {
+				return {
+					localKey: crypto.randomUUID(),
+					app,
+					original: snapshot(app),
+					collapsed: true
+				};
+			});
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -61,23 +60,22 @@
 
 	function newApp(): AppState {
 		const app: App = {
-			id: 294100,   // temporary
+			id: 294100, // temporary
 			name: 'RimWorld',
 			developer: 'Ludeon Studios',
-			description: 'RimWorld is a sci-fi colony sim driven by an intelligent AI storyteller. Inspired by Dwarf Fortress and Firefly, you manage colonists’ moods, needs, wounds, and survival while building and exploring emergent stories.',
+			description:
+				'RimWorld is a sci-fi colony sim driven by an intelligent AI storyteller. Inspired by Dwarf Fortress and Firefly, you manage colonists’ moods, needs, wounds, and survival while building and exploring emergent stories.',
 			banner: 'https://cdn.akamai.steamstatic.com/steam/apps/294100/header.jpg',
 			enabled: true,
 			available: true,
-			default_tags: [
-				// { app_id: 294100, tag: '1.6', display_name: '1.6' },
-				// { app_id: 294100, tag: 'mod', display_name: 'mod' }
-			]
+			default_tags: [],
+			tags: []
 		};
 
 		return {
 			localKey: crypto.randomUUID(),
 			app,
-			original: "asd",
+			original: 'nonsense',
 			collapsed: false
 		};
 	}
@@ -100,6 +98,7 @@
 		}
 
 		state.original = snapshot(state.app);
+		apps = apps;
 	}
 
 	async function remove(state: AppState) {
@@ -116,56 +115,54 @@
 			return;
 		}
 
-		apps = apps.filter(a => a !== state);
+		apps = apps.filter((a) => a !== state);
 	}
 
-	function addTag(state: AppState) {
-		state.app.default_tags = [
-			...state.app.default_tags,
-			{
-				app_id: state.app.id,
-				display_name: '',
-				tag: ''
-			}
-		];
+	function setTag(checked: boolean, tag: Record, state: AppState) {
+		if (checked) {
+			state.app.default_tags.push(tag);
+		} else {
+			state.app.default_tags.splice(
+				state.app.default_tags.findIndex((element) => element.id === tag.id),
+				1
+			);
+		}
+		apps = apps;
 	}
 
-	function removeTag(state: AppState, i: number) {
-		state.app.default_tags =
-			state.app.default_tags.filter((_, idx) => idx !== i);
+	function getTag(tag, state) {
+		const some = state.app.default_tags.some((element) => element.id.String === tag.id.String);
+		console.log(tag, some);
+		return some;
 	}
 </script>
 
 {#if loading}
-	<p class="text-sm text-surface-500">Loading…</p>
+	<p class="text-surface-500 text-sm">Loading…</p>
 {:else if error}
 	<p class="text-error-500">{error}</p>
 {/if}
 
 <div class="space-y-6">
-	<button class="btn btn-primary" on:click={() => apps = [...apps, newApp()]}>
-		Add App
-	</button>
-
+	<button class="btn btn-primary" onclick={() => (apps = [...apps, newApp()])}> Add App</button>
+	{@debug apps}
 	{#each apps as state (state.localKey)}
-		<div
-			class="card border border-surface-300"
-			class:border-warning-400={isDirty(state)}
-		>
+		{@debug state}
+		<div class="card border-surface-300 border" class:border-warning-400={isDirty(state)}>
 			<!-- Header -->
 			<button
 				type="button"
-				class="w-full flex justify-between items-center p-4 text-left"
-				on:click={() => state.collapsed = !state.collapsed}
+				class="flex w-full items-center justify-between p-4 text-left"
+				onclick={() => {
+					return (state.collapsed = !state.collapsed);
+				}}
 			>
 				<div>
 					<h3 class="font-semibold">
 						{state.app.name || 'New App'}
 					</h3>
 					{#if isDirty(state)}
-						<p class="text-xs text-warning-500">
-							Unsaved changes
-						</p>
+						<p class="text-warning-500 text-xs">Unsaved changes</p>
 					{/if}
 				</div>
 				<span class="text-sm opacity-70">
@@ -175,18 +172,16 @@
 
 			{#if !state.collapsed}
 				<form
-					class="p-4 space-y-4 border-t border-surface-300"
-					on:submit|preventDefault={() => save(state)}
+					class="border-surface-300 space-y-4 border-t p-4"
+					onsubmit={(e) => {
+						e.preventDefault();
+						save(state);
+					}}
 				>
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<label class="label">
 							<span>ID</span>
-							<input
-								type="number"
-								class="input"
-								bind:value={state.app.id}
-								min="1"
-							/>
+							<input type="number" class="input" bind:value={state.app.id} min="1" />
 						</label>
 
 						<label class="label">
@@ -201,11 +196,7 @@
 
 						<label class="label md:col-span-2">
 							<span>Description</span>
-							<textarea
-								class="textarea"
-								rows="3"
-								bind:value={state.app.description}
-							/>
+							<textarea class="textarea" rows="3" bind:value={state.app.description} />
 						</label>
 
 						<label class="label md:col-span-2">
@@ -214,31 +205,23 @@
 						</label>
 					</div>
 
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<label class="space-y-1">
 							<div class="flex items-center gap-2">
-								<input
-									type="checkbox"
-									class="checkbox"
-									bind:checked={state.app.enabled}
-								/>
+								<input type="checkbox" class="checkbox" bind:checked={state.app.enabled} />
 								<span class="font-medium">Enabled</span>
 							</div>
-							<p class="text-xs text-surface-500">
+							<p class="text-surface-500 text-xs">
 								Allows interaction such as facets, votes, and companions.
 							</p>
 						</label>
 
 						<label class="space-y-1">
 							<div class="flex items-center gap-2">
-								<input
-									type="checkbox"
-									class="checkbox"
-									bind:checked={state.app.available}
-								/>
+								<input type="checkbox" class="checkbox" bind:checked={state.app.available} />
 								<span class="font-medium">Available</span>
 							</div>
-							<p class="text-xs text-surface-500">
+							<p class="text-surface-500 text-xs">
 								Controls whether the app is visible in public listings.
 							</p>
 						</label>
@@ -246,36 +229,25 @@
 
 					<fieldset class="space-y-2">
 						<legend class="font-medium">Default Tags</legend>
-
-						{#each state.app.default_tags as tag, i}
+						{#each state.app.tags as tag}
 							<div class="flex gap-2">
-								<input
-									class="input flex-1"
-									placeholder="Display Name"
-									bind:value={tag.display_name}
-								/>
-								<input
-									class="input flex-1"
-									placeholder="Tag ID"
-									bind:value={tag.tag}
-								/>
-								<button
-									type="button"
-									class="btn btn-error btn-sm"
-									on:click={() => removeTag(state, i)}
-								>
-									✕
-								</button>
+								<label class="flex items-center space-x-2">
+									<input
+										class="checkbox"
+										type="checkbox"
+										value={tag}
+										bind:checked={
+											() => getTag(tag, state),
+											(v) => {
+												setTag(v, tag, state);
+												state = state;
+											}
+										}
+									/>
+									<p>{tag.id.String}</p>
+								</label>
 							</div>
 						{/each}
-
-						<button
-							type="button"
-							class="btn btn-secondary btn-sm"
-							on:click={() => addTag(state)}
-						>
-							Add Tag
-						</button>
 					</fieldset>
 
 					<div class="flex justify-between pt-2">
@@ -283,7 +255,7 @@
 							type="button"
 							class="btn btn-error"
 							disabled={!state.app.id}
-							on:click={() => remove(state)}
+							onclick={() => remove(state)}
 						>
 							Delete
 						</button>

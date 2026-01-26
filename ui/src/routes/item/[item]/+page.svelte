@@ -22,10 +22,11 @@
 	import Property from './Property.svelte';
 	import { Modal } from '@skeletonlabs/skeleton-svelte';
 	import { onNavigate } from '$app/navigation';
+	import type { PageData } from '*.svelte';
 
-	let { data }: { data } = $props();
-	console.log('Hello, wolrd!', data);
-	let item = data;
+	let { data }: { data: PageData } = $props();
+	console.log(data);
+	let item = data.data;
 
 	function whichLang(lang: Number): String {
 		switch (lang) {
@@ -77,17 +78,16 @@
 	const tags = get_tags(data.data);
 	const languages = get_languages(data.data);
 
-	let selectedTags = $state(['tags:Mod', 'tags:⟨1.6⟩']);
+	let selectedTags = $state([]);
 	let selectedLangs = $state(['English']);
 
+	// N.B. I wrote this a while ago, it's hideous. Need help rewriting it at some point.
 	function filter(item) {
 		const itemTags = item.tags.map((e) => e.id);
 		const tags = selectedTags.every((e) => {
-			console.log(itemTags, 'includes', e, ':', itemTags.includes(e));
 			return itemTags.includes(e);
 		});
 		const langs = item.languages.every((e) => selectedLangs.includes(whichLang(e)));
-		console.log('item', item.title, 'tags', tags, 'langs', langs, ':', !tags && !langs);
 		return !(tags && langs);
 	}
 
