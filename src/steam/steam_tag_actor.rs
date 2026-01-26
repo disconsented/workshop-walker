@@ -8,7 +8,11 @@ use tracing::{debug, error, info};
 
 use crate::{
     application::{apps_service::AppsService, tags_service::TagsService},
-    db::{apps_repository::AppsSilo, model::Tag, tags_repository::TagsSilo},
+    db::{
+        apps_repository::AppsSilo,
+        model::{Tag, TagRef},
+        tags_repository::TagsSilo,
+    },
 };
 
 pub struct SteamTagActor;
@@ -102,8 +106,10 @@ fn extract_tags(app_id: u32, html: &str) -> Vec<Tag> {
         })
         .map(|text| Tag {
             app_id: app_id.into(),
-            display_name: text.clone(),
-            tag: text,
+            tag_ref: TagRef {
+                display_name: text.clone(),
+                tag: text,
+            },
         })
         .collect::<Vec<_>>()
 }

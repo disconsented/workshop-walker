@@ -6,7 +6,11 @@ use surrealdb::RecordId;
 use tracing::error;
 
 use crate::{
-    db::{item_update_actor::ItemUpdateMsg, model, model::WorkshopItem},
+    db::{
+        item_update_actor::ItemUpdateMsg,
+        model,
+        model::{TagRef, WorkshopItem},
+    },
     processing::{
         bb_actor::BBMsg,
         language_actor::{DetectedLanguage, LanguageMsg},
@@ -96,7 +100,9 @@ impl WorkshopItem<RecordId> {
             description,
             id: RecordId::from_table_key("workshop_items", data.publishedfileid),
             title: data.title.whatever_context("Missing title")?,
-            preview_url: data.preview_url,
+            preview_url: data
+                .preview_url
+                .or_else(|| data.previews.first().map(|preview| preview.url.clone())),
             last_updated: data.time_updated.unwrap_or_default() as _,
             tags: data
                 .tags
@@ -104,8 +110,10 @@ impl WorkshopItem<RecordId> {
                 .cloned()
                 .map(|tag| model::Tag {
                     app_id,
-                    display_name: tag.display_name,
-                    tag: tag.tag,
+                    tag_ref: TagRef {
+                        display_name: tag.display_name,
+                        tag: tag.tag,
+                    },
                 })
                 .collect::<Vec<_>>(),
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),

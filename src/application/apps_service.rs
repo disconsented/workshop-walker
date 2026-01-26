@@ -1,5 +1,5 @@
 use crate::{
-    db::model::App,
+    db::model::{App, TagRef},
     domain::apps::{AppError, AppsPort},
 };
 
@@ -12,11 +12,11 @@ impl<R: AppsPort> AppsService<R> {
         Self { repo }
     }
 
-    pub async fn list_available(&self) -> Result<Vec<App>, AppError> {
+    pub async fn list_available(&self) -> Result<Vec<App<TagRef>>, AppError> {
         self.repo.list_available().await
     }
 
-    pub async fn upsert(&self, app: App) -> Result<(), AppError> {
+    pub async fn upsert(&self, app: App<TagRef>) -> Result<(), AppError> {
         self.repo.upsert(app).await
     }
 
@@ -24,11 +24,11 @@ impl<R: AppsPort> AppsService<R> {
         self.repo.remove(id).await
     }
 
-    pub async fn list(&self) -> Result<Vec<App>, AppError> {
+    pub async fn list(&self) -> Result<Vec<App<TagRef>>, AppError> {
         self.repo.list().await
     }
 
-    pub async fn get(&self, id: u32) -> Result<App, AppError> {
+    pub async fn get(&self, id: u32) -> Result<App<TagRef>, AppError> {
         self.repo.get(id).await
     }
 }

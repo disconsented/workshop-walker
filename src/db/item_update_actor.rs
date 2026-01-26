@@ -231,7 +231,7 @@ async fn insert_data(
         .bind((
             "tags",
             tags.iter()
-                .map(|tag| RecordId::from_table_key("tags", tag.tag.clone()))
+                .map(|tag| RecordId::from_table_key("tags", tag.tag_ref.tag.clone()))
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");

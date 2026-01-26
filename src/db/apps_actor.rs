@@ -5,7 +5,10 @@ use surrealdb::{Surreal, engine::local::Db};
 
 use crate::{
     application::apps_service::AppsService,
-    db::{apps_repository::AppsSilo, model::App},
+    db::{
+        apps_repository::AppsSilo,
+        model::{App, TagRef},
+    },
     domain::apps::AppError,
     steam::steam_download_actor::SteamDownloadMsg,
 };
@@ -25,11 +28,11 @@ pub struct AppsState {
 }
 
 pub enum AppsMsg {
-    ListAvailable(RpcReplyPort<Result<Vec<App>, AppError>>),
-    Upsert(App, RpcReplyPort<Result<(), AppError>>),
+    ListAvailable(RpcReplyPort<Result<Vec<App<TagRef>>, AppError>>),
+    Upsert(App<TagRef>, RpcReplyPort<Result<(), AppError>>),
     Remove(u32, RpcReplyPort<Result<(), AppError>>),
-    List(RpcReplyPort<Result<Vec<App>, AppError>>),
-    Get(u32, RpcReplyPort<Result<App, AppError>>),
+    List(RpcReplyPort<Result<Vec<App<TagRef>>, AppError>>),
+    Get(u32, RpcReplyPort<Result<App<TagRef>, AppError>>),
 }
 
 #[async_trait]

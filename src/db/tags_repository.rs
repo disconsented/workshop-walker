@@ -25,7 +25,7 @@ impl TagsPort for TagsSilo {
                 .query("UPSERT tags CONTENT $tag")
                 .query("UPDATE $id SET tags = tags.add($record)")
                 .query("COMMIT")
-                .bind(("record", RecordId::from_table_key("tags", &tag.tag)))
+                .bind(("record", RecordId::from_table_key("tags", &tag.tag_ref.tag)))
                 .bind(("tag", tag))
                 .bind(("id", RecordId::from_table_key("apps", i64::from(app_id))));
             if let Err(error) = query.await.map(surrealdb::Response::check) {

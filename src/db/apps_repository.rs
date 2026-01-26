@@ -1,8 +1,8 @@
-use surrealdb::{RecordId, Surreal, engine::local::Db};
-use tracing::error;
+use surrealdb::{RecordId, Response, Surreal, engine::local::Db};
+use tracing::{debug, error};
 
 use crate::{
-    db::model::App,
+    db::model::{App, TagRef},
     domain::apps::{AppError, AppsPort},
 };
 
@@ -17,10 +17,14 @@ impl AppsSilo {
 }
 
 impl AppsPort for AppsSilo {
-    async fn list_available(&self) -> Result<Vec<App>, AppError> {
+    async fn list_available(&self) -> Result<Vec<App<TagRef>>, AppError> {
         match self
             .db
-            .query("SELECT *, tags.map(|$v|$v.id()), default_tags.map(|$v|$v.id()), id.id() FROM apps WHERE available = true")
+            .query(
+                "SELECT *, tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
+                 default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
+                 id.id() FROM apps WHERE available = true",
+            )
             .await
             .map(|mut q| q.take(0))
         {
@@ -32,17 +36,23 @@ impl AppsPort for AppsSilo {
         }
     }
 
-    async fn upsert(&self, app: App) -> Result<(), AppError> {
-        if let Err(error) = self
+    async fn upsert(&self, app: App<TagRef>) -> Result<(), AppError> {
+        match self
             .db
             .query("UPSERT apps CONTENT $app")
             .bind(("app", app.clone()))
             .await
+            .map(Response::check)
         {
-            error!(?error, "failed to upsert app");
-            return Err(AppError::Internal);
+            Ok(Ok(response)) => {
+                debug!(?app, ?response, "upserted app");
+                Ok(())
+            }
+            Err(error) | Ok(Err(error)) => {
+                error!(?error, "failed to upsert app");
+                Err(AppError::Internal)
+            }
         }
-        Ok(())
     }
 
     async fn remove(&self, id: u32) -> Result<(), AppError> {
@@ -58,10 +68,14 @@ impl AppsPort for AppsSilo {
         Ok(())
     }
 
-    async fn list(&self) -> Result<Vec<App>, AppError> {
+    async fn list(&self) -> Result<Vec<App<TagRef>>, AppError> {
         match self
             .db
-            .query("SELECT *, tags.map(|$v|$v.id()), default_tags.map(|$v|$v.id()),  id.id() FROM apps")
+            .query(
+                "SELECT *, tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
+                 default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
+                 id.id() FROM apps",
+            )
             .await
             .map(|mut q| q.take(0))
         {
@@ -73,11 +87,12 @@ impl AppsPort for AppsSilo {
         }
     }
 
-    async fn get(&self, id: u32) -> Result<App, AppError> {
+    async fn get(&self, id: u32) -> Result<App<TagRef>, AppError> {
         match self
             .db
             .query(
-                "SELECT *, tags.map(|$v|$v.id()), default_tags.map(|$v|$v.id()), \
+                "SELECT *, tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
+                 default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
                  id.id() FROM $id",
             )
             .bind(("id", RecordId::from_table_key("apps", i64::from(id))))
