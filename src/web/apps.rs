@@ -4,17 +4,16 @@ use salvo::{
     http::StatusError,
     oapi::{
         endpoint,
-        extract::{JsonBody, QueryParam},
+        extract::{JsonBody, PathParam, QueryParam},
     },
     prelude::*,
 };
-use salvo::oapi::extract::PathParam;
 use snafu::{ErrorCompat, Snafu};
 
 use crate::{
     db::{
         apps_actor::{APPS_ACTOR, AppsMsg},
-        model::App,
+        model::{App, TagRef},
     },
     domain::apps::AppError,
 };
@@ -85,7 +84,7 @@ impl From<AppError> for InnerError {
 }
 
 #[endpoint]
-pub async fn list_available() -> Result<Json<Vec<App>>> {
+pub async fn list_available() -> Result<Json<Vec<App<TagRef>>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     let apps = call!(actor, AppsMsg::ListAvailable)
         .map_err(InnerError::from)?
@@ -94,7 +93,7 @@ pub async fn list_available() -> Result<Json<Vec<App>>> {
 }
 
 #[endpoint]
-pub async fn upsert(app: JsonBody<App>) -> Result<()> {
+pub async fn upsert(app: JsonBody<App<TagRef>>) -> Result<()> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     call!(actor, |reply| AppsMsg::Upsert(app.0, reply))
         .map_err(InnerError::from)?
@@ -111,7 +110,7 @@ pub async fn remove(id: QueryParam<u32, true>) -> Result<()> {
 }
 
 #[endpoint]
-pub async fn list() -> Result<Json<Vec<App>>> {
+pub async fn list() -> Result<Json<Vec<App<TagRef>>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     let apps = call!(actor, AppsMsg::List)
         .map_err(InnerError::from)?
@@ -120,7 +119,7 @@ pub async fn list() -> Result<Json<Vec<App>>> {
 }
 
 #[endpoint]
-pub async fn get(id: PathParam<u32>) -> Result<Json<App>> {
+pub async fn get(id: PathParam<u32>) -> Result<Json<App<TagRef>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     let app = call!(actor, |reply| AppsMsg::Get(*id, reply))
         .map_err(InnerError::from)?

@@ -29,9 +29,10 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
             .hoop(max_size(1024 * 1024))
             .push(Router::with_path("list").get(query::list))
             .push(
-                Router::with_path("item/{id}")
+                Router::with_path("item")
                     .hoop(auth::validate_opt)
-                    .get(item::get),
+                    .push(Router::with_path("{id}").get(item::get))
+                    .push(Router::with_path("{id}/app").get(item::get)),
             )
             .push(
                 Router::with_path("property")

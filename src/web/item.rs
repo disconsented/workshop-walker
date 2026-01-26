@@ -191,9 +191,6 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
         .await
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to query database"))
         .map_err(|_| InnerError::InternalError)?
-        // .inspect(|res| {
-        //     dbg!(res);
-        // })
         .take(0)
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to take result"))
         .map_err(|_| InnerError::InternalError)?;
@@ -205,6 +202,23 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
 #[endpoint]
 #[instrument(skip_all)]
 pub async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWorkshopItem>> {
+    // Lazily spawn the actor on first use and keep a global reference like auth.rs
+    let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
+
+    let user = auth::get_user_from_depot(depot);
+    let data = call!(actor, |reply| { ItemMsg::Get(id.0, user, reply) })
+        .map_err(|_| InnerError::InternalError)??;
+    Ok(Json(data))
+}
+
+/// GET /api/item/{id}/app
+/// Retrieves the app
+#[endpoint]
+#[instrument(skip_all)]
+pub async fn app_from_item(
+    id: PathParam<String>,
+    depot: &mut Depot,
+) -> Result<Json<FullWorkshopItem>> {
     // Lazily spawn the actor on first use and keep a global reference like auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
