@@ -204,6 +204,8 @@ pub struct IPublishedStruct {
     pub num_children: Option<i64>,
     pub num_comments_public: Option<i64>,
     pub num_reports: Option<i64>,
+    #[serde(default)]
+    pub previews: Vec<Preview>,
     pub preview_file_size: Option<String>,
     pub preview_url: Option<String>,
     pub publishedfileid: String,
@@ -226,6 +228,16 @@ pub struct IPublishedStruct {
     pub workshop_accepted: bool,
     #[serde(default)]
     pub workshop_file: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Preview {
+    pub previewid: String,
+    pub sortorder: i64,
+    pub url: String,
+    pub size: i64,
+    pub filename: String,
+    pub preview_type: i64,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IPublishedResponse {

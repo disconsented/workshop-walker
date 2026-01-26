@@ -41,6 +41,12 @@ impl Display for OrderBy {
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct Tag {
     pub app_id: u64,
+    #[serde(flatten)]
+    pub tag_ref: TagRef,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
+pub struct TagRef {
     pub display_name: String,
     #[serde(rename = "id")]
     pub tag: String,
@@ -104,7 +110,7 @@ pub struct Dependencies {
 }
 /// A steam workshop app
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct App {
+pub struct App<T> {
     /// The steam ID for an app
     pub id: u32,
     /// App name, I.E. Rimworld
@@ -119,9 +125,13 @@ pub struct App {
     /// Whether the app is visible on the index
     pub available: bool,
     /// List of tags to select by default
-    pub default_tags: Vec<String>,
+    #[salvo(schema(skip))]
+    #[serde(default)]
+    pub default_tags: Vec<T>,
     /// List of known tags
-    pub tags: Vec<String>,
+    #[salvo(schema(skip))]
+    #[serde(default)]
+    pub tags: Vec<T>,
 }
 
 /// A workshop walker user
