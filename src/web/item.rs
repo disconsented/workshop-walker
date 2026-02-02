@@ -134,8 +134,8 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
                     }"
         .to_string(),
     };
-    let query = "SELECT *,type::number(id.id()) as id, type::record('usernames:⟨' + author + \
-                 '⟩').{
+    let query = "SELECT *,type::number(id.id()) as id, type::thing('usernames', \
+            type::number(author)).{
                 id: type::number(id.id()),
                 name
             } AS author, tags.{
