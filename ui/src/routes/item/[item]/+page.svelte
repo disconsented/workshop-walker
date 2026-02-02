@@ -118,8 +118,9 @@
 </script>
 
 <svelte:head>
-	<title>{item.title ? 'Workshop Walker - ' + item.title : 'Workshop Walker - Loading'}</title>
+
 	{#await data then data}
+		<title>{data.data.title ? 'Workshop Walker - ' + data.data.title : 'Workshop Walker - Loading'}</title>
 		<meta property="og:title" content={'Workshop Walker - ' + data.title} />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content={window.location.href} />
@@ -128,11 +129,12 @@
 </svelte:head>
 
 {@render loginModal()}
-{#await data}
+{#await data.data}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
 	</div>
 {:then item}
+	{@debug item}
 	{#if item.status}
 		{@render errorCard(item)}
 	{:else}
@@ -264,6 +266,7 @@
 {/snippet}
 
 {#snippet titleCard()}
+	{@debug item}
 	<div
 		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 rounded-lg border-[1px] p-6"
 	>
@@ -322,8 +325,8 @@
 			<span>
 				Properties:
 				<div class="flex flex-row flex-wrap items-center gap-2">
-					{#each item.properties as property}
-						{@debug property}
+									{#each item.properties as property}
+						<!--{@debug property}-->
 						<Property
 							loggedIn={logged_in}
 							property={{ class: property.out.class, value: property.out.value, ...property }}
