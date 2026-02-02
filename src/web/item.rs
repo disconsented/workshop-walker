@@ -7,7 +7,7 @@ use salvo::{
     prelude::{Json, StatusCode, StatusError},
 };
 use surrealdb::{RecordId, Surreal, engine::local::Db};
-use tracing::{error, instrument};
+use tracing::{debug, error, instrument};
 
 use crate::{db::model::FullWorkshopItem, web::auth};
 
@@ -184,6 +184,8 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
                 description: in.description,
                 properties: []
             } AS dependants FROM $id;";
+
+    debug!(%query, "item query");
 
     let result: Option<_> = db
         .query(query)
