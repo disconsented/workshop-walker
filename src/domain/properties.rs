@@ -20,7 +20,7 @@ pub enum PropertiesError {
 /// Data required to create/link a new property to a workshop item
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct NewProperty {
-    pub workshop_item: String,
+    pub workshop_item: i64,
     pub class: Class,
     pub value: String,
     /// Reasoning or justification for an inclusion
@@ -30,7 +30,7 @@ pub struct NewProperty {
 /// Data required to cast or update a vote on a property
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct VoteData {
-    pub item: String,
+    pub item: u64,
     pub class: Class,
     pub value: String,
     pub score: i32,

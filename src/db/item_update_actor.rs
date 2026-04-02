@@ -152,7 +152,7 @@ impl Actor for ItemUpdateActor {
 async fn maybe_queue_ml(
     db: &Surreal<Db>,
     ml_queue: Option<&ActorRef<MLQueueMsg>>,
-    item: &WorkshopItem<RecordId>,
+    item: &WorkshopItem<i64>,
 ) -> crate::Result<(), Whatever> {
     if let Some(queue) = ml_queue {
         let mut resp = db
@@ -176,7 +176,7 @@ async fn maybe_queue_ml(
                 name = item.title,
                 outdated, description_changed, "Item is being processed for extraction"
             );
-            let _ = queue.send_message(MLQueueMsg::Process(item.id.clone()));
+            let _ = queue.send_message(MLQueueMsg::Process(item.id));
         }
     }
     Ok(())
