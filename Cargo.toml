@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros", "serde-hack", "classification"]
+members = ["macros", "serde-hack", "classification", "scratch"]
 
 [workspace.package]
 version = "0.2.0"
@@ -26,16 +26,16 @@ itertools = "0.14"
 lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean", "french"] }
 multimap = "0.10"
 ractor = { version = "0.15", features = ["monitors", "async-trait"] }
-reqwest = { version = "0.12", features = ["json", ] }
-salvo = { version = "0.86", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
+reqwest = { version = "0.13", features = ["json", ] }
+salvo = { version = "0.89", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-content = "0.1"
 serde-xml-rs = "0.8.1"
 serde_json = "1.0"
 serde_repr = "0.1"
-snafu = "0.8"
+snafu = "0.9"
 str-macro = "1"
-surrealdb = { version = "2.4", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+surrealdb = { version = "3.0", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
 surrealdb-migrations = "2.2"
 tokenizers = "0.21"
 tokio = { version = "1.48", features = ["full"] }
@@ -43,6 +43,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 veil = "0.3"
 scraper = "0.25"
+paste = "1.0"
+
+surrealdb-types = "3.0"
+derive_more = {version = "2.1", features = ["into"] }
 
 [package]
 name = "workshop-walker"
@@ -74,6 +78,7 @@ snafu.workspace = true
 str-macro.workspace = true
 surrealdb = { workspace = true, features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
 surrealdb-migrations.workspace = true
+surrealdb-types.workspace = true
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 tracing.workspace = true

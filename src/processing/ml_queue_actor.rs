@@ -28,7 +28,7 @@ pub struct MLQueueState {
 
 pub enum MLQueueMsg {
     /// Enqueue a workshop item id (record id) to be sent to the ML extractor
-    Process(RecordId),
+    Process(i64),
 }
 
 #[async_trait]
@@ -57,7 +57,7 @@ impl Actor for MLQueueActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             MLQueueMsg::Process(id) => {
-                if let Err(e) = process_one(state, &id).await {
+                if let Err(e) = process_one(state, id).await {
                     error!(?e, record=%id, "processing ML extraction");
                 }
             }
@@ -66,12 +66,12 @@ impl Actor for MLQueueActor {
     }
 }
 
-async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), Whatever> {
+async fn process_one(state: &mut MLQueueState, workshop_item: i64) -> Result<(), Whatever> {
     // Load minimal fields needed
     let mut resp = state
         .database
         .query("SELECT title, description FROM $id")
-        .bind(("id", id.clone()))
+        .bind(("id", RecordId::from_table_key("workshop_items", workshop_item.to_string())))
         .await
         .whatever_context("Querying item for ML extraction")?;
     let title: Option<String> = resp
@@ -81,7 +81,7 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
         .take((0, "description"))
         .whatever_context("Taking description from response")?;
     let (Some(title), Some(description)) = (title, description) else {
-        debug!(record=%id, "No item found or missing fields for ML extraction");
+        debug!(%workshop_item, "No item found or missing fields for ML extraction");
         return Ok(());
     };
 
@@ -92,7 +92,7 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
         rpc_reply_port: reply
     }) {
         Ok(Ok(props)) => {
-            info!(record=%id, props=?props, "ML extraction completed");
+            info!(%workshop_item, props=?props, "ML extraction completed");
 
             for (class, value) in props
                 .genres
@@ -104,7 +104,7 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
             {
                 match call!(state.property_actor, |reply| PropertiesMsg::NewProperty(
                     NewProperty {
-                        workshop_item: id.key().to_string().replace("⟩", "").replace("⟨", ""),
+                        workshop_item: workshop_item,
                         class: class.clone(),
                         value: value.clone(),
                         note: None,
@@ -124,10 +124,10 @@ async fn process_one(state: &mut MLQueueState, id: &RecordId) -> Result<(), What
             }
         }
         Ok(Err(err)) => {
-            error!(record=%id, ?err, "ML extraction failed");
+            error!(record=%workshop_item, ?err, "ML extraction failed");
         }
         Err(err) => {
-            error!(record=%id, ?err, "ML extractor RPC failed");
+            error!(record=%workshop_item, ?err, "ML extractor RPC failed");
         }
     }
     Ok(())

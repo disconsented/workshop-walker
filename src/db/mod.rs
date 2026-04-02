@@ -11,8 +11,12 @@ pub mod user_names_repository;
 
 use macros::define_id;
 
-define_id!("users", UserID, String);
-define_id!("workshop_items", ItemID, String);
+define_id!("users", IUserID, UserID, String);
+define_id!("workshop_items", ItemID, IItemID, String);
+
+
+
+
 
 #[cfg(test)]
 mod test {
