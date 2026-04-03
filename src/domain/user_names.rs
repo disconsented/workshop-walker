@@ -1,11 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
-use surrealdb::RecordId;
+
+use crate::db::IUsernameID;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserName {
-    pub id: RecordId,
+    pub id: IUsernameID,
     #[serde(serialize_with = "crate::db::model::serialize_chrono_as_sql_datetime")]
     pub last_updated: DateTime<Utc>,
     pub name: String,
@@ -22,5 +23,5 @@ pub enum UserNameError {
 
 pub trait UserNamesPort: Send + Sync + 'static {
     async fn upsert(&self, username: UserName) -> Result<(), UserNameError>;
-    async fn get_by_id(&self, id: RecordId) -> Result<Option<UserName>, UserNameError>;
+    async fn get_by_id(&self, id: IUsernameID) -> Result<Option<UserName>, UserNameError>;
 }

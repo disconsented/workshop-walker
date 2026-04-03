@@ -6,10 +6,13 @@ use salvo::{
     oapi::{endpoint, extract::PathParam},
     prelude::{Json, StatusCode, StatusError},
 };
-use surrealdb::{RecordId, Surreal, engine::local::Db};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{debug, error, instrument};
 
-use crate::{db::model::FullWorkshopItem, web::auth};
+use crate::{
+    db::{IItemID, ItemID, model::FullWorkshopItem},
+    web::auth,
+};
 
 static ITEM_ACTOR: OnceLock<ActorRef<ItemMsg>> = OnceLock::new();
 
@@ -98,7 +101,7 @@ impl Actor for ItemActor {
 }
 
 async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<FullWorkshopItem> {
-    let id = RecordId::new("workshop_items", &id);
+    let id = IItemID::from(&id);
 
     let properties = match user {
         Some(user) => format!(
@@ -135,7 +138,7 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
         .to_string(),
     };
     let query = "SELECT *,type::number(id.id()) as id, type::thing('usernames', \
-            type::number(author)).{
+                 type::number(author)).{
                 id: type::number(id.id()),
                 name
             } AS author, tags.{

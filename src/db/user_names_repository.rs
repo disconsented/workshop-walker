@@ -1,7 +1,10 @@
-use surrealdb::{RecordId, Surreal, engine::local::Db};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
-use crate::domain::user_names::{UserName, UserNameError, UserNamesPort};
+use crate::{
+    db::IUsernameID,
+    domain::user_names::{UserName, UserNameError, UserNamesPort},
+};
 
 pub struct UserNamesSilo {
     db: Surreal<Db>,
@@ -32,7 +35,7 @@ impl UserNamesPort for UserNamesSilo {
         }
     }
 
-    async fn get_by_id(&self, id: RecordId) -> Result<Option<UserName>, UserNameError> {
+    async fn get_by_id(&self, id: IUsernameID) -> Result<Option<UserName>, UserNameError> {
         match self
             .db
             .query("SELECT * FROM $id")

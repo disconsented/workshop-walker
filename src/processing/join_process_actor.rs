@@ -2,11 +2,11 @@ use std::mem::take;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{OptionExt, Whatever};
-use surrealdb::RecordId;
 use tracing::error;
 
 use crate::{
     db::{
+        IItemID, ItemID,
         item_update_actor::ItemUpdateMsg,
         model,
         model::{TagRef, WorkshopItem},
@@ -83,7 +83,7 @@ impl Actor for JoinProcessActor {
     }
 }
 
-impl WorkshopItem<RecordId> {
+impl WorkshopItem<IItemID> {
     fn try_new(
         data: IPublishedStruct,
         languages: Vec<DetectedLanguage>,

@@ -26,12 +26,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::to_value;
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
-use surrealdb::{
-    Surreal,
-    engine::local::Db,
-};
-use tracing::{debug, error};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::statements::InsertStatement;
+use tracing::{debug, error};
+
 use crate::{
     app_config::BiscuitConfig,
     db::{UserID, model::User},

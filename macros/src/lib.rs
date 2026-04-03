@@ -1,4 +1,3 @@
-
 /// A helper macro to define a newtype for a SurrealDB record ID
 /// Makes it not a total pain in the ass to deal with
 ///
@@ -34,9 +33,23 @@ macro_rules! define_id {
         }
         impl From<$external> for $internal {
             fn from(id: $external) -> Self {
+                #[allow(
+                    clippy::disallowed_methods,
+                    reason = "Macro use only, this is considered correct"
+                )]
                 Self(surrealdb_types::RecordId::new(Self::TABLE_NAME, id.0))
             }
         }
+        impl From<$external_type> for $internal {
+            fn from(id: $external_type) -> Self {
+                #[allow(
+                    clippy::disallowed_methods,
+                    reason = "Macro use only, this is considered correct"
+                )]
+                Self(surrealdb_types::RecordId::new(Self::TABLE_NAME, id))
+            }
+        }
+
         impl Into<surrealdb_types::RecordId> for $internal {
             fn into(self) -> surrealdb_types::RecordId {
                 self.0

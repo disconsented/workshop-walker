@@ -1,9 +1,11 @@
-use surrealdb::{ Surreal, engine::local::Db};
-use surrealdb_types::RecordId;
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{debug, error};
 
 use crate::{
-    db::model::{App, TagRef},
+    db::{
+        AppID, IAppID,
+        model::{App, TagRef},
+    },
     domain::apps::{AppError, AppsPort},
 };
 
@@ -60,7 +62,7 @@ impl AppsPort for AppsSilo {
         if let Err(error) = self
             .db
             .query("DELETE $id")
-            .bind(("id", RecordId::new("apps", i64::from(id))))
+            .bind(("id", IAppID::from(id as u64)))
             .await
         {
             error!(?error, "failed to remove app");
@@ -96,7 +98,7 @@ impl AppsPort for AppsSilo {
                  default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
                  id.id() FROM $id",
             )
-            .bind(("id", RecordId::new("apps", i64::from(id))))
+            .bind(("id", IAppID::from(id as u64)))
             .await
             .map(|mut q| q.take(0))
         {

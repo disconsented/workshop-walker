@@ -1,8 +1,8 @@
-use surrealdb::{RecordId, Surreal, engine::local::Db};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
 use crate::{
-    db::model::Tag,
+    db::{AppID, IAppID, ITagID, TagID, model::Tag},
     domain::tags::{TagError, TagsPort},
 };
 
@@ -25,9 +25,9 @@ impl TagsPort for TagsSilo {
                 .query("UPSERT tags CONTENT $tag")
                 .query("UPDATE $id SET tags = tags.add($record)")
                 .query("COMMIT")
-                .bind(("record", RecordId::new("tags", &tag.tag_ref.tag)))
+                .bind(("record", ITagID::from(TagID::from(tag.tag_ref.tag.clone()))))
                 .bind(("tag", tag))
-                .bind(("id", RecordId::new("apps", i64::from(app_id))));
+                .bind(("id", IAppID::from(AppID::from(i64::from(app_id)))));
             if let Err(error) = query.await.map(surrealdb::Response::check) {
                 error!(?error, "failed to upsert tag");
                 return Err(TagError::Internal {
@@ -41,7 +41,9 @@ impl TagsPort for TagsSilo {
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{RecordId, Surreal, engine::local::Mem};
+    use surrealdb::{Surreal, engine::local::Mem};
+
+    use crate::db::{AppID, IAppID, ITagID, TagID};
 
     #[tokio::test]
     async fn test_upsert_tags() {
@@ -83,17 +85,17 @@ mod test {
         .await
         .unwrap();
         db.query("CREATE $id")
-            .bind(("id", RecordId::new("apps", 4)))
+            .bind(("id", IAppID::from(4i64)))
             .await
             .unwrap();
         db.query("UPDATE $id SET tags = tags.add($record)")
-            .bind(("id", RecordId::new("apps", 4)))
-            .bind(("record", RecordId::new("tags", "something")))
+            .bind(("id", IAppID::from(4i64)))
+            .bind(("record", ITagID::from("something".to_string())))
             .await
             .unwrap();
         let stuff: Vec<String> = db
             .query("SELECT tags.map(|$v|$v.to_string()) FROM $id")
-            .bind(("id", RecordId::new("apps", 4)))
+            .bind(("id", IAppID::from(4i64)))
             .await
             .unwrap()
             .take(0)

@@ -1,15 +1,15 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{
-    Surreal,
-    engine::local::Db,
-};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_types::RecordId;
 use tracing::{debug, error};
 
 use crate::{
-    db::model::{Dependencies, WorkshopItem},
+    db::{
+        IItemDependencyID, IItemID, ITagID, ItemDependencyID, ItemID, TagID,
+        model::{Dependencies, WorkshopItem},
+    },
     processing::{
         bb_actor::BBMsg,
         join_process_actor::{JoinProcessActor, JoinProcessArgs, JoinProcessMsg},
@@ -195,14 +195,14 @@ async fn insert_data(
         let data = children
             .into_iter()
             .map(|child| {
-                let dep_id = RecordId::new("workshop_items", child.publishedfileid);
+                let dep_id = IItemID::from(ItemID::from(child.publishedfileid));
                 to_value(Dependencies {
-                    id: RecordId::new(
-                        "item_dependencies",
-                        vec![item.id.clone().into(), dep_id.clone().into()],
-                    ),
+                    id: IItemDependencyID::from(vec![
+                        item.id.clone().into(),
+                        dep_id.clone().into(),
+                    ]),
                     this: item.id.clone(),
-                    dependency: dep_id,
+                    dependency: dep_id.into(),
                 })
                 .unwrap()
             })
@@ -228,7 +228,7 @@ async fn insert_data(
         .bind((
             "tags",
             tags.iter()
-                .map(|tag| RecordId::new("tags", tag.tag_ref.tag.clone()))
+                .map(|tag| ITagID::from(tag.tag_ref.tag.clone()))
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");

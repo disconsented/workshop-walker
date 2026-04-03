@@ -1,11 +1,12 @@
 use classification::actor::ExtractionMsg;
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{ResultExt, Whatever};
-use surrealdb::{RecordId, Surreal, engine::local::Db};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{debug, error, info};
 
 use crate::{
     db::{
+        IItemID, ItemID,
         model::{Class, Source, Status},
         properties_actor::PropertiesMsg,
     },
@@ -71,7 +72,7 @@ async fn process_one(state: &mut MLQueueState, workshop_item: i64) -> Result<(),
     let mut resp = state
         .database
         .query("SELECT title, description FROM $id")
-        .bind(("id", RecordId::new("workshop_items", workshop_item.to_string())))
+        .bind(("id", IItemID::from(workshop_item.to_string())))
         .await
         .whatever_context("Querying item for ML extraction")?;
     let title: Option<String> = resp
@@ -104,7 +105,7 @@ async fn process_one(state: &mut MLQueueState, workshop_item: i64) -> Result<(),
             {
                 match call!(state.property_actor, |reply| PropertiesMsg::NewProperty(
                     NewProperty {
-                        workshop_item: workshop_item,
+                        workshop_item,
                         class: class.clone(),
                         value: value.clone(),
                         note: None,
