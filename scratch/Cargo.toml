@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 macros.workspace = true
-derive_more.workspace = true
+proc-macros.workspace = true
 surrealdb-types.workspace = true
 serde.workspace = true
-paste = "1.0.15"
