@@ -38,6 +38,10 @@ impl Display for OrderBy {
     }
 }
 
+use crate::db::{
+    AppID, IAppID, IItemDependencyID, IItemID, ITagID, IUserID, ItemID, TagID, UserID,
+};
+
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct Tag {
     pub app_id: u64,
@@ -49,7 +53,7 @@ pub struct Tag {
 pub struct TagRef {
     pub display_name: String,
     #[serde(rename = "id")]
-    pub tag: String,
+    pub tag: TagID,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
@@ -70,8 +74,8 @@ pub struct WorkshopItem<ID> {
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FullWorkshopItem {
     // Core identifiers
-    pub id: u64,    // The item's ID
-    pub appid: i64, // The steam ID of the app this belongs to
+    pub id: ItemID,   // The item's ID
+    pub appid: AppID, // The steam ID of the app this belongs to
 
     // Content information
     pub title: String,       // The titles name
@@ -83,7 +87,7 @@ pub struct FullWorkshopItem {
     #[serde(default)]
     pub tags: Vec<Tag>, // The list of tags found
     #[serde(default)]
-    pub properties: Vec<WorkshopItemProperties<String, Property>>, // Approved or owned properties
+    pub properties: Vec<WorkshopItemProperties<ItemID, Property>>, // Approved or owned properties
     pub score: f32, // The "quality" score assigned by steam
 
     // Author and timing
@@ -102,17 +106,17 @@ pub struct FullWorkshopItem {
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Dependencies {
-    pub id: RecordId,
+    pub id: IItemDependencyID,
     #[serde(rename = "in")]
-    pub this: RecordId,
+    pub this: IItemID,
     #[serde(rename = "out")]
-    pub dependency: RecordId,
+    pub dependency: IItemID,
 }
 /// A steam workshop app
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct App<T> {
     /// The steam ID for an app
-    pub id: u32,
+    pub id: AppID,
     /// App name, I.E. Rimworld
     pub name: String,
     /// The developers primary name I.E. Ludeon Studios
@@ -209,10 +213,9 @@ pub struct Companion<R, S> {
 
 /// A voting record
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-#[expect(unused, reason = "To be used soon")]
 pub struct Vote {
     /// The app this is associated with, for possible filtering
-    pub app_id: String,
+    pub app_id: AppID,
     pub score: f32,
     pub when: DateTime<Utc>,
 }
@@ -310,7 +313,7 @@ pub enum Status {
 
 #[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct DisplayUser {
-    id: u64,
+    id: UserID,
     name: String,
 }
 #[derive(Serialize, Deserialize, PartialOrd, PartialEq, Eq, Debug)]
@@ -365,11 +368,14 @@ mod test {
     use serde::{Deserialize, Serialize};
     use surrealdb::RecordId;
 
-    use crate::db::model::{Class, Id, Source};
+    use crate::db::{
+        IItemID, IUserID, ItemID, UserID,
+        model::{Class, Id, Source},
+    };
 
     #[test]
     fn test_id_newtype() {
-        let id: Id = RecordId::new("items", "1").into();
+        let id: Id = IItemID::from("1".to_string()).into();
         let id_txt = serde_json::to_string(&id).unwrap();
         let id2: Id = serde_json::from_str(&id_txt).unwrap();
         assert_eq!(id, id2);
@@ -391,7 +397,7 @@ mod test {
         println!("{user_text} {system_text}");
 
         {
-            let user = Source::User(RecordId::new("a", "b"));
+            let user = Source::User(IUserID::from("b".to_string()));
             let user_text = serde_json::to_string(&user).unwrap();
             let user2 = serde_json::from_str(&user_text).unwrap();
             assert_eq!(user, user2);

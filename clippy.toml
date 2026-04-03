@@ -1,3 +1,4 @@
 allow-unwrap-in-tests = true
 allow-dbg-in-tests = true
 allow-unwrap-types = ["std::sync::LockResult"]
+disallowed-methods = ["surrealdb_types::value::record_id::RecordId::new"]

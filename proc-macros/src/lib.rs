@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, GenericParam, Type, TypePath};
+use syn::{DeriveInput, GenericParam, Type, TypePath, parse_macro_input};
 
 #[proc_macro_derive(ConvertId)]
 pub fn derive_convert_id(input: TokenStream) -> TokenStream {

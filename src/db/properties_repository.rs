@@ -1,11 +1,11 @@
 use std::result::Result;
 
-use surrealdb::{RecordId, Surreal, engine::local::Db};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        ItemID, UserID,
+        IItemID, IUserID, ItemID, UserID,
         model::{Property, Source, Status, WorkshopItemProperties},
     },
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
@@ -28,7 +28,7 @@ impl PropertiesPort for PropertiesSilo {
         source: Source<String>,
         status: Status,
     ) -> Result<(), PropertiesError> {
-        let workshop_id = ItemID::from(new_property.workshop_item).into_recordid();
+        let workshop_id = IItemID::from(new_property.workshop_item);
 
         let test_prop = Property {
             class: new_property.class,
@@ -97,7 +97,7 @@ impl PropertiesPort for PropertiesSilo {
                 "source",
                 match source {
                     Source::System => Source::System,
-                    Source::User(userid) => Source::<RecordId>::User(UserID::from(userid).into()),
+                    Source::User(userid) => Source::User(IUserID::from(userid)),
                 },
             ))
             .bind(("status", status))
@@ -146,10 +146,10 @@ impl PropertiesPort for PropertiesSilo {
             )
             .bind(("class", vote_data.class))
             .bind(("value", vote_data.value))
-            .bind(("user", user.into_recordid()))
+            .bind(("user", IUserID::from(user)))
             .bind((
                 "item",
-                RecordId::new("workshop_items", vote_data.item),
+                IItemID::from(vote_data.item),
             ))
             .bind(("score", vote_data.score));
 
@@ -190,11 +190,8 @@ impl PropertiesPort for PropertiesSilo {
             .query("COMMIT TRANSACTION;")
             .bind(("class", vote_data.class))
             .bind(("value", vote_data.value))
-            .bind(("user", user.into_recordid()))
-            .bind((
-                "item",
-                RecordId::new("workshop_items", vote_data.item),
-            ))
+            .bind(("user", IUserID::from(user)))
+            .bind(("item", IItemID::from(vote_data.item)))
             .await;
 
         match result.map(surrealdb::Response::check) {

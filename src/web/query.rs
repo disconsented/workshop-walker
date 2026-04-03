@@ -18,7 +18,10 @@ use surrealdb::{
 use tracing::{Instrument, info, info_span, instrument};
 
 use crate::{
-    db::model::{OrderBy, WorkshopItem},
+    db::{
+        ITagID, TagID,
+        model::{OrderBy, WorkshopItem},
+    },
     processing::language_actor::DetectedLanguage,
     web,
     web::DB_POOL,
@@ -135,7 +138,8 @@ pub async fn list(
                                     .map(|tag| {
                                         to_value(
                                             RecordId::from_str(tag)
-                                                .unwrap_or(RecordId::new("tags", tag)),
+                                                .map(ITagID::from)
+                                                .unwrap_or(ITagID::from(tag.to_string())),
                                         )
                                         .unwrap()
                                     })

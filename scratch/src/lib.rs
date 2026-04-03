@@ -5,6 +5,7 @@ define_id!("users", Internal, External, String);
 #[cfg(test)]
 mod tests {
     use proc_macros::ConvertId;
+
     use crate::{External, Internal};
 
     #[derive(ConvertId)]
@@ -20,7 +21,6 @@ mod tests {
         let external2: External = internal.try_into().unwrap();
         let raw: String = external2.into();
         assert_eq!(raw, "test");
-
     }
 
     #[test]
