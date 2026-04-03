@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use surrealdb::RecordId;
+use surrealdb_types::RecordId;
 use tracing::debug;
 
 use crate::domain::user_names::{UserName, UserNameError, UserNamesPort};

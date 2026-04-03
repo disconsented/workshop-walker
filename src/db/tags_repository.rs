@@ -25,9 +25,9 @@ impl TagsPort for TagsSilo {
                 .query("UPSERT tags CONTENT $tag")
                 .query("UPDATE $id SET tags = tags.add($record)")
                 .query("COMMIT")
-                .bind(("record", RecordId::from_table_key("tags", &tag.tag_ref.tag)))
+                .bind(("record", RecordId::new("tags", &tag.tag_ref.tag)))
                 .bind(("tag", tag))
-                .bind(("id", RecordId::from_table_key("apps", i64::from(app_id))));
+                .bind(("id", RecordId::new("apps", i64::from(app_id))));
             if let Err(error) = query.await.map(surrealdb::Response::check) {
                 error!(?error, "failed to upsert tag");
                 return Err(TagError::Internal {
@@ -83,17 +83,17 @@ mod test {
         .await
         .unwrap();
         db.query("CREATE $id")
-            .bind(("id", RecordId::from_table_key("apps", 4)))
+            .bind(("id", RecordId::new("apps", 4)))
             .await
             .unwrap();
         db.query("UPDATE $id SET tags = tags.add($record)")
-            .bind(("id", RecordId::from_table_key("apps", 4)))
-            .bind(("record", RecordId::from_table_key("tags", "something")))
+            .bind(("id", RecordId::new("apps", 4)))
+            .bind(("record", RecordId::new("tags", "something")))
             .await
             .unwrap();
         let stuff: Vec<String> = db
             .query("SELECT tags.map(|$v|$v.to_string()) FROM $id")
-            .bind(("id", RecordId::from_table_key("apps", 4)))
+            .bind(("id", RecordId::new("apps", 4)))
             .await
             .unwrap()
             .take(0)

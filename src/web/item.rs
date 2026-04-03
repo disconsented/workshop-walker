@@ -98,7 +98,7 @@ impl Actor for ItemActor {
 }
 
 async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<FullWorkshopItem> {
-    let id = RecordId::from_table_key("workshop_items", &id);
+    let id = RecordId::new("workshop_items", &id);
 
     let properties = match user {
         Some(user) => format!(

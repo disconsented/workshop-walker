@@ -369,7 +369,7 @@ mod test {
 
     #[test]
     fn test_id_newtype() {
-        let id: Id = RecordId::from_table_key("items", "1").into();
+        let id: Id = RecordId::new("items", "1").into();
         let id_txt = serde_json::to_string(&id).unwrap();
         let id2: Id = serde_json::from_str(&id_txt).unwrap();
         assert_eq!(id, id2);
@@ -391,7 +391,7 @@ mod test {
         println!("{user_text} {system_text}");
 
         {
-            let user = Source::User(RecordId::from_table_key("a", "b"));
+            let user = Source::User(RecordId::new("a", "b"));
             let user_text = serde_json::to_string(&user).unwrap();
             let user2 = serde_json::from_str(&user_text).unwrap();
             assert_eq!(user, user2);

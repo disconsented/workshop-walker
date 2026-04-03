@@ -71,7 +71,7 @@ async fn process_one(state: &mut MLQueueState, workshop_item: i64) -> Result<(),
     let mut resp = state
         .database
         .query("SELECT title, description FROM $id")
-        .bind(("id", RecordId::from_table_key("workshop_items", workshop_item.to_string())))
+        .bind(("id", RecordId::new("workshop_items", workshop_item.to_string())))
         .await
         .whatever_context("Querying item for ML extraction")?;
     let title: Option<String> = resp

@@ -19,7 +19,6 @@ candle-examples = "0.9"
 candle-nn = "0.9"
 candle-transformers = "0.9"
 chrono = "0.4"
-config = "0.15"
 hf-hub = "0.4"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
@@ -37,8 +36,9 @@ serde_repr = "0.1"
 snafu = "0.9"
 str-macro = "1"
 surrealdb = { version = "3.0", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+surrealdb-core = "3.0"
 surrealdb-migrations = "2.2"
-tokenizers = "0.21"
+tokenizers = "0.22"
 tokio = { version = "1.48", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
@@ -47,7 +47,6 @@ scraper = "0.25"
 surrealdb-types = "3.0"
 syn = "2.0"
 quote = "1.0"
-proc-macro2 = "1.0"
 
 [package]
 name = "workshop-walker"
@@ -60,7 +59,6 @@ bbscope.workspace = true
 biscuit-auth.workspace = true
 chrono.workspace = true
 classification = { workspace = true, optional = true }
-config.workspace = true
 humantime.workspace = true
 itertools.workspace = true
 lingua = { workspace = true, features = ["english", "russian", "chinese", "japanese", "korean"] }
@@ -78,6 +76,7 @@ serde_repr.workspace = true
 snafu.workspace = true
 str-macro.workspace = true
 surrealdb = { workspace = true, features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+surrealdb-core.workspace = true
 surrealdb-migrations.workspace = true
 surrealdb-types.workspace = true
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
