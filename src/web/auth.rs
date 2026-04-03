@@ -23,16 +23,15 @@ use salvo::{
     prelude::{Redirect, StatusCode, StatusError, endpoint},
 };
 use serde::{Deserialize, Serialize};
+use serde_json::to_value;
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{
     Surreal,
     engine::local::Db,
-    sql::{Data, Operator, Value, statements::InsertStatement, to_value},
-    syn::idiom,
 };
 use tracing::{debug, error};
-
+use surrealdb_core::sql::statements::InsertStatement;
 use crate::{
     app_config::BiscuitConfig,
     db::{UserID, model::User},

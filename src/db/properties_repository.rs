@@ -149,7 +149,7 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("user", user.into_recordid()))
             .bind((
                 "item",
-                RecordId::from_table_key("workshop_items", vote_data.item),
+                RecordId::new("workshop_items", vote_data.item),
             ))
             .bind(("score", vote_data.score));
 
@@ -193,7 +193,7 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("user", user.into_recordid()))
             .bind((
                 "item",
-                RecordId::from_table_key("workshop_items", vote_data.item),
+                RecordId::new("workshop_items", vote_data.item),
             ))
             .await;
 

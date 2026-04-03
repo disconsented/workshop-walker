@@ -1,14 +1,11 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{
-    RecordId, Surreal,
+    Surreal,
     engine::local::Db,
-    sql::{
-        Data, Value,
-        statements::{InsertStatement, UpsertStatement},
-        to_value,
-    },
 };
+use surrealdb_types::RecordId;
 use tracing::{debug, error};
 
 use crate::{
@@ -198,9 +195,9 @@ async fn insert_data(
         let data = children
             .into_iter()
             .map(|child| {
-                let dep_id = RecordId::from_table_key("workshop_items", child.publishedfileid);
+                let dep_id = RecordId::new("workshop_items", child.publishedfileid);
                 to_value(Dependencies {
-                    id: RecordId::from_table_key(
+                    id: RecordId::new(
                         "item_dependencies",
                         vec![item.id.clone().into(), dep_id.clone().into()],
                     ),
@@ -231,7 +228,7 @@ async fn insert_data(
         .bind((
             "tags",
             tags.iter()
-                .map(|tag| RecordId::from_table_key("tags", tag.tag_ref.tag.clone()))
+                .map(|tag| RecordId::new("tags", tag.tag_ref.tag.clone()))
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");

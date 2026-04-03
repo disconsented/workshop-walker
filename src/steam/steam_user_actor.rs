@@ -100,7 +100,7 @@ impl Actor for SteamUserActor {
                                 for users in root.response.players {
                                     if let Err(error) = user_names_service
                                         .update_user_name(
-                                            RecordId::from_table_key(
+                                            RecordId::new(
                                                 "usernames",
                                                 users.steamid.parse::<i64>().unwrap(),
                                             ),
@@ -156,7 +156,7 @@ impl Actor for SteamUserActor {
 
 async fn should_update_user(user_names_service: &UserNamesService<UserNamesSilo>, id: u64) -> bool {
     user_names_service
-        .should_update_user(RecordId::from_table_key("usernames", id as i64))
+        .should_update_user(RecordId::new("usernames", id as i64))
         .await
         .inspect_err(|error| error!(?error, "Failed to check if user should be updated"))
         .unwrap_or(true)

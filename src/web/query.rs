@@ -135,7 +135,7 @@ pub async fn list(
                                     .map(|tag| {
                                         to_value(
                                             RecordId::from_str(tag)
-                                                .unwrap_or(RecordId::from_table_key("tags", tag)),
+                                                .unwrap_or(RecordId::new("tags", tag)),
                                         )
                                         .unwrap()
                                     })
@@ -153,7 +153,7 @@ pub async fn list(
                                         .map(|tag| format!(
                                             "$var.id == {}",
                                             RecordId::from_str(&tag)
-                                                .unwrap_or(RecordId::from_table_key("tags", tag))
+                                                .unwrap_or(RecordId::new("tags", tag))
                                         ))
                                         .join(" OR ")
                                 ))
