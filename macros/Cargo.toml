@@ -3,6 +3,7 @@ name = "macros"
 version.workspace = true
 edition.workspace = true
 
+
+
 [dependencies]
 serde.workspace = true
-paste.workspace = true

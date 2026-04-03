@@ -1,3 +1,4 @@
+
 /// A helper macro to define a newtype for a SurrealDB record ID
 /// Makes it not a total pain in the ass to deal with
 ///
@@ -44,10 +45,12 @@ macro_rules! define_id {
 
         impl TryInto<$external> for $internal {
             type Error = surrealdb_types::Error;
+
             fn try_into(self) -> Result<$external, Self::Error> {
-                Ok($external(surrealdb_types::SurrealValue::into_value(self.0.key).into_t()?))
+                Ok($external(
+                    surrealdb_types::SurrealValue::into_value(self.0.key).into_t()?,
+                ))
             }
         }
     };
 }
-

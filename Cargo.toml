@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros", "serde-hack", "classification", "scratch"]
+members = ["macros", "serde-hack", "classification", "scratch", "proc-macros"]
 
 [workspace.package]
 version = "0.2.0"
@@ -9,6 +9,7 @@ license = "MPL-2"
 [workspace.dependencies]
 classification = { path = "./classification" }
 macros = { path = "./macros" }
+proc-macros = { path = "./proc-macros" }
 serde-hack = { path = "./serde-hack" }
 
 bbscope = "0.2"
@@ -43,10 +44,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 veil = "0.3"
 scraper = "0.25"
-paste = "1.0"
-
 surrealdb-types = "3.0"
-derive_more = {version = "2.1", features = ["into"] }
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
 
 [package]
 name = "workshop-walker"

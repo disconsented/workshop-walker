@@ -5034,7 +5034,6 @@ checksum = "670fdfda89751bc4a84ac13eaa63e205cf0fd22b4c9a5fbfa085b63c1f1d3a30"
 name = "macros"
 version = "0.2.0"
 dependencies = [
- "paste",
  "serde",
 ]
 
@@ -6319,6 +6318,14 @@ dependencies = [
  "syn 2.0.117",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "proc-macros"
+version = "0.2.0"
+dependencies = [
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -7794,9 +7801,8 @@ dependencies = [
 name = "scratch"
 version = "0.2.0"
 dependencies = [
- "derive_more",
  "macros",
- "paste",
+ "proc-macros",
  "serde",
  "surrealdb-types",
 ]
