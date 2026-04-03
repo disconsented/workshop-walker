@@ -1,8 +1,7 @@
 [package]
+edition.workspace = true
 name = "macros"
 version.workspace = true
-edition.workspace = true
-
 
 
 [dependencies]

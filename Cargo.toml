@@ -1,10 +1,10 @@
 [workspace]
-members = ["macros", "serde-hack", "classification", "scratch", "proc-macros"]
+members = ["classification", "macros", "proc-macros", "scratch", "serde-hack"]
 
 [workspace.package]
-version = "0.2.0"
 edition = "2024"
 license = "MPL-2"
+version = "0.2.0"
 
 [workspace.dependencies]
 classification = { path = "./classification" }
@@ -23,51 +23,86 @@ hf-hub = "0.4"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
 itertools = "0.14"
-lingua = { version = "1.7", features = ["english", "russian", "chinese", "japanese", "korean", "french"] }
+lingua = { features = [
+  "chinese",
+  "english",
+  "french",
+  "japanese",
+  "korean",
+  "russian",
+], version = "1.7" }
 multimap = "0.10"
-ractor = { version = "0.15", features = ["monitors", "async-trait"] }
-reqwest = { version = "0.13", features = ["json", ] }
-salvo = { version = "0.89", features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
-serde = { version = "1.0", features = ["derive"] }
+quote = "1.0"
+ractor = { features = ["async-trait", "monitors"], version = "0.15" }
+reqwest = { features = ["json"], version = "0.13" }
+salvo = { features = [
+  "affix-state",
+  "cookie",
+  "logging",
+  "oapi",
+  "serve-static",
+  "size-limiter",
+], version = "0.89" }
+scraper = "0.25"
+serde = { features = ["derive"], version = "1.0" }
 serde-content = "0.1"
 serde-xml-rs = "0.8.1"
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.9"
 str-macro = "1"
-surrealdb = { version = "3.0", features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+surrealdb = { features = [
+  "allocator",
+  "kv-mem",
+  "kv-rocksdb",
+  "protocol-http",
+  "protocol-ws",
+  "rustls",
+], version = "3.0" }
 surrealdb-core = "3.0"
 surrealdb-migrations = "2.2"
-tokenizers = "0.22"
-tokio = { version = "1.48", features = ["full"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-veil = "0.3"
-scraper = "0.25"
 surrealdb-types = "3.0"
 syn = "2.0"
-quote = "1.0"
+tokenizers = "0.22"
+tokio = { features = ["full"], version = "1.48" }
+tracing = "0.1"
+tracing-subscriber = { features = ["env-filter"], version = "0.3.19" }
+veil = "0.3"
 
 [package]
-name = "workshop-walker"
-version.workspace = true
 edition.workspace = true
 license.workspace = true
+name = "workshop-walker"
+version.workspace = true
 
 [dependencies]
 bbscope.workspace = true
 biscuit-auth.workspace = true
 chrono.workspace = true
-classification = { workspace = true, optional = true }
+classification = { optional = true, workspace = true }
 humantime.workspace = true
 itertools.workspace = true
-lingua = { workspace = true, features = ["english", "russian", "chinese", "japanese", "korean"] }
+lingua = { features = [
+  "chinese",
+  "english",
+  "japanese",
+  "korean",
+  "russian",
+], workspace = true }
 macros.workspace = true
 multimap.workspace = true
-ractor = { workspace = true, features = ["monitors", "async-trait"] }
-reqwest = { workspace = true, features = ["json", ] }
-salvo = { workspace = true, features = ["oapi", "logging", "serve-static", "affix-state", "cookie", "size-limiter"] }
-serde = { workspace = true, features = ["derive"] }
+ractor = { features = ["async-trait", "monitors"], workspace = true }
+reqwest = { features = ["json"], workspace = true }
+salvo = { features = [
+  "affix-state",
+  "cookie",
+  "logging",
+  "oapi",
+  "serve-static",
+  "size-limiter",
+], workspace = true }
+scraper.workspace = true
+serde = { features = ["derive"], workspace = true }
 serde-content.workspace = true
 serde-hack.workspace = true
 serde-xml-rs.workspace = true
@@ -75,15 +110,27 @@ serde_json.workspace = true
 serde_repr.workspace = true
 snafu.workspace = true
 str-macro.workspace = true
-surrealdb = { workspace = true, features = ["kv-rocksdb", "allocator", "protocol-http", "protocol-ws", "rustls", "kv-mem"] }
+surrealdb = { features = [
+  "allocator",
+  "kv-mem",
+  "kv-rocksdb",
+  "protocol-http",
+  "protocol-ws",
+  "rustls",
+], workspace = true }
 surrealdb-core.workspace = true
 surrealdb-migrations.workspace = true
 surrealdb-types.workspace = true
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros", "fs", "sync"] }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tokio = { features = [
+  "fs",
+  "macros",
+  "rt",
+  "rt-multi-thread",
+  "sync",
+], workspace = true }
 tracing.workspace = true
+tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
-scraper.workspace = true
 
 [features]
 default = ["ml-classification"]
@@ -103,16 +150,16 @@ panic = 'abort'
 opt-level = 3
 
 [lints.clippy]
-lint_groups_priority = { level = "allow", priority = 0 }
-suspicious = { level = "deny", priority = 1 }
-style = { level = "deny", priority = 2 }
-perf = { level = "deny", priority = 4 }
-pedantic = { level = "deny", priority = 5 }
-correctness = { level = "deny", priority = 6 }
-complexity = { level = "warn", priority = 7 }
-dbg_macro = { level = "deny", priority = 8 }
 allow-dbg-in-tests = { level = "allow", priority = 9 }
+complexity = { level = "warn", priority = 7 }
+correctness = { level = "deny", priority = 6 }
+dbg_macro = { level = "deny", priority = 8 }
+lint_groups_priority = { level = "allow", priority = 0 }
+pedantic = { level = "deny", priority = 5 }
+perf = { level = "deny", priority = 4 }
 pub_with_shorthand = { level = "allow", priority = 10 }
+style = { level = "deny", priority = 2 }
+suspicious = { level = "deny", priority = 1 }
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = "-C target-cpu=x86-64-v3"

@@ -1,11 +1,11 @@
 [package]
-name = "scratch"
-version.workspace = true
 edition.workspace = true
 license.workspace = true
+name = "scratch"
+version.workspace = true
 
 [dependencies]
 macros.workspace = true
 proc-macros.workspace = true
-surrealdb-types.workspace = true
 serde.workspace = true
+surrealdb-types.workspace = true
