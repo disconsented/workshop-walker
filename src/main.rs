@@ -3,7 +3,7 @@ use std::{env, sync::Arc};
 use salvo::__private::tracing::debug;
 use snafu::{Whatever, prelude::*};
 use surrealdb::{Surreal, engine::local::RocksDb, opt::auth::Root};
-use surrealdb_migrations::MigrationRunner;
+// use surrealdb_migrations::MigrationRunner;
 use tracing::{Instrument, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -60,12 +60,12 @@ async fn main() -> Result<()> {
     .whatever_context("signing in to db")?;
 
     debug!("checking migrations");
-    // Run migrations
-    MigrationRunner::new(&db)
-        .up()
-        .instrument(info_span!(parent: &span, "run migrations"))
-        .await
-        .whatever_context("Failed to apply migrations")?;
+    // // Run migrations
+    // MigrationRunner::new(&db)
+    //     .up()
+    //     .instrument(info_span!(parent: &span, "run migrations"))
+    //     .await
+    //     .whatever_context("Failed to apply migrations")?;
     debug!("migrations finished");
     {
         let admin_service = AdminService::new(AdminSilo::new(db.clone()));

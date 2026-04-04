@@ -1,4 +1,4 @@
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{Surreal, engine::local::Db, IndexedResults};
 use tracing::{debug, error};
 
 use crate::{
@@ -45,7 +45,7 @@ impl AppsPort for AppsSilo {
             .query("UPSERT apps CONTENT $app")
             .bind(("app", app.clone()))
             .await
-            .map(Response::check)
+            .map(IndexedResults::check)
         {
             Ok(Ok(response)) => {
                 debug!(?app, ?response, "upserted app");
@@ -58,11 +58,11 @@ impl AppsPort for AppsSilo {
         }
     }
 
-    async fn remove(&self, id: u32) -> Result<(), AppError> {
+    async fn remove(&self, id: IAppID) -> Result<(), AppError> {
         if let Err(error) = self
             .db
             .query("DELETE $id")
-            .bind(("id", IAppID::from(id as u64)))
+            .bind(("id", id))
             .await
         {
             error!(?error, "failed to remove app");

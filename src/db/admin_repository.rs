@@ -36,7 +36,7 @@ impl AdminPort for AdminSilo {
     }
 
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
-        let id = UserID::from(patch.id).into_recordid();
+        let id = UserID::from(patch.id).into();
         if let Some(banned) = patch.banned
             && let Err(e) = self
                 .db
@@ -95,7 +95,7 @@ impl AdminPort for AdminSilo {
             )
             .bind(("class", patch.property.class))
             .bind(("value", patch.property.value))
-            .bind(("item", ItemID::from(patch.item).into_recordid()))
+            .bind(("item", ItemID::from(patch.item).into()))
             .bind(("status", patch.status))
             .await;
         if let Err(e) = res {

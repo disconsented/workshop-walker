@@ -9,13 +9,15 @@ pub mod properties_repository;
 pub mod tags_repository;
 pub mod user_names_repository;
 
+// use salvo::prelude::ToSchema;
+use surrealdb_types::SurrealValue;
 use macros::define_id;
 
 define_id!("users", IUserID, UserID, String);
-define_id!("workshop_items", IItemID, ItemID, String);
-define_id!("apps", IAppID, AppID, i64);
+define_id!("workshop_items", IItemID, ItemID, u64);
+define_id!("apps", IAppID, AppID, u64);
 define_id!("tags", ITagID, TagID, String);
-define_id!("usernames", IUsernameID, UsernameID, i64);
+define_id!("usernames", IUsernameID, UsernameID, u64);
 define_id!("properties", IPropertyID, PropertyID, String);
 define_id!("votes", IVoteID, VoteID, String);
 define_id!(
@@ -34,7 +36,7 @@ define_id!(
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{Surreal, engine::local::Mem};
+    use surrealdb::{engine::local::Mem, Surreal};
 
     use crate::db::*;
 

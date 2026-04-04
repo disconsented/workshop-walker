@@ -1,8 +1,11 @@
+use surrealdb_core::sql::Expr;
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_types::RecordId;
+use surrealdb_core::sql::data::Data;
+use surrealdb_core::sql::statements::{InsertStatement, UpsertStatement};
+use surrealdb_types::{RecordId, Value};
 use tracing::{debug, error};
 
 use crate::{
@@ -42,8 +45,8 @@ pub struct ItemUpdateState {
 pub enum ItemUpdateMsg {
     DeserializeRawFiles(SteamRoot<IPublishedResponse>),
     MainlineProcessing(IPublishedStruct),
-    Upsert((WorkshopItem<RecordId>, Vec<Child>)),
-    MaybeQueueMl((WorkshopItem<RecordId>, Vec<Child>)),
+    Upsert((WorkshopItem<IItemID>, Vec<Child>)),
+    MaybeQueueMl((WorkshopItem<IItemID>, Vec<Child>)),
 }
 #[async_trait]
 impl Actor for ItemUpdateActor {
@@ -102,7 +105,7 @@ impl Actor for ItemUpdateActor {
                 if let Err(error) =
                     maybe_queue_ml(&state.database, state.ml_queue.as_ref(), &item).await
                 {
-                    error!(?error, id = %item.id, "queuing ML work (message)");
+                    error!(?error, id = ?item.id, "queuing ML work (message)");
                 }
                 if myself
                     .send_message(ItemUpdateMsg::Upsert((item, children)))
@@ -128,7 +131,7 @@ impl Actor for ItemUpdateActor {
                 }
 
                 if let Err(error) = insert_data(&state.database, item, children).await {
-                    error!(?error, title, %item_id, "upserting item");
+                    error!(?error, title, ?item_id, "upserting item");
                 }
             }
         }
@@ -149,7 +152,7 @@ impl Actor for ItemUpdateActor {
 async fn maybe_queue_ml(
     db: &Surreal<Db>,
     ml_queue: Option<&ActorRef<MLQueueMsg>>,
-    item: &WorkshopItem<i64>,
+    item: &WorkshopItem<IItemID>,
 ) -> crate::Result<(), Whatever> {
     if let Some(queue) = ml_queue {
         let mut resp = db
@@ -173,7 +176,7 @@ async fn maybe_queue_ml(
                 name = item.title,
                 outdated, description_changed, "Item is being processed for extraction"
             );
-            let _ = queue.send_message(MLQueueMsg::Process(item.id));
+            let _ = queue.send_message(MLQueueMsg::Process(item.id.clone()));
         }
     }
     Ok(())
@@ -181,7 +184,7 @@ async fn maybe_queue_ml(
 
 async fn insert_data(
     db: &Surreal<Db>,
-    mut item: WorkshopItem<RecordId>,
+    mut item: WorkshopItem<IItemID>,
     children: Vec<Child>,
 ) -> crate::Result<(), Whatever> {
     let tags = std::mem::take(&mut item.tags);
@@ -191,17 +194,17 @@ async fn insert_data(
         let mut stmt = InsertStatement::default();
         stmt.relation = true;
 
-        stmt.into = Some(Value::Table("item_dependencies".into()));
+        stmt.into = Some(Expr::Table("item_dependencies".into()));
         let data = children
             .into_iter()
             .map(|child| {
-                let dep_id = IItemID::from(ItemID::from(child.publishedfileid));
+                let dep_id = IItemID::from(child.publishedfileid);
                 to_value(Dependencies {
                     id: IItemDependencyID::from(vec![
                         item.id.clone().into(),
                         dep_id.clone().into(),
                     ]),
-                    this: item.id.clone(),
+                    this: IItemID::from(item.id.clone()),
                     dependency: dep_id.into(),
                 })
                 .unwrap()
@@ -221,14 +224,14 @@ async fn insert_data(
 
     let query = db
         .query("BEGIN TRANSACTION")
-        .query(upsert_item.to_string()) // Missing impl for into query
+        .query(upsert_item) // Missing impl for into query
         .query(insert_item_deps)
         .query("UPDATE $id SET tags=$tags")
         .bind(("id", id))
         .bind((
             "tags",
             tags.iter()
-                .map(|tag| ITagID::from(tag.tag_ref.tag.clone()))
+                .map(|tag| ITagID::from(tag.tag_ref.tag.clone()).into())
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");

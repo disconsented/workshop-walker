@@ -13,6 +13,7 @@ use crate::{
     db::{IItemID, ItemID, model::FullWorkshopItem},
     web::auth,
 };
+use crate::db::IUserID;
 
 static ITEM_ACTOR: OnceLock<ActorRef<ItemMsg>> = OnceLock::new();
 
@@ -59,8 +60,8 @@ pub struct ItemArgs {
 
 pub enum ItemMsg {
     Get(
-        String,
-        Option<String>,
+        IItemID,
+        Option<IUserID>,
         RpcReplyPort<Result<FullWorkshopItem>>,
     ),
 }
@@ -100,8 +101,7 @@ impl Actor for ItemActor {
     }
 }
 
-async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<FullWorkshopItem> {
-    let id = IItemID::from(&id);
+async fn get_item(db: &Surreal<Db>, id: IItemID, user: Option<IUserID>) -> Result<FullWorkshopItem> {
 
     let properties = match user {
         Some(user) => format!(
@@ -122,6 +122,7 @@ async fn get_item(db: &Surreal<Db>, id: String, user: Option<String>) -> Result<
                             user: {{ 0 }}
                         }}.score
                     }}"
+            user = String::from(user)
         ),
         None => "filter(|$prop: any| $prop.status == 1)[*].{
                         id: id.id(),

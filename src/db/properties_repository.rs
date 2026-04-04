@@ -102,10 +102,10 @@ impl PropertiesPort for PropertiesSilo {
             ))
             .bind(("status", status))
             .await
-            .map(surrealdb::Response::check)
+            .map(surrealdb::IndexedResults::check)
         {
             Ok(Ok(_)) => Ok(()),
-            Ok(Err(surrealdb::Error::Db(surrealdb::err::Error::IndexExists { .. }))) => {
+            Ok(Err(err)) if err.is_already_exists() => {
                 Err(PropertiesError::Conflict)
             }
             Ok(Err(other)) => {
@@ -153,7 +153,7 @@ impl PropertiesPort for PropertiesSilo {
             ))
             .bind(("score", vote_data.score));
 
-        match query.await.map(surrealdb::Response::check) {
+        match query.await.map(surrealdb::IndexedResults::check) {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(e)) => {
                 debug!(?e, "bad vote from user");
@@ -194,7 +194,7 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("item", IItemID::from(vote_data.item)))
             .await;
 
-        match result.map(surrealdb::Response::check) {
+        match result.map(surrealdb::IndexedResults::check) {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(e)) => {
                 debug!(?e, "bad vote removal from user");

@@ -1,5 +1,5 @@
 use snafu::prelude::*;
-
+use crate::db::IAppID;
 use crate::db::model::{App, TagRef};
 
 #[derive(Debug, Snafu, Clone)]
@@ -19,7 +19,7 @@ pub enum AppError {
 pub trait AppsPort: Send + Sync + 'static {
     async fn list_available(&self) -> Result<Vec<App<TagRef>>, AppError>;
     async fn upsert(&self, app: App<TagRef>) -> Result<(), AppError>;
-    async fn remove(&self, id: u32) -> Result<(), AppError>;
+    async fn remove(&self, id: IAppID) -> Result<(), AppError>;
     async fn list(&self) -> Result<Vec<App<TagRef>>, AppError>;
-    async fn get(&self, id: u32) -> Result<App<TagRef>, AppError>;
+    async fn get(&self, id: IAppID) -> Result<App<TagRef>, AppError>;
 }
