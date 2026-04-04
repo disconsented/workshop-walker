@@ -23,7 +23,7 @@ impl UserNamesPort for UserNamesSilo {
             .query("UPSERT usernames CONTENT $username")
             .bind(("username", username))
             .await
-            .map(surrealdb::Response::check)
+            .map(surrealdb::IndexedResults::check)
         {
             Ok(Ok(..)) => Ok(()),
             Err(error) | Ok(Err(error)) => {

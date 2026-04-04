@@ -10,7 +10,7 @@
 macro_rules! define_id {
     ($table:literal, $internal:ident, $external:ident, $external_type:ty) => {
         /// Externally facing newtype over $external_type
-        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, salvo::prelude::ToSchema)]
         #[serde(transparent)]
         pub struct $external($external_type);
         impl Into<$external_type> for $external {
@@ -25,7 +25,7 @@ macro_rules! define_id {
             }
         }
         /// Internally facing newtype over RecordID
-        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+        #[derive(serde::Serialize, serde::Deserialize, Clone, Debug,  Eq, PartialEq, Ord, PartialOrd, Hash, surrealdb_types::SurrealValue)]
         #[serde(transparent)]
         pub struct $internal(surrealdb_types::RecordId);
         impl $internal {

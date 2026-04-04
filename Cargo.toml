@@ -19,29 +19,30 @@ candle-examples = "0.9"
 candle-nn = "0.9"
 candle-transformers = "0.9"
 chrono = "0.4"
+config = "0.15"
 hf-hub = "0.4"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
 itertools = "0.14"
 lingua = { features = [
-  "chinese",
-  "english",
-  "french",
-  "japanese",
-  "korean",
-  "russian",
+    "chinese",
+    "english",
+    "french",
+    "japanese",
+    "korean",
+    "russian",
 ], version = "1.7" }
 multimap = "0.10"
 quote = "1.0"
 ractor = { features = ["async-trait", "monitors"], version = "0.15" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
-  "affix-state",
-  "cookie",
-  "logging",
-  "oapi",
-  "serve-static",
-  "size-limiter",
+    "affix-state",
+    "cookie",
+    "logging",
+    "oapi",
+    "serve-static",
+    "size-limiter",
 ], version = "0.89" }
 scraper = "0.25"
 serde = { features = ["derive"], version = "1.0" }
@@ -52,12 +53,12 @@ serde_repr = "0.1"
 snafu = "0.9"
 str-macro = "1"
 surrealdb = { features = [
-  "allocator",
-  "kv-mem",
-  "kv-rocksdb",
-  "protocol-http",
-  "protocol-ws",
-  "rustls",
+    "allocator",
+    "kv-mem",
+    "kv-rocksdb",
+    "protocol-http",
+    "protocol-ws",
+    "rustls",
 ], version = "3.0" }
 surrealdb-core = "3.0"
 surrealdb-migrations = "2.2"
@@ -80,26 +81,27 @@ bbscope.workspace = true
 biscuit-auth.workspace = true
 chrono.workspace = true
 classification = { optional = true, workspace = true }
+config.workspace = true
 humantime.workspace = true
 itertools.workspace = true
 lingua = { features = [
-  "chinese",
-  "english",
-  "japanese",
-  "korean",
-  "russian",
+    "chinese",
+    "english",
+    "japanese",
+    "korean",
+    "russian",
 ], workspace = true }
 macros.workspace = true
 multimap.workspace = true
 ractor = { features = ["async-trait", "monitors"], workspace = true }
-reqwest = { features = ["json"], workspace = true }
+reqwest = { features = ["json", "query"], workspace = true, version = "1.0.0" }
 salvo = { features = [
-  "affix-state",
-  "cookie",
-  "logging",
-  "oapi",
-  "serve-static",
-  "size-limiter",
+    "affix-state",
+    "cookie",
+    "logging",
+    "oapi",
+    "serve-static",
+    "size-limiter",
 ], workspace = true }
 scraper.workspace = true
 serde = { features = ["derive"], workspace = true }
@@ -111,22 +113,22 @@ serde_repr.workspace = true
 snafu.workspace = true
 str-macro.workspace = true
 surrealdb = { features = [
-  "allocator",
-  "kv-mem",
-  "kv-rocksdb",
-  "protocol-http",
-  "protocol-ws",
-  "rustls",
+    "allocator",
+    "kv-mem",
+    "kv-rocksdb",
+    "protocol-http",
+    "protocol-ws",
+    "rustls",
 ], workspace = true }
 surrealdb-core.workspace = true
-surrealdb-migrations.workspace = true
+#surrealdb-migrations.workspace = true
 surrealdb-types.workspace = true
 tokio = { features = [
-  "fs",
-  "macros",
-  "rt",
-  "rt-multi-thread",
-  "sync",
+    "fs",
+    "macros",
+    "rt",
+    "rt-multi-thread",
+    "sync",
 ], workspace = true }
 tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
@@ -139,6 +141,9 @@ ml-classification = ["classification", "classification/mkl"]
 
 [patch.crates-io]
 surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
+surrealdb-core = { path = "../surrealdb/surrealdb/core" }
+surrealdb = { path = "../surrealdb/surrealdb" }
+surrealdb-types = { path = "../surrealdb/surrealdb/types" }
 
 [profile.release]
 lto = true

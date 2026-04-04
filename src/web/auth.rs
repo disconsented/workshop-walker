@@ -27,7 +27,10 @@ use serde_json::to_value;
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
+use surrealdb_core::sql::data::Data;
+use surrealdb_core::sql::expression::Expr;
 use surrealdb_core::sql::statements::InsertStatement;
+use surrealdb_core::syn::token::Operator;
 use tracing::{debug, error};
 
 use crate::{
@@ -35,6 +38,7 @@ use crate::{
     db::{UserID, model::User},
     steam::steam_user_actor::SteamUserMsg,
 };
+use crate::db::IUserID;
 
 static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
 
@@ -326,12 +330,12 @@ impl Actor for AuthActor {
 }
 
 impl AuthActor {
-    async fn is_admin(db: &Surreal<Db>, userid: String) -> Result<bool> {
+    async fn is_admin(db: &Surreal<Db>, userid: IUserID) -> Result<bool> {
         match db
             .query("SELECT admin FROM $user")
-            .bind(("user", UserID::from(userid).into_recordid()))
+            .bind(("user", userid.into()))
             .await
-            .map(surrealdb::Response::check)
+            .map(surrealdb::IndexedResults::check)
         {
             Err(_) | Ok(Err(_)) => Err(InnerError::InternalError)?,
             Ok(Ok(mut db_response)) => Ok(db_response.take("admin").ok().flatten() == Some(true)),
@@ -503,13 +507,13 @@ impl AuthActor {
 
         {
             let user = User {
-                id: UserID::from(user_id.to_owned()).into_recordid(),
+                id: UserID::from(user_id.to_owned()).into(),
                 admin: false,
                 banned: false,
                 last_logged_in: Utc::now(),
             };
             let mut stmt = InsertStatement::default();
-            stmt.into = Some(Value::Table("users".into()));
+            stmt.into = Some(Expr::Table("users".into()));
             stmt.data = Data::SingleExpression(
                 to_value(user.clone()).map_err(|_| InnerError::PeerValidationFailed)?,
             );

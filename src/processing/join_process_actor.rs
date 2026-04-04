@@ -98,7 +98,7 @@ impl WorkshopItem<IItemID> {
             author: data.creator.whatever_context("Missing author")?,
             languages,
             description,
-            id: RecordId::new("workshop_items", data.publishedfileid),
+            id: IItemID::from(data.publishedfileid),
             title: data.title.whatever_context("Missing title")?,
             preview_url: data
                 .preview_url

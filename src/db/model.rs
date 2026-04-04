@@ -5,12 +5,12 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use salvo::prelude::ToSchema;
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use surrealdb::RecordId;
-
+use surrealdb_types::{RecordId, SurrealValue};
+use crate::db::{AppID, IItemDependencyID, IItemID, ITagID, ItemID, TagID, UserID};
 use crate::processing::language_actor::DetectedLanguage;
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
 pub enum OrderBy {
@@ -38,22 +38,18 @@ impl Display for OrderBy {
     }
 }
 
-use crate::db::{
-    AppID, IAppID, IItemDependencyID, IItemID, ITagID, IUserID, ItemID, TagID, UserID,
-};
-
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct Tag {
     pub app_id: u64,
     #[serde(flatten)]
     pub tag_ref: TagRef,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct TagRef {
     pub display_name: String,
     #[serde(rename = "id")]
-    pub tag: TagID,
+    pub tag: ITagID,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
@@ -71,7 +67,7 @@ pub struct WorkshopItem<ID> {
     pub score: f32,
     pub properties: Vec<WorkshopItemProperties<String, Property>>,
 }
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct FullWorkshopItem {
     // Core identifiers
     pub id: ItemID,   // The item's ID
@@ -113,7 +109,7 @@ pub struct Dependencies {
     pub dependency: IItemID,
 }
 /// A steam workshop app
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct App<T> {
     /// The steam ID for an app
     pub id: AppID,
@@ -139,7 +135,7 @@ pub struct App<T> {
 }
 
 /// A workshop walker user
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct User<T> {
     /// The steam account ID
     pub id: T,
@@ -155,11 +151,11 @@ pub fn serialize_chrono_as_sql_datetime<S>(x: &DateTime<Utc>, s: S) -> Result<S:
 where
     S: Serializer,
 {
-    Into::<surrealdb::sql::Datetime>::into(*x).serialize(s)
+    Into::<surrealdb_types::Datetime>::into(*x).serialize(s)
 }
 
 /// Crowdsourced metadata for an item, private version
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Eq, PartialEq, Hash, SurrealValue)]
 pub struct Property {
     pub class: Class,
     pub value: String,
@@ -172,7 +168,7 @@ impl Display for Property {
         f.write_str(&self.value)
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct PropertyExt<SOURCE> {
     /// Reasoning or justification for an inclusion
     pub note: Option<String>,
@@ -183,7 +179,7 @@ pub struct PropertyExt<SOURCE> {
     pub vote_count: u64,
     pub source: Source<SOURCE>,
 }
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct WorkshopItemProperties<CHILD, PROP> {
     #[serde(rename = "in")]
     pub workshop_item: CHILD,
@@ -197,7 +193,7 @@ pub struct WorkshopItemProperties<CHILD, PROP> {
 /// Crowdsourced relationships for an item, used for "soft" dependencies not
 /// supplied by steam, private version
 #[expect(unused, reason = "To be used soon")]
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct Companion<R, S> {
     /// Snowflake generated ID
     pub id: String,
@@ -212,7 +208,7 @@ pub struct Companion<R, S> {
 }
 
 /// A voting record
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
 pub struct Vote {
     /// The app this is associated with, for possible filtering
     pub app_id: AppID,
@@ -220,7 +216,7 @@ pub struct Vote {
     pub when: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, ToSchema, Eq, PartialEq)]
+#[derive(Clone, Debug, ToSchema, Eq, PartialEq, SurrealValue)]
 pub enum Source<T> {
     /// Auto-generated
     System,
@@ -266,7 +262,7 @@ where
     }
 }
 
-#[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash, SurrealValue)]
 pub enum Class {
     /// Anything like addon, overhaul, bugfix, patch
     Type,
@@ -302,6 +298,7 @@ impl Display for Class {
     PartialEq,
     Ord,
     PartialOrd,
+    SurrealValue,
 )]
 #[repr(i8)]
 pub enum Status {
@@ -366,11 +363,10 @@ impl salvo::oapi::ToSchema for Id {
 #[cfg(test)]
 mod test {
     use serde::{Deserialize, Serialize};
-    use surrealdb::RecordId;
-
+    use surrealdb_types::RecordId;
     use crate::db::{
-        IItemID, IUserID, ItemID, UserID,
-        model::{Class, Id, Source},
+        model::{Class, Id, Source}, IItemID,
+        IUserID,
     };
 
     #[test]
@@ -430,7 +426,7 @@ mod test {
     }
     #[tokio::test]
     async fn test_source_surreal() {
-        use surrealdb::{Surreal, engine::local::Mem};
+        use surrealdb::{engine::local::Mem, Surreal};
 
         #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
         struct Foo {

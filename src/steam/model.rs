@@ -78,7 +78,7 @@ pub enum EPublishedFileInfoMatchingFileType {
 pub struct GetPage {
     pub query_type: EPublishedFileQueryType,
     pub numperpage: u32,
-    pub appid: u32,
+    pub appid: u64,
     pub return_tags: bool,
     pub return_children: bool,
     pub return_details: bool,
@@ -147,7 +147,7 @@ impl TryFrom<&SteamRoot<IPublishedResponse>> for GetPage {
 #[expect(clippy::missing_docs_in_private_items)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Child {
-    pub publishedfileid: String,
+    pub publishedfileid: u64,
     pub sortorder: i64,
     pub file_type: i64,
 }
@@ -178,11 +178,11 @@ pub struct IPublishedStruct {
     pub can_subscribe: bool,
     #[serde(default)]
     pub children: Vec<Child>,
-    pub consumer_appid: Option<i64>,
+    pub consumer_appid: Option<u64>,
     pub consumer_shortcutid: Option<i64>,
     pub content_descriptorids: Option<Vec<i64>>,
     pub creator: Option<String>,
-    pub creator_appid: Option<i64>,
+    pub creator_appid: Option<u64>,
     pub favorited: Option<i64>,
     pub file_description: Option<String>,
     pub file_size: Option<String>,

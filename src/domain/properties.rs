@@ -1,7 +1,8 @@
 use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
-
+use surrealdb_types::SurrealValue;
+use crate::db::IItemID;
 use crate::db::model::{Class, Source, Status};
 
 #[derive(Debug, Snafu, Clone)]
@@ -20,7 +21,7 @@ pub enum PropertiesError {
 /// Data required to create/link a new property to a workshop item
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct NewProperty {
-    pub workshop_item: i64,
+    pub workshop_item: IItemID,
     pub class: Class,
     pub value: String,
     /// Reasoning or justification for an inclusion
@@ -28,7 +29,7 @@ pub struct NewProperty {
 }
 
 /// Data required to cast or update a vote on a property
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, SurrealValue)]
 pub struct VoteData {
     pub item: u64,
     pub class: Class,
