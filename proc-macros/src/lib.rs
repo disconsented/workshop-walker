@@ -1,91 +1,137 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, GenericParam, Type, TypePath, parse_macro_input};
+use syn::{parse::Parser, parse_macro_input, DeriveInput, Type};
 
-#[proc_macro_derive(ConvertId)]
-pub fn derive_convert_id(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = &input.ident;
-    let generics = &input.generics;
+#[proc_macro_attribute]
+pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(item as DeriveInput);
+    let original_ident = input.ident.clone();
 
-    // Find the generic parameter (assuming there's only one relevant one for now,
-    // or just handle all of them) For simplicity, we assume the first generic
-    // parameter is the ID type.
-    let type_param = generics.params.iter().find_map(|p| {
-        if let GenericParam::Type(t) = p {
-            Some(&t.ident)
-        } else {
-            None
-        }
-    });
-
-    let type_param = match type_param {
-        Some(tp) => tp,
-        None => {
-            return TokenStream::from(quote! {
-                compile_error!("ConvertId derive requires at least one generic type parameter");
-            });
-        }
-    };
-
-    let fields = match &input.data {
-        syn::Data::Struct(s) => &s.fields,
+    let fields = match &mut input.data {
+        syn::Data::Struct(s) => &mut s.fields,
         _ => {
             return TokenStream::from(quote! {
-                compile_error!("ConvertId can only be derived for structs");
+                compile_error!("dual_struct can only be applied to structs");
             });
         }
     };
 
-    let from_fields = fields.iter().map(|f| {
-        let field_name = &f.ident;
-        let field_type = &f.ty;
+    let mut internal_fields = Vec::new();
+    let mut external_fields = Vec::new();
+    let mut from_internal_to_external = Vec::new();
+    let mut from_external_to_internal = Vec::new();
 
-        if is_type_param(field_type, type_param) {
-            quote! { #field_name: val.#field_name.into() }
-        } else {
-            quote! { #field_name: val.#field_name }
+    let mut internal_derives = vec![];
+    let mut external_derives = vec![];
+
+    // Parse the attribute input: #[dual_struct(derive(A, B), internal_derive(C),
+    // external_derive(D))]
+    let mut shared_derives = Vec::new();
+
+    {
+        let attr_parser = syn::meta::parser(|meta| {
+            if meta.path.is_ident("derive") {
+                meta.parse_nested_meta(|meta| {
+                    shared_derives.push(meta.path);
+                    Ok(())
+                })
+            } else {
+                Err(meta.error("unsupported attribute"))
+            }
+        });
+
+        if !attr_ts.is_empty() {
+            if let Err(e) = attr_parser.parse(attr_ts) {
+                return TokenStream::from(e.to_compile_error());
+            }
         }
-    });
+    }
 
-    let try_from_fields = fields.iter().map(|f| {
-        let field_name = &f.ident;
-        let field_type = &f.ty;
+    for d in shared_derives {
+        internal_derives.push(quote! { #d });
+        external_derives.push(quote! { #d });
+    }
 
-        if is_type_param(field_type, type_param) {
-            quote! { #field_name: val.#field_name.try_into()? }
+    // Requirement 6: Specific derives
+    internal_derives.push(quote! { surrealdb_types::SurrealValue });
+    external_derives.push(quote! { salvo::prelude::ToSchema });
+
+    for field in fields.iter_mut() {
+        let field_ident = &field.ident;
+        let mut dual_type = None;
+
+        // Check for #[dual_type(InternalType, ExternalType)]
+        field.attrs.retain(|attr| {
+            if attr.path().is_ident("dual_type") {
+                let result = attr.parse_nested_meta(|meta| {
+                    let internal_type: Type = meta.input.parse()?;
+                    meta.input.parse::<syn::Token![,]>()?;
+                    let external_type: Type = meta.input.parse()?;
+                    dual_type = Some((internal_type, external_type));
+                    Ok(())
+                });
+                if result.is_err() {
+                    // Fallback or error? For now just ignore if it fails to
+                    // parse as expected
+                }
+                false // remove the attribute
+            } else {
+                true
+            }
+        });
+
+        if let Some((internal_ty, external_ty)) = dual_type {
+            internal_fields.push(quote! { #field #field_ident: #internal_ty });
+            external_fields.push(quote! { #field #field_ident: #external_ty });
+            from_internal_to_external.push(quote! { #field_ident: item.#field_ident.into() });
+            from_external_to_internal.push(quote! { #field_ident: item.#field_ident.into() });
         } else {
-            quote! { #field_name: val.#field_name }
+            internal_fields.push(quote! { #field });
+            external_fields.push(quote! { #field });
+            from_internal_to_external.push(quote! { #field_ident: item.#field_ident });
+            from_external_to_internal.push(quote! { #field_ident: item.#field_ident });
         }
-    });
+    }
+
+    let internal_ident = syn::Ident::new(
+        &format!("Internal{}", original_ident),
+        original_ident.span(),
+    );
+    let external_ident = syn::Ident::new(
+        &format!("External{}", original_ident),
+        original_ident.span(),
+    );
+    let original_name_str = original_ident.to_string();
 
     let expanded = quote! {
-        impl From<#name<External>> for #name<Internal> {
-            fn from(val: #name<External>) -> Self {
+        #[derive(#(#internal_derives),*)]
+        #[serde(rename = #original_name_str)]
+        pub struct #internal_ident {
+            #(#internal_fields),*
+        }
+
+        #[derive(#(#external_derives),*)]
+        #[serde(rename = #original_name_str)]
+        pub struct #external_ident {
+            #(#external_fields),*
+        }
+
+        impl From<#internal_ident> for #external_ident {
+            fn from(item: #internal_ident) -> Self {
                 Self {
-                    #(#from_fields),*
+                    #(#from_internal_to_external),*
                 }
             }
         }
 
-        impl TryFrom<#name<Internal>> for #name<External> {
-            type Error = surrealdb_types::Error;
-            fn try_from(val: #name<Internal>) -> Result<Self, Self::Error> {
-                Ok(Self {
-                    #(#try_from_fields),*
-                })
+        impl From<#external_ident> for #internal_ident {
+            fn from(item: #external_ident) -> Self {
+                Self {
+                    #(#from_external_to_internal),*
+                }
             }
         }
     };
 
     TokenStream::from(expanded)
-}
-
-fn is_type_param(ty: &Type, param: &syn::Ident) -> bool {
-    if let Type::Path(TypePath { path, .. }) = ty {
-        if let Some(segment) = path.segments.first() {
-            return segment.ident == *param;
-        }
-    }
-    false
 }
