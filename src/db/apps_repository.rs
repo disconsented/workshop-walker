@@ -90,7 +90,7 @@ impl AppsPort for AppsSilo {
         }
     }
 
-    async fn get(&self, id: u32) -> Result<App<TagRef>, AppError> {
+    async fn get(&self, id: IAppID) -> Result<App<TagRef>, AppError> {
         match self
             .db
             .query(
@@ -98,7 +98,7 @@ impl AppsPort for AppsSilo {
                  default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
                  id.id() FROM $id",
             )
-            .bind(("id", IAppID::from(id as u64)))
+            .bind(("id", id))
             .await
             .map(|mut q| q.take(0))
         {

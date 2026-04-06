@@ -33,7 +33,7 @@ impl Drop for SteamUserState {
 }
 
 pub enum SteamUserMsg {
-    Fetch(u64),
+    Fetch(i64),
 }
 
 #[async_trait]
@@ -153,7 +153,7 @@ impl Actor for SteamUserActor {
     }
 }
 
-async fn should_update_user(user_names_service: &UserNamesService<UserNamesSilo>, id: u64) -> bool {
+async fn should_update_user(user_names_service: &UserNamesService<UserNamesSilo>, id: i64) -> bool {
     user_names_service
         .should_update_user(IUsernameID::from(id as i64))
         .await
