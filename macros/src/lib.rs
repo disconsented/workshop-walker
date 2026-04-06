@@ -1,4 +1,5 @@
-mod dual;
+
+pub use proc_macros::dual_struct;
 
 /// A helper macro to define a newtype for a SurrealDB record ID.
 /// Makes it not a total pain in the ass to deal with.

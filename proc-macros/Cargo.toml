@@ -10,3 +10,9 @@ proc-macro = true
 [dependencies]
 quote.workspace = true
 syn.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
+salvo.workspace = true
+surrealdb-types.workspace = true
+serde_json.workspace = true

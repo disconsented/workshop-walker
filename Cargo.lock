@@ -4498,6 +4498,7 @@ name = "macros"
 version = "0.2.0"
 dependencies = [
  "paste",
+ "proc-macros",
  "serde",
  "serde_json",
 ]
@@ -5661,6 +5662,10 @@ name = "proc-macros"
 version = "0.2.0"
 dependencies = [
  "quote",
+ "salvo",
+ "serde",
+ "serde_json",
+ "surrealdb-types",
  "syn 2.0.117",
 ]
 
