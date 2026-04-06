@@ -213,12 +213,12 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     Ok(())
 }
 /// Returns the user id of the current user, if any.
-pub fn get_user_from_depot(depot: &mut Depot) -> Option<String> {
+pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
     let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
     let (userid, _): (String, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
         .ok()?;
-    Some(userid)
+    Some(IUserID::from(userid))
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -483,7 +483,7 @@ impl AuthActor {
             .next()
             .ok_or(InnerError::PeerValidationFailed)?;
 
-        if let Ok(id) = user_id.parse::<u64>() {
+        if let Ok(id) = user_id.parse::<i64>() {
             let _ = state
                 .steam_user_actor_ref
                 .send_message(SteamUserMsg::Fetch(id));

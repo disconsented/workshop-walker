@@ -33,7 +33,7 @@ use crate::{
 #[endpoint]
 pub async fn list(
     _: &mut Request,
-    app: QueryParam<u64, true>,
+    app: QueryParam<i64, true>,
     page: QueryParam<u64, false>,
     limit: QueryParam<u64, false>,
     languages: QueryParam<DetectedLanguage, false>,

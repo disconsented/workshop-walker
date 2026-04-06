@@ -121,7 +121,7 @@ async fn get_item(db: &Surreal<Db>, id: IItemID, user: Option<IUserID>) -> Resul
                             link: out,
                             user: {{ 0 }}
                         }}.score
-                    }}"
+                    }}",
             user = String::from(user)
         ),
         None => "filter(|$prop: any| $prop.status == 1)[*].{
@@ -212,7 +212,7 @@ pub async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWo
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
     let user = auth::get_user_from_depot(depot);
-    let data = call!(actor, |reply| { ItemMsg::Get(id.0, user, reply) })
+    let data = call!(actor, |reply| { ItemMsg::Get(IItemID::from(id.0), user, reply) })
         .map_err(|_| InnerError::InternalError)??;
     Ok(Json(data))
 }
@@ -229,7 +229,7 @@ pub async fn app_from_item(
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
     let user = auth::get_user_from_depot(depot);
-    let data = call!(actor, |reply| { ItemMsg::Get(id.0, user, reply) })
+    let data = call!(actor, |reply| { ItemMsg::Get(IItemID::from(id.0), user, reply) })
         .map_err(|_| InnerError::InternalError)??;
     Ok(Json(data))
 }

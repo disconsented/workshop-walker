@@ -31,7 +31,7 @@ pub struct NewProperty {
 /// Data required to cast or update a vote on a property
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, SurrealValue)]
 pub struct VoteData {
-    pub item: u64,
+    pub item: i64,
     pub class: Class,
     pub value: String,
     pub score: i32,

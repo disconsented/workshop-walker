@@ -9,15 +9,50 @@ pub mod properties_repository;
 pub mod tags_repository;
 pub mod user_names_repository;
 
+use surrealdb::engine::local::Mem;
+use surrealdb::Surreal;
 // use salvo::prelude::ToSchema;
 use surrealdb_types::SurrealValue;
-use macros::define_id;
+use macros::{define_id, define_id2};
 
-define_id!("users", IUserID, UserID, String);
-define_id!("workshop_items", IItemID, ItemID, u64);
-define_id!("apps", IAppID, AppID, u64);
+// define_id!("users", IUserID, UserID, String);
+
+// define_id2!("users", UserID, String);
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(transparent)]
+pub enum UserID {
+    Internal(surrealdb_types::RecordId),
+    External(String),
+}
+impl UserID {
+    const TABLE_NAME: &'static str = "users";
+}
+impl From<String> for UserID {
+    fn from(id: String) -> Self {
+        Self::External(id)
+    }
+}
+impl From<surrealdb_types::RecordId> for UserID {
+    fn from(id: surrealdb_types::RecordId) -> Self {
+        Self::Internal(id)
+    }
+}
+impl TryInto<String> for UserID {
+    type Error = surrealdb_types::Error;
+
+    fn try_into(self) -> Result<String, Self::Error> {
+        match self {
+            Self::External(id) => Ok(id),
+            Self::Internal(id) => surrealdb_types::SurrealValue::into_value(id.key).into_t()?,
+        }
+    }
+}
+
+// i64 is due to `impl From<i64> for RecordIdKey` rather than `impl From<u64> for RecordId`
+define_id!("workshop_items", IItemID, ItemID, i64);
+define_id!("apps", IAppID, AppID, i64);
 define_id!("tags", ITagID, TagID, String);
-define_id!("usernames", IUsernameID, UsernameID, u64);
+define_id!("usernames", IUsernameID, UsernameID, i64);
 define_id!("properties", IPropertyID, PropertyID, String);
 define_id!("votes", IVoteID, VoteID, String);
 define_id!(
