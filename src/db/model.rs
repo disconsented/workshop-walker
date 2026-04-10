@@ -10,6 +10,7 @@ use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{RecordId, SurrealValue};
+use macros::dual_struct;
 use crate::db::{AppID, IAppID, IItemDependencyID, IItemID, ITagID, ItemID, TagID, UserID};
 use crate::processing::language_actor::DetectedLanguage;
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
@@ -38,37 +39,34 @@ impl Display for OrderBy {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct Tag {
-    pub app_id: i64,
-    #[serde(flatten)]
-    pub tag_ref: TagRef,
+    #[dual_type(IAppID)]
+    pub app_id: AppID,
+    #[dual_type(ITagID)]
+    pub id: TagID,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, surrealdb_types_derive::SurrealValue)]
-pub struct TagRef {
-    pub display_name: String,
-    #[serde(rename = "id")]
-    pub tag: ITagID,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct WorkshopItem<ID> {
-    pub appid: i64,
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct WorkshopItem {
+    #[dual_type(IAppID)]
+    pub app_id: AppID,
     pub author: String,
     pub description: String,
-    pub id: ID,
-    pub languages: Vec<DetectedLanguage>,
+    #[dual_type(IItemID)]
+    pub id: ItemID,
+    // pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
     pub title: String,
-    pub tags: Vec<Tag>,
+    #[dual_type(Vec<InternalTag>)]
+    pub tags: Vec<ExternalTag>,
     pub score: f32,
     pub properties: Vec<WorkshopItemProperties<String, Property>>,
 }
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct InternalFullWorkshopItem {
+pub struct FullWorkshopItem {
     // Core identifiers
     pub id: ItemID,   // The item's ID
     pub appid: AppID, // The steam ID of the app this belongs to
@@ -99,47 +97,6 @@ pub struct InternalFullWorkshopItem {
     pub dependencies: Vec<InternalFullWorkshopItem>, // A list of dependencies found
     #[serde(default)]
     pub dependants: Vec<InternalFullWorkshopItem>, // A list of dependants found
-}
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-struct ExternalExampleItem{
-    pub id: ItemID,   // The item's ID
-    pub appid: AppID, // The steam ID of the app this belongs to
-
-    // Content information
-    pub title: String,       // The titles name
-    pub description: String, // HTML encoded description from steam
-}
-
-impl From<InternalFullWorkshopItem> for ExternalExampleItem {
-    fn from(item: InternalFullWorkshopItem) -> Self {
-        Self {
-            id: item.id.into(),
-            appid: item.appid.into(),
-            title: item.title,
-            description: item.description,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, SurrealValue)]
-struct InternalExampleItem{
-    pub id: IItemID,   // The item's ID
-    pub appid: IAppID, // The steam ID of the app this belongs to
-
-    // Content information
-    pub title: String,       // The titles name
-    pub description: String, // HTML encoded description from steam
-}
-
-impl From<InternalFullWorkshopItem> for InternalExampleItem {
-    fn from(item: InternalFullWorkshopItem) -> Self {
-        Self {
-            id: item.id.into(),
-            appid: item.appid.into(),
-            title: item.title,
-            description: item.description,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -4,10 +4,11 @@ use tracing::{debug, error};
 use crate::{
     db::{
         AppID, IAppID,
-        model::{App, TagRef},
+        model::{App},
     },
     domain::apps::{AppError, AppsPort},
 };
+use crate::db::ITagID;
 
 pub struct AppsSilo {
     pub db: Surreal<Db>,
@@ -20,7 +21,7 @@ impl AppsSilo {
 }
 
 impl AppsPort for AppsSilo {
-    async fn list_available(&self) -> Result<Vec<App<TagRef>>, AppError> {
+    async fn list_available(&self) -> Result<Vec<App<ITagID>>, AppError> {
         match self
             .db
             .query(
@@ -39,7 +40,7 @@ impl AppsPort for AppsSilo {
         }
     }
 
-    async fn upsert(&self, app: App<TagRef>) -> Result<(), AppError> {
+    async fn upsert(&self, app: App<ITagID>) -> Result<(), AppError> {
         match self
             .db
             .query("UPSERT apps CONTENT $app")
@@ -71,7 +72,7 @@ impl AppsPort for AppsSilo {
         Ok(())
     }
 
-    async fn list(&self) -> Result<Vec<App<TagRef>>, AppError> {
+    async fn list(&self) -> Result<Vec<App<ITagID>>, AppError> {
         match self
             .db
             .query(
@@ -90,7 +91,7 @@ impl AppsPort for AppsSilo {
         }
     }
 
-    async fn get(&self, id: IAppID) -> Result<App<TagRef>, AppError> {
+    async fn get(&self, id: IAppID) -> Result<App<ITagID>, AppError> {
         match self
             .db
             .query(

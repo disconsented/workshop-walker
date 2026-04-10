@@ -10,10 +10,10 @@ use crate::{
     application::{apps_service::AppsService, tags_service::TagsService},
     db::{
         apps_repository::AppsSilo,
-        model::{Tag, TagRef},
         tags_repository::TagsSilo,
     },
 };
+use crate::steam::model::Tag;
 
 pub struct SteamTagActor;
 
@@ -94,7 +94,7 @@ impl Actor for SteamTagActor {
     }
 }
 
-fn extract_tags(app_id: u32, html: &str) -> Vec<Tag> {
+fn extract_tags(app_id: IAppID, html: &str) -> Vec<Tag> {
     Html::parse_document(html)
         .select(&Selector::parse(".tag_label").unwrap())
         .filter_map(|node| {
@@ -105,6 +105,7 @@ fn extract_tags(app_id: u32, html: &str) -> Vec<Tag> {
                 .map(String::from)
         })
         .map(|text| Tag {
+
             app_id: app_id.into(),
             tag_ref: TagRef {
                 display_name: text.clone(),

@@ -7,11 +7,12 @@ use crate::{
     application::apps_service::AppsService,
     db::{
         apps_repository::AppsSilo,
-        model::{App, TagRef},
+        model::{App},
     },
     domain::apps::AppError,
     steam::steam_download_actor::SteamDownloadMsg,
 };
+use crate::db::ITagID;
 
 pub static APPS_ACTOR: OnceLock<ActorRef<AppsMsg>> = OnceLock::new();
 
@@ -28,11 +29,11 @@ pub struct AppsState {
 }
 
 pub enum AppsMsg {
-    ListAvailable(RpcReplyPort<Result<Vec<App<TagRef>>, AppError>>),
-    Upsert(App<TagRef>, RpcReplyPort<Result<(), AppError>>),
+    ListAvailable(RpcReplyPort<Result<Vec<App<ITagID>>, AppError>>),
+    Upsert(App<ITagID>, RpcReplyPort<Result<(), AppError>>),
     Remove(u32, RpcReplyPort<Result<(), AppError>>),
-    List(RpcReplyPort<Result<Vec<App<TagRef>>, AppError>>),
-    Get(u32, RpcReplyPort<Result<App<TagRef>, AppError>>),
+    List(RpcReplyPort<Result<Vec<App<ITagID>>, AppError>>),
+    Get(u32, RpcReplyPort<Result<App<ITagID>, AppError>>),
 }
 
 #[async_trait]

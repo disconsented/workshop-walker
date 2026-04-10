@@ -2,9 +2,10 @@ use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
 use crate::{
-    db::{AppID, IAppID, ITagID, TagID, model::Tag},
+    db::{AppID, IAppID, ITagID, TagID},
     domain::tags::{TagError, TagsPort},
 };
+use crate::db::model::InternalTag;
 
 pub struct TagsSilo {
     db: Surreal<Db>,
@@ -17,7 +18,7 @@ impl TagsSilo {
 }
 
 impl TagsPort for TagsSilo {
-    async fn upsert_tags(&self, app_id: u32, tags: Vec<Tag>) -> Result<(), TagError> {
+    async fn upsert_tags(&self, app_id: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError> {
         for tag in tags {
             let query = self
                 .db
@@ -25,9 +26,9 @@ impl TagsPort for TagsSilo {
                 .query("UPSERT tags CONTENT $tag")
                 .query("UPDATE $id SET tags = tags.add($record)")
                 .query("COMMIT")
-                .bind(("record", ITagID::from(TagID::from(tag.tag_ref.tag.clone()))))
+                .bind(("record", tag.id.clone()))
                 .bind(("tag", tag))
-                .bind(("id", IAppID::from(AppID::from(i64::from(app_id)))));
+                .bind(("id", app_id));
             if let Err(error) = query.await.map(surrealdb::IndexedResults::check) {
                 error!(?error, "failed to upsert tag");
                 return Err(TagError::Internal {

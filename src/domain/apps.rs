@@ -1,6 +1,6 @@
 use snafu::prelude::*;
-use crate::db::IAppID;
-use crate::db::model::{App, TagRef};
+use crate::db::{IAppID, ITagID};
+use crate::db::model::{App};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -17,9 +17,9 @@ pub enum AppError {
 
 /// Port for app-related persistence operations.
 pub trait AppsPort: Send + Sync + 'static {
-    async fn list_available(&self) -> Result<Vec<App<TagRef>>, AppError>;
-    async fn upsert(&self, app: App<TagRef>) -> Result<(), AppError>;
+    async fn list_available(&self) -> Result<Vec<App<ITagID>>, AppError>;
+    async fn upsert(&self, app: App<ITagID>) -> Result<(), AppError>;
     async fn remove(&self, id: IAppID) -> Result<(), AppError>;
-    async fn list(&self) -> Result<Vec<App<TagRef>>, AppError>;
-    async fn get(&self, id: IAppID) -> Result<App<TagRef>, AppError>;
+    async fn list(&self) -> Result<Vec<App<ITagID>>, AppError>;
+    async fn get(&self, id: IAppID) -> Result<App<ITagID>, AppError>;
 }
