@@ -7,47 +7,49 @@ use proc_macros::dual_struct;
 // Mock types to simulate the User's environment
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue, ToSchema)]
 #[surreal(transparent)]
-struct ItemID(i64);
+pub struct ItemID(i64);
 impl From<i64> for ItemID { fn from(v: i64) -> Self { Self(v) } }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue, ToSchema)]
 #[surreal(transparent)]
-struct AppID(i64);
+pub struct AppID(i64);
 impl From<i64> for AppID { fn from(v: i64) -> Self { Self(v) } }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue)]
-struct IItemID(surrealdb_types::RecordId);
+pub struct IItemID(surrealdb_types::RecordId);
 impl From<ItemID> for IItemID {
     fn from(id: ItemID) -> Self {
         Self(surrealdb_types::RecordId::new("workshop_items", id.0))
     }
 }
 impl From<IItemID> for ItemID {
-    fn from(id: IItemID) -> Self {
+    fn from(_id: IItemID) -> Self {
         // Simple mock conversion for testing
         Self(0)
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue)]
-struct IAppID(surrealdb_types::RecordId);
+pub struct IAppID(surrealdb_types::RecordId);
 impl From<AppID> for IAppID {
     fn from(id: AppID) -> Self {
         Self(surrealdb_types::RecordId::new("apps", id.0))
     }
 }
 impl From<IAppID> for AppID {
-    fn from(id: IAppID) -> Self {
+    fn from(_id: IAppID) -> Self {
         Self(0)
     }
 }
 
+/// This is a doc comment for ExampleItem
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug, PartialEq))]
 struct ExampleItem {
-    #[dual_type(IItemID, ItemID)]
-    pub id: ItemID,   // The item's ID
-    #[dual_type(IAppID, AppID)]
-    pub appid: AppID, // The steam ID of the app this belongs to
+    /// The item's ID
+    #[dual_type(IItemID)]
+    pub id: ItemID,   
+    #[dual_type(IAppID)]
+    pub appid: AppID, // Inferred external as AppID, internal as IAppID
 
     // Content information
     pub title: String,       // The titles name
@@ -67,6 +69,9 @@ fn test_dual_struct_generation() {
     };
 
     let internal: InternalExampleItem = external.clone().into();
+    let internal_id: IItemID = internal.id.clone();
+    let internal_appid: IAppID = internal.appid.clone();
+    internal.preview_url;
 
     // Check fields
     // internal.id is IItemID
@@ -101,4 +106,5 @@ fn test_serde_rename() {
     let container = Container { item: external };
     let json = serde_json::to_string(&container).unwrap();
     // This doesn't actually test the rename because "item" is the field name.
+
 }
