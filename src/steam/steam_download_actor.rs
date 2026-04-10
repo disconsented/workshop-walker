@@ -37,7 +37,7 @@ pub struct SteamDownloadState {
 }
 
 pub enum SteamDownloadMsg {
-    Download { app_id: u32, first_page: GetPage },
+    Download { app_id: IAppID, first_page: GetPage },
     AddApp(u32),
     RemoveApp(u32),
 }
@@ -114,7 +114,7 @@ impl Actor for SteamDownloadActor {
 
 async fn download(
     state: &mut SteamDownloadState,
-    app_id: u32,
+    app_id: IAppID,
     mut page: GetPage,
     database_writer_actor_ref: ActorRef<ItemUpdateMsg>,
 ) -> Result<(), Whatever> {
@@ -161,7 +161,7 @@ async fn download(
 async fn start_downloader(
     myself: &ActorRef<SteamDownloadMsg>,
     state: &mut SteamDownloadState,
-    app_id: u32,
+    app_id: IAppID,
     force: bool,
 ) {
     let timestamp: Option<u64> = state

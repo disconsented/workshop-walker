@@ -1,6 +1,6 @@
 use snafu::prelude::*;
-
-use crate::db::model::Tag;
+use crate::db::IAppID;
+use crate::db::model::{InternalTag};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -12,5 +12,5 @@ pub enum TagError {
 }
 
 pub trait TagsPort: Send + Sync + 'static {
-    async fn upsert_tags(&self, app_id: u32, tags: Vec<Tag>) -> Result<(), TagError>;
+    async fn upsert_tags(&self, app_id: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError>;
 }

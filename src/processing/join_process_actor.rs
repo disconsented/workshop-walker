@@ -9,7 +9,7 @@ use crate::{
         IItemID, ItemID,
         item_update_actor::ItemUpdateMsg,
         model,
-        model::{TagRef, WorkshopItem},
+        model::{WorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,

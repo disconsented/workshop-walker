@@ -6,6 +6,7 @@ use syn::{parse::Parser, parse_macro_input, DeriveInput, Type};
 pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(item as DeriveInput);
     let original_ident = input.ident.clone();
+    let original_attrs = input.attrs.clone();
 
     let fields = match &mut input.data {
         syn::Data::Struct(s) => &mut s.fields,
@@ -59,20 +60,27 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
     for field in fields.iter_mut() {
         let field_ident = &field.ident;
         let mut dual_type = None;
+        let original_ty = field.ty.clone();
 
-        // Check for #[dual_type(InternalType, ExternalType)]
+        // Check for #[dual_type(InternalType, ExternalType)] or
+        // #[dual_type(Type)]
         field.attrs.retain(|attr| {
             if attr.path().is_ident("dual_type") {
-                let result = attr.parse_nested_meta(|meta| {
-                    let internal_type: Type = meta.input.parse()?;
-                    meta.input.parse::<syn::Token![,]>()?;
-                    let external_type: Type = meta.input.parse()?;
-                    dual_type = Some((internal_type, external_type));
-                    Ok(())
-                });
-                if result.is_err() {
-                    // Fallback or error? For now just ignore if it fails to
-                    // parse as expected
+                let parse_res = attr.parse_args_with(
+                    syn::punctuated::Punctuated::<Type, syn::Token![,]>::parse_terminated,
+                );
+                if let Ok(punctuated) = parse_res {
+                    let mut iter = punctuated.into_iter();
+                    match (iter.next(), iter.next()) {
+                        (Some(first), Some(second)) => {
+                            dual_type = Some((first, second));
+                        }
+                        (Some(first), None) => {
+                            // Infer internal from attribute, external from field
+                            dual_type = Some((first, original_ty.clone()));
+                        }
+                        _ => {}
+                    }
                 }
                 false // remove the attribute
             } else {
@@ -80,10 +88,16 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
             }
         });
 
+        // Use a temporary field without the removed attribute
+        let mut internal_field = field.clone();
+        let mut external_field = field.clone();
+
         if let Some((internal_ty, external_ty)) = dual_type {
-            internal_fields.push(quote! { #field #field_ident: #internal_ty });
-            external_fields.push(quote! { #field #field_ident: #external_ty });
-            from_internal_to_external.push(quote! { #field_ident: item.#field_ident.into() });
+            internal_field.ty = internal_ty;
+            external_field.ty = external_ty;
+            internal_fields.push(quote! { #internal_field });
+            external_fields.push(quote! { #external_field });
+            from_internal_to_external.push(quote! { #field_ident: item.#field_ident.try_into()? });
             from_external_to_internal.push(quote! { #field_ident: item.#field_ident.into() });
         } else {
             internal_fields.push(quote! { #field });
@@ -103,24 +117,64 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
     );
     let original_name_str = original_ident.to_string();
 
+    let internal_struct_doc = format!(
+        "Internal version of [`{}`].\n\n```rust\nstruct {} {{\n    {}\n}}\n```",
+        original_ident,
+        internal_ident,
+        internal_fields
+            .iter()
+            .map(|f| {
+                let s = quote!(#f).to_string();
+                // Replace #[doc = r" ..."] with /// ...
+                // This is a naive replacement but should work for most cases in docs
+                s.replace("# [doc = r\"", "///")
+                    .replace("# [doc = \"", "///")
+                    .replace("\"]", "")
+                    .replace("\"] ", "")
+            })
+            .collect::<Vec<_>>()
+            .join(",\n    ")
+    );
+    let external_struct_doc = format!(
+        "External version of [`{}`].\n\n```rust\nstruct {} {{\n    {}\n}}\n```",
+        original_ident,
+        external_ident,
+        external_fields
+            .iter()
+            .map(|f| {
+                let s = quote!(#f).to_string();
+                s.replace("# [doc = r\"", "///")
+                    .replace("# [doc = \"", "///")
+                    .replace("\"]", "")
+                    .replace("\"] ", "")
+            })
+            .collect::<Vec<_>>()
+            .join(",\n    ")
+    );
+
     let expanded = quote! {
+        #(#original_attrs)*
+        #[doc = #internal_struct_doc]
         #[derive(#(#internal_derives),*)]
         #[serde(rename = #original_name_str)]
         pub struct #internal_ident {
             #(#internal_fields),*
         }
 
+        #(#original_attrs)*
+        #[doc = #external_struct_doc]
         #[derive(#(#external_derives),*)]
         #[serde(rename = #original_name_str)]
         pub struct #external_ident {
             #(#external_fields),*
         }
 
-        impl From<#internal_ident> for #external_ident {
-            fn from(item: #internal_ident) -> Self {
-                Self {
+        impl TryFrom<#internal_ident> for #external_ident {
+            type Error = surrealdb_types::Error;
+            fn try_from(item: #internal_ident) -> Result<Self, Self::Error> {
+                Ok(Self {
                     #(#from_internal_to_external),*
-                }
+                })
             }
         }
 
