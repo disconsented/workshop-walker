@@ -7,11 +7,12 @@ use tracing::{debug, error, info};
 use crate::{
     db::{
         IItemID, ItemID,
-        model::{Class, Source, Status},
+        model::{Class, Status},
         properties_actor::PropertiesMsg,
     },
     domain::properties::NewProperty,
 };
+use crate::db::model::InternalSource;
 
 pub struct MLQueueActor;
 
@@ -110,7 +111,7 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
                         value: value.clone(),
                         note: None,
                     },
-                    Source::System,
+                    InternalSource::System,
                     Status::Accepted,
                     reply
                 )) {

@@ -42,6 +42,14 @@ impl From<IAppID> for AppID {
     }
 }
 
+fn to_external_ids(internal: Vec<IItemID>) -> Result<Vec<ItemID>, surrealdb_types::Error> {
+    Ok(internal.into_iter().map(ItemID::from).collect())
+}
+
+fn to_internal_ids(external: Vec<ItemID>) -> Vec<IItemID> {
+    external.into_iter().map(IItemID::from).collect()
+}
+
 /// This is a doc comment for ExampleItem
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug, PartialEq))]
 struct ExampleItem {
@@ -50,6 +58,9 @@ struct ExampleItem {
     pub id: ItemID,   
     #[dual_type(IAppID)]
     pub appid: AppID, // Inferred external as AppID, internal as IAppID
+
+    #[dual_type(Vec<IItemID>, to_external = to_external_ids, to_internal = to_internal_ids)]
+    pub related_items: Vec<ItemID>,
 
     // Content information
     pub title: String,       // The titles name
@@ -63,23 +74,26 @@ fn test_dual_struct_generation() {
     let external = ExternalExampleItem {
         id: ItemID(123),
         appid: AppID(456),
+        related_items: vec![ItemID(789), ItemID(101)],
         title: "Test Title".to_string(),
         description: "Test Description".to_string(),
         preview_url: None,
     };
 
-    let internal: InternalExampleItem = external.clone().into();
+    let internal: InternalExampleItem = external.clone().try_into().unwrap();
     let internal_id: IItemID = internal.id.clone();
     let internal_appid: IAppID = internal.appid.clone();
-    internal.preview_url;
+    assert_eq!(internal.related_items.len(), 2);
+    let _ = internal.preview_url.clone();
 
     // Check fields
     // internal.id is IItemID
     // internal.appid is IAppID
     assert_eq!(internal.title, "Test Title");
 
-    let external_back: ExternalExampleItem = internal.into();
+    let external_back: ExternalExampleItem = internal.try_into().expect("Conversion failed");
     assert_eq!(external_back.title, "Test Title");
+    assert_eq!(external_back.related_items.len(), 2);
     // Conversion back for IDs depends on From impls above
 }
 
@@ -88,6 +102,7 @@ fn test_serde_rename() {
     let external = ExternalExampleItem {
         id: ItemID(123),
         appid: AppID(456),
+        related_items: vec![],
         title: "Test Title".to_string(),
         description: "Test Description".to_string(),
         preview_url: None,

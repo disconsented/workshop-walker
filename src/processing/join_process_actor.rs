@@ -9,7 +9,6 @@ use crate::{
         IItemID, ItemID,
         item_update_actor::ItemUpdateMsg,
         model,
-        model::{WorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,
@@ -17,6 +16,8 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
+use crate::db::{IAppID, ITagID};
+use crate::db::model::InternalWorkshopItem;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`
@@ -66,7 +67,7 @@ impl Actor for JoinProcessActor {
                 let languages = call!(state.language, LanguageMsg::Detect, description.clone())?;
                 let description = call!(state.bb, BBMsg::Process, description)?;
                 let children = take(&mut data.children);
-                match WorkshopItem::try_new(data, languages, description) {
+                match InternalWorkshopItem::try_new(data, languages, description) {
                     Ok(item) => {
                         state
                             .item_update
@@ -83,39 +84,38 @@ impl Actor for JoinProcessActor {
     }
 }
 
-impl WorkshopItem<IItemID> {
+impl InternalWorkshopItem {
     fn try_new(
         data: IPublishedStruct,
         languages: Vec<DetectedLanguage>,
         description: String,
     ) -> Result<Self, Whatever> {
-        let app_id = data
+        let app_id: IAppID = data
             .consumer_appid
             .whatever_context("Missing app id")
-            .inspect_err(|_| error!(?data, "creating new item"))? as u64;
+            .inspect_err(|_| error!(?data, "creating new item"))?.into();
         Ok(Self {
-            appid: app_id,
+            app_id: app_id.clone(),
             author: data.creator.whatever_context("Missing author")?,
             languages,
             description,
-            id: IItemID::from(data.publishedfileid),
+            id: IItemID::from(data.publishedfileid.parse()?),
             title: data.title.whatever_context("Missing title")?,
             preview_url: data
                 .preview_url
                 .or_else(|| data.previews.first().map(|preview| preview.url.clone())),
             last_updated: data.time_updated.unwrap_or_default() as _,
-            tags: data
-                .tags
-                .iter()
-                .cloned()
-                .map(|tag| model::Tag {
-                    app_id,
-                    tag_ref: TagRef {
-                        display_name: tag.display_name,
-                        tag: tag.tag,
-                    },
-                })
-                .collect::<Vec<_>>(),
+            // tags: data
+            //     .tags
+            //     .iter()
+            //     .cloned()
+            //     .map(|tag| model::InternalTag {
+            //         app_id,
+            //
+            //         id: ITagID,
+            //     })
+            //     .collect::<Vec<_>>(),
+            tags: vec![], // ToDo: this
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
             properties: vec![],
         })

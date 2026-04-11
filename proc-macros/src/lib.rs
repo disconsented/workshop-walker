@@ -1,6 +1,56 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse::Parser, parse_macro_input, DeriveInput, Type};
+use syn::{parse::Parser, parse_macro_input, DeriveInput, Type, Expr};
+
+struct DualTypeAttr {
+    internal_ty: Type,
+    external_ty: Option<Type>,
+    to_external: Option<Expr>,
+    to_internal: Option<Expr>,
+}
+
+impl syn::parse::Parse for DualTypeAttr {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let internal_ty: Type = input.parse()?;
+        let mut external_ty = None;
+        let mut to_external = None;
+        let mut to_internal = None;
+
+        if input.peek(syn::Token![,]) {
+            input.parse::<syn::Token![,]>()?;
+            // If the next token is an identifier followed by '=', it's a keyword argument
+            if !(input.peek(syn::Ident) && input.peek2(syn::Token![=])) {
+                external_ty = Some(input.parse()?);
+                if input.peek(syn::Token![,]) {
+                    input.parse::<syn::Token![,]>()?;
+                }
+            }
+        }
+
+        while !input.is_empty() {
+            let ident: syn::Ident = input.parse()?;
+            input.parse::<syn::Token![=]>()?;
+            let expr: Expr = input.parse()?;
+            if ident == "to_external" {
+                to_external = Some(expr);
+            } else if ident == "to_internal" {
+                to_internal = Some(expr);
+            } else {
+                return Err(syn::Error::new(ident.span(), "expected `to_external` or `to_internal`"));
+            }
+            if input.peek(syn::Token![,]) {
+                input.parse::<syn::Token![,]>()?;
+            }
+        }
+
+        Ok(DualTypeAttr {
+            internal_ty,
+            external_ty,
+            to_external,
+            to_internal,
+        })
+    }
+}
 
 #[proc_macro_attribute]
 pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
@@ -57,29 +107,26 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
     internal_derives.push(quote! { surrealdb_types::SurrealValue });
     external_derives.push(quote! { salvo::prelude::ToSchema });
 
+    let mut errors = Vec::new();
+
     for field in fields.iter_mut() {
         let field_ident = &field.ident;
         let mut dual_type = None;
         let original_ty = field.ty.clone();
 
-        // Check for #[dual_type(InternalType, ExternalType)] or
-        // #[dual_type(Type)]
+        // Check for #[dual_type(InternalType, ExternalType, ...)] or
+        // #[dual_type(Type, ...)]
         field.attrs.retain(|attr| {
             if attr.path().is_ident("dual_type") {
-                let parse_res = attr.parse_args_with(
-                    syn::punctuated::Punctuated::<Type, syn::Token![,]>::parse_terminated,
-                );
-                if let Ok(punctuated) = parse_res {
-                    let mut iter = punctuated.into_iter();
-                    match (iter.next(), iter.next()) {
-                        (Some(first), Some(second)) => {
-                            dual_type = Some((first, second));
-                        }
-                        (Some(first), None) => {
-                            // Infer internal from attribute, external from field
-                            dual_type = Some((first, original_ty.clone()));
-                        }
-                        _ => {}
+                let parse_res = attr.parse_args::<DualTypeAttr>();
+                match parse_res {
+                    Ok(dual_attr) => {
+                        let internal_ty = dual_attr.internal_ty;
+                        let external_ty = dual_attr.external_ty.unwrap_or_else(|| original_ty.clone());
+                        dual_type = Some((internal_ty, external_ty, dual_attr.to_external, dual_attr.to_internal));
+                    }
+                    Err(e) => {
+                        errors.push(e);
                     }
                 }
                 false // remove the attribute
@@ -92,13 +139,28 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
         let mut internal_field = field.clone();
         let mut external_field = field.clone();
 
-        if let Some((internal_ty, external_ty)) = dual_type {
-            internal_field.ty = internal_ty;
-            external_field.ty = external_ty;
+        if let Some((ref internal_ty, ref external_ty, ref to_external, ref to_internal)) = dual_type {
+            internal_field.ty = internal_ty.clone();
+            external_field.ty = external_ty.clone();
             internal_fields.push(quote! { #internal_field });
             external_fields.push(quote! { #external_field });
-            from_internal_to_external.push(quote! { #field_ident: item.#field_ident.try_into()? });
-            from_external_to_internal.push(quote! { #field_ident: item.#field_ident.into() });
+
+            let to_ext_expr = if let Some(func) = to_external {
+                quote! { #func(item.#field_ident)? }
+            } else {
+                quote! { item.#field_ident.try_into().map_err(|e| {
+                    let err_str = format!("{:?}", e);
+                    surrealdb_types::Error::thrown(err_str)
+                })? }
+            };
+            from_internal_to_external.push(quote! { #field_ident: #to_ext_expr });
+
+            let to_int_expr = if let Some(func) = to_internal {
+                quote! { #func(item.#field_ident) }
+            } else {
+                quote! { item.#field_ident.into() }
+            };
+            from_external_to_internal.push(quote! { #field_ident: #to_int_expr });
         } else {
             internal_fields.push(quote! { #field });
             external_fields.push(quote! { #field });
@@ -151,6 +213,13 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
             .collect::<Vec<_>>()
             .join(",\n    ")
     );
+
+    if !errors.is_empty() {
+        let compile_errors = errors.iter().map(|e| e.to_compile_error());
+        return TokenStream::from(quote! {
+            #(#compile_errors)*
+        });
+    }
 
     let expanded = quote! {
         #(#original_attrs)*

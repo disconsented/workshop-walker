@@ -5,15 +5,15 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use tokio::task::JoinHandle;
-use tracing::{Instrument, debug, error, info, info_span};
+use tracing::{debug, error, info, info_span, Instrument};
 
 use crate::{
-    db::item_update_actor::ItemUpdateMsg,
+    db::{item_update_actor::ItemUpdateMsg, IAppID},
     steam::model::{EPublishedFileQueryType, GetPage, IPublishedResponse, SteamRoot},
 };
 
@@ -32,14 +32,14 @@ pub struct SteamDownloadState {
     client: Client,
     steam_token: Arc<String>,
     item_processing_actor_ref: ActorRef<ItemUpdateMsg>,
-    apps: HashMap<u32, JoinHandle<()>>,
+    apps: HashMap<IAppID, JoinHandle<()>>,
     database: Surreal<Db>,
 }
 
 pub enum SteamDownloadMsg {
     Download { app_id: IAppID, first_page: GetPage },
-    AddApp(u32),
-    RemoveApp(u32),
+    AddApp(IAppID),
+    RemoveApp(IAppID),
 }
 #[async_trait]
 impl Actor for SteamDownloadActor {
@@ -52,7 +52,7 @@ impl Actor for SteamDownloadActor {
         myself: ActorRef<Self::Msg>,
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
-        let apps: Vec<u32> = args
+        let apps: Vec<IAppID> = args
             .database
             .query("SELECT id.id() AS id FROM apps WHERE enabled = true")
             // .instrument(info_span!("select enabled apps"))
@@ -68,7 +68,7 @@ impl Actor for SteamDownloadActor {
         };
         for app_id in apps {
             start_downloader(&myself, &mut state, app_id, args.force)
-                .instrument(info_span!("start downloader", app_id))
+                .instrument(info_span!("start downloader", ?app_id))
                 .await;
         }
 
@@ -86,13 +86,13 @@ impl Actor for SteamDownloadActor {
             SteamDownloadMsg::Download { app_id, first_page } => {
                 if let Err(error) = download(
                     state,
-                    app_id,
+                    app_id.clone(),
                     first_page,
                     state.item_processing_actor_ref.clone(),
                 )
                 .await
                 {
-                    error!(app_id, ?error, "Downloading workshop items");
+                    error!(?app_id, ?error, "Downloading workshop items");
                 }
             }
             SteamDownloadMsg::AddApp(app_id) => {
@@ -103,7 +103,7 @@ impl Actor for SteamDownloadActor {
             SteamDownloadMsg::RemoveApp(app_id) => {
                 if let Some(handle) = state.apps.remove(&app_id) {
                     handle.abort();
-                    info!(app_id, "Stopped downloading workshop items");
+                    info!(?app_id, "Stopped downloading workshop items");
                 }
             }
         }
@@ -118,7 +118,7 @@ async fn download(
     mut page: GetPage,
     database_writer_actor_ref: ActorRef<ItemUpdateMsg>,
 ) -> Result<(), Whatever> {
-    page.appid = app_id;
+    page.appid = app_id.into();
     let mut total = i64::MAX;
     let mut downloaded = 0;
     while total > downloaded {
@@ -151,7 +151,7 @@ async fn download(
             progress = (downloaded * 100 / total * 100) / 100,
             downloaded,
             expected = total,
-            app_id,
+            ?app_id,
             "Downloaded items"
         );
     }
@@ -189,7 +189,7 @@ async fn start_downloader(
     };
     if time_since > h12 || force {
         let _ = myself.send_message(message_builder());
-        info!(period = %humantime::Duration::from(time_since),app = app_id, "newest mod is at least 12 hours out of date; running update now");
+        info!(period = %humantime::Duration::from(time_since), app = ?app_id, "newest mod is at least 12 hours out of date; running update now");
     }
 
     if let Some(old) = state

@@ -259,7 +259,7 @@ pub struct VoteData {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SteamUser {
-    pub steamid: String,
+    pub steamid: i64,
     pub communityvisibilitystate: i64,
     pub profilestate: Option<i64>,
     pub personaname: String,

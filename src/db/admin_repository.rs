@@ -1,10 +1,10 @@
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use tracing::error;
 
 use crate::{
     db::{
-        ItemID, UserID,
-        model::{Property, User, WorkshopItemProperties},
+        model::{InternalUser, InternalWorkshopItemProperties, Property}, ItemID,
+        UserID,
     },
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
@@ -20,7 +20,7 @@ impl AdminSilo {
 }
 
 impl AdminPort for AdminSilo {
-    async fn list_users(&self) -> Result<Vec<User<String>>, AdminError> {
+    async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError> {
         match self
             .db
             .query("SELECT id.id().to_string() as id, * FROM users")
@@ -36,12 +36,11 @@ impl AdminPort for AdminSilo {
     }
 
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
-        let id = UserID::from(patch.id).into();
         if let Some(banned) = patch.banned
             && let Err(e) = self
                 .db
                 .query("UPDATE $user SET banned=$banned")
-                .bind(("user", id.clone()))
+                .bind(("user", patch.id.clone()))
                 .bind(("banned", banned))
                 .await
         {
@@ -52,7 +51,7 @@ impl AdminPort for AdminSilo {
             && let Err(e) = self
                 .db
                 .query("UPDATE $user SET admin=$admin")
-                .bind(("user", id))
+                .bind(("user", patch.id))
                 .bind(("admin", admin))
                 .await
         {
@@ -64,7 +63,7 @@ impl AdminPort for AdminSilo {
 
     async fn list_workshop_item_properties(
         &self,
-    ) -> Result<Vec<WorkshopItemProperties<String, Property>>, AdminError> {
+    ) -> Result<Vec<InternalWorkshopItemProperties>, AdminError> {
         match self
             .db
             .query(
@@ -95,7 +94,7 @@ impl AdminPort for AdminSilo {
             )
             .bind(("class", patch.property.class))
             .bind(("value", patch.property.value))
-            .bind(("item", ItemID::from(patch.item).into()))
+            .bind(("item", patch.item))
             .bind(("status", patch.status))
             .await;
         if let Err(e) = res {

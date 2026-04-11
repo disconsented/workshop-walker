@@ -1,7 +1,8 @@
 use crate::{
-    db::model::{Property, User, WorkshopItemProperties},
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
+use crate::db::IUserID;
+use crate::db::model::{InternalUser, InternalWorkshopItemProperties};
 
 pub struct AdminService<R: AdminPort> {
     repo: R,
@@ -12,7 +13,7 @@ impl<R: AdminPort> AdminService<R> {
         Self { repo }
     }
 
-    pub async fn list_users(&self) -> Result<Vec<User<String>>, AdminError> {
+    pub async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError> {
         self.repo.list_users().await
     }
 
@@ -27,7 +28,7 @@ impl<R: AdminPort> AdminService<R> {
 
     pub async fn list_workshop_item_properties(
         &self,
-    ) -> Result<Vec<WorkshopItemProperties<String, Property>>, AdminError> {
+    ) -> Result<Vec<InternalWorkshopItemProperties>, AdminError> {
         self.repo.list_workshop_item_properties().await
     }
 

@@ -1,15 +1,16 @@
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use itertools::Itertools;
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use reqwest::{Client, Response, StatusCode};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
+use surrealdb_core::{map, syn::token::Keyword::Into};
 use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
 use tracing::{debug, error};
 
 use crate::{
     application::user_names_service::UserNamesService,
-    db::{IUsernameID, UsernameID, user_names_repository::UserNamesSilo},
+    db::{user_names_repository::UserNamesSilo, IUserID, IUsernameID, UsernameID},
     steam::model::{SteamRoot, SteamUserResponse},
 };
 
@@ -22,7 +23,7 @@ pub struct SteamUserArgs {
 }
 
 pub struct SteamUserState {
-    pub sender: mpsc::Sender<u64>,
+    pub sender: mpsc::Sender<IUsernameID>,
     pub handle: JoinHandle<()>,
 }
 
@@ -33,7 +34,7 @@ impl Drop for SteamUserState {
 }
 
 pub enum SteamUserMsg {
-    Fetch(i64),
+    Fetch(IUsernameID),
 }
 
 #[async_trait]
@@ -79,7 +80,10 @@ impl Actor for SteamUserActor {
                     continue;
                 }
 
-                let id_string = user_ids.iter().join(",");
+                let id_string = user_ids
+                    .drain()
+                    .map(|id| UsernameID::try_from(id).unwrap().into().to_string())
+                    .join(",");
                 let url = format!(
                     "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={id_string}",
                     args.steam_token
@@ -100,9 +104,7 @@ impl Actor for SteamUserActor {
                                 for users in root.response.players {
                                     if let Err(error) = user_names_service
                                         .update_user_name(
-                                            IUsernameID::from(
-                                                users.steamid.parse::<i64>().unwrap(),
-                                            ),
+                                            IUsernameID::from(users.steamid),
                                             users.personaname,
                                         )
                                         .await
@@ -153,9 +155,12 @@ impl Actor for SteamUserActor {
     }
 }
 
-async fn should_update_user(user_names_service: &UserNamesService<UserNamesSilo>, id: i64) -> bool {
+async fn should_update_user(
+    user_names_service: &UserNamesService<UserNamesSilo>,
+    id: IUsernameID,
+) -> bool {
     user_names_service
-        .should_update_user(IUsernameID::from(id as i64))
+        .should_update_user(id)
         .await
         .inspect_err(|error| error!(?error, "Failed to check if user should be updated"))
         .unwrap_or(true)

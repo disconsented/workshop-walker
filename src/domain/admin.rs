@@ -2,7 +2,7 @@ use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 
-use crate::db::model::{Property, Status, User, WorkshopItemProperties};
+use crate::db::model::{InternalUser, InternalWorkshopItemProperties, Property, Status};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -32,11 +32,11 @@ pub struct PatchRelationshipData {
 
 /// Port for admin-related persistence operations.
 pub trait AdminPort: Send + Sync + 'static {
-    async fn list_users(&self) -> Result<Vec<User<String>>, AdminError>;
+    async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError>;
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError>;
     async fn list_workshop_item_properties(
         &self,
-    ) -> Result<Vec<WorkshopItemProperties<String, Property>>, AdminError>;
+    ) -> Result<Vec<InternalWorkshopItemProperties>, AdminError>;
     async fn patch_workshop_item_property(
         &self,
         patch: PatchRelationshipData,

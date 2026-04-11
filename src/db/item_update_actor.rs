@@ -11,7 +11,7 @@ use tracing::{debug, error};
 use crate::{
     db::{
         IItemDependencyID, IItemID, ITagID, ItemDependencyID, ItemID, TagID,
-        model::{Dependencies, WorkshopItem},
+        model::{Dependencies},
     },
     processing::{
         bb_actor::BBMsg,
@@ -24,6 +24,7 @@ use crate::{
         steam_user_actor::SteamUserMsg,
     },
 };
+use crate::db::model::InternalWorkshopItem;
 
 pub struct ItemUpdateActor {}
 
@@ -45,8 +46,8 @@ pub struct ItemUpdateState {
 pub enum ItemUpdateMsg {
     DeserializeRawFiles(SteamRoot<IPublishedResponse>),
     MainlineProcessing(IPublishedStruct),
-    Upsert((WorkshopItem<IItemID>, Vec<Child>)),
-    MaybeQueueMl((WorkshopItem<IItemID>, Vec<Child>)),
+    Upsert((InternalWorkshopItem, Vec<Child>)),
+    MaybeQueueMl((InternalWorkshopItem, Vec<Child>)),
 }
 #[async_trait]
 impl Actor for ItemUpdateActor {
@@ -152,7 +153,7 @@ impl Actor for ItemUpdateActor {
 async fn maybe_queue_ml(
     db: &Surreal<Db>,
     ml_queue: Option<&ActorRef<MLQueueMsg>>,
-    item: &WorkshopItem<IItemID>,
+    item: &InternalWorkshopItem,
 ) -> crate::Result<(), Whatever> {
     if let Some(queue) = ml_queue {
         let mut resp = db
@@ -184,7 +185,7 @@ async fn maybe_queue_ml(
 
 async fn insert_data(
     db: &Surreal<Db>,
-    mut item: WorkshopItem<IItemID>,
+    mut item: InternalWorkshopItem,
     children: Vec<Child>,
 ) -> crate::Result<(), Whatever> {
     let tags = std::mem::take(&mut item.tags);

@@ -1,5 +1,5 @@
 use crate::{
-    db::model::{Source, Status},
+    db::model::{InternalSource, Status},
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
 };
 
@@ -15,7 +15,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
     pub async fn new_property(
         &self,
         mut new_property: NewProperty,
-        source: Source<String>,
+        source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError> {
         new_property.value = new_property.value.to_ascii_lowercase();

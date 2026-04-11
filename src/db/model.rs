@@ -4,15 +4,19 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
+use macros::dual_struct;
+use ractor::Message;
 use salvo::prelude::ToSchema;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use surrealdb_types::{RecordId, SurrealValue};
-use macros::dual_struct;
-use crate::db::{AppID, IAppID, IItemDependencyID, IItemID, ITagID, ItemID, TagID, UserID};
-use crate::processing::language_actor::DetectedLanguage;
+use surrealdb_types::SurrealValue;
+
+use crate::{
+    db::{AppID, IAppID, IItemDependencyID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
+    processing::language_actor::DetectedLanguage,
+};
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
 pub enum OrderBy {
     Alphabetical,
@@ -39,12 +43,33 @@ impl Display for OrderBy {
     }
 }
 
-#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+#[dual_struct(derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Hash,
+    Ord,
+    PartialOrd
+))]
 pub struct Tag {
     #[dual_type(IAppID)]
     pub app_id: AppID,
     #[dual_type(ITagID)]
     pub id: TagID,
+}
+
+fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surrealdb_types::Error> {
+    Ok(internal
+        .into_iter()
+        .map(ExternalTag::try_from)
+        .collect::<Result<_, _>>()?)
+}
+
+fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
+    external.into_iter().map(InternalTag::from).collect()
 }
 
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -55,21 +80,24 @@ pub struct WorkshopItem {
     pub description: String,
     #[dual_type(IItemID)]
     pub id: ItemID,
-    // pub languages: Vec<DetectedLanguage>,
+    pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
     pub title: String,
-    #[dual_type(Vec<InternalTag>)]
+    #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
     pub tags: Vec<ExternalTag>,
     pub score: f32,
-    pub properties: Vec<WorkshopItemProperties<String, Property>>,
+    #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props)]
+    pub properties: Vec<ExternalWorkshopItemProperties>,
 }
+// An externally represented workshop item with full details
+// Read only, no need for DB interfacing
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FullWorkshopItem {
     // Core identifiers
-    pub id: ItemID,   // The item's ID
-    pub appid: AppID, // The steam ID of the app this belongs to
+    pub id: ItemID,    // The item's ID
+    pub app_id: AppID, // The steam ID of the app this belongs to
 
     // Content information
     pub title: String,       // The titles name
@@ -77,16 +105,16 @@ pub struct FullWorkshopItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>, // The URL to the banner image
 
-    // Metadata and categorization
+    // Metadata and categorisation
     #[serde(default)]
-    pub tags: Vec<Tag>, // The list of tags found
+    pub tags: Vec<ExternalTag>, // The list of tags found
     #[serde(default)]
-    pub properties: Vec<WorkshopItemProperties<ItemID, Property>>, // Approved or owned properties
+    pub properties: Vec<ExternalWorkshopItemProperties>, // Approved or owned properties
     pub score: f32, // The "quality" score assigned by steam
 
     // Author and timing
-    pub author: Option<DisplayUser>, // Authors steam ID
-    pub last_updated: u64,           // Timestamp in milliseconds
+    pub author: Option<UserID>, // Authors steam ID
+    pub last_updated: u64,      // Timestamp in milliseconds
 
     // Localization
     #[serde(default)]
@@ -94,9 +122,9 @@ pub struct FullWorkshopItem {
 
     // Dependencies
     #[serde(default)]
-    pub dependencies: Vec<InternalFullWorkshopItem>, // A list of dependencies found
+    pub dependencies: Vec<FullWorkshopItem>, // A list of dependencies found
     #[serde(default)]
-    pub dependants: Vec<InternalFullWorkshopItem>, // A list of dependants found
+    pub dependants: Vec<FullWorkshopItem>, // A list of dependants found
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -108,9 +136,10 @@ pub struct Dependencies {
     pub dependency: IItemID,
 }
 /// A steam workshop app
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
-pub struct App<T> {
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct App {
     /// The steam ID for an app
+    #[dual_type(IAppID)]
     pub id: AppID,
     /// App name, I.E. Rimworld
     pub name: String,
@@ -124,20 +153,21 @@ pub struct App<T> {
     /// Whether the app is visible on the index
     pub available: bool,
     /// List of tags to select by default
-    #[salvo(schema(skip))]
     #[serde(default)]
-    pub default_tags: Vec<T>,
+    #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
+    pub default_tags: Vec<ExternalTag>,
     /// List of known tags
-    #[salvo(schema(skip))]
     #[serde(default)]
-    pub tags: Vec<T>,
+    #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
+    pub tags: Vec<ExternalTag>,
 }
 
 /// A workshop walker user
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
-pub struct User<T> {
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct User {
     /// The steam account ID
-    pub id: T,
+    #[dual_type(IUserID)]
+    pub id: UserID,
     /// Privileged access
     pub admin: bool,
     pub banned: bool,
@@ -167,8 +197,8 @@ impl Display for Property {
         f.write_str(&self.value)
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
-pub struct PropertyExt<SOURCE> {
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct PropertyExt {
     /// Reasoning or justification for an inclusion
     pub note: Option<String>,
     pub status: Status,
@@ -176,72 +206,85 @@ pub struct PropertyExt<SOURCE> {
     pub upvote_count: i64,
     /// The total upvotes
     pub vote_count: u64,
-    pub source: Source<SOURCE>,
+    #[dual_type(InternalSource)]
+    pub source: ExternalSource,
 }
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
-pub struct WorkshopItemProperties<CHILD, PROP> {
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct WorkshopItemProperties {
+    #[dual_type(IItemID)]
     #[serde(rename = "in")]
-    pub workshop_item: CHILD,
+    pub workshop_item: ItemID,
     #[serde(rename = "out")]
-    pub property: PROP,
+    pub property: Property,
+    #[dual_type(InternalPropertyExt)]
     #[serde(flatten)]
-    pub property_ext: PropertyExt<CHILD>,
+    pub property_ext: ExternalPropertyExt,
     pub vote_state: Option<i32>,
+}
+
+fn to_external_props(
+    internal: Vec<InternalWorkshopItemProperties>,
+) -> Result<Vec<ExternalWorkshopItemProperties>, surrealdb_types::Error> {
+    Ok(internal
+        .into_iter()
+        .map(TryFrom::try_from)
+        .collect::<Result<_, _>>()?)
+}
+
+fn to_internal_props(
+    external: Vec<ExternalWorkshopItemProperties>,
+) -> Vec<InternalWorkshopItemProperties> {
+    external.into_iter().map(From::from).collect()
 }
 
 /// Crowdsourced relationships for an item, used for "soft" dependencies not
 /// supplied by steam, private version
-#[expect(unused, reason = "To be used soon")]
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
-pub struct Companion<R, S> {
-    /// Snowflake generated ID
-    pub id: String,
-    pub r#in: R,
-    pub out: R,
-    /// Reasoning or justification for an inclusion
-    pub note: Option<String>,
-    pub status: Status,
-    pub upvote_count: u64,
-    pub vote_count: u64,
-    pub source: Source<S>,
-}
+// #[expect(unused, reason = "To be used soon")]
+// #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
+// pub struct Companion<R, S> {
+//     /// Snowflake generated ID
+//     pub id: String,
+//     pub r#in: R,
+//     pub out: R,
+//     /// Reasoning or justification for an inclusion
+//     pub note: Option<String>,
+//     pub status: Status,
+//     pub upvote_count: u64,
+//     pub vote_count: u64,
+//     pub source: Source<S>,
+// }
 
 /// A voting record
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct Vote {
     /// The app this is associated with, for possible filtering
+    #[dual_type(IAppID)]
     pub app_id: AppID,
     pub score: f32,
     pub when: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, ToSchema, Eq, PartialEq, SurrealValue)]
-pub enum Source<T> {
+#[derive(Clone, Debug, Eq, PartialEq, SurrealValue)]
+pub enum InternalSource {
     /// Auto-generated
     System,
     /// User submitted
-    User(T),
+    User(IUserID),
 }
 
-impl<T> serde::Serialize for Source<T>
-where
-    T: serde::Serialize,
-{
+impl serde::Serialize for InternalSource {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
-            Source::System => serializer.serialize_str("system"),
-            Source::User(t) => t.serialize(serializer),
+            InternalSource::System => serializer.serialize_str("system"),
+            InternalSource::User(t) => t.serialize(serializer),
         }
     }
 }
 
-impl<'de, T> serde::Deserialize<'de> for Source<T>
-where
-    T: serde::Deserialize<'de>,
-{
+impl<'de> serde::Deserialize<'de> for InternalSource {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -251,9 +294,9 @@ where
         let value = deserializer.deserialize_any(ValueVisitor)?;
 
         match value {
-            Value::String(str) if str == "system" => Ok(Source::System),
-            _ => <T as serde::Deserialize>::deserialize(deserializer)
-                .map(Source::User)
+            Value::String(str) if str == "system" => Ok(InternalSource::System),
+            _ => <IUserID as serde::Deserialize>::deserialize(deserializer)
+                .map(InternalSource::User)
                 .map_err(|_| {
                     Error::custom("data did not match any variant of untagged enum Source")
                 }),
@@ -261,7 +304,47 @@ where
     }
 }
 
-#[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash, SurrealValue)]
+impl From<ExternalSource> for InternalSource {
+    fn from(value: ExternalSource) -> Self {
+        match value {
+            ExternalSource::System => Self::System,
+            ExternalSource::User(t) => Self::User(t.into()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, ToSchema, Serialize, Deserialize)]
+pub enum ExternalSource {
+    /// Auto-generated
+    System,
+    /// User submitted
+    User(UserID),
+}
+
+impl TryFrom<InternalSource> for ExternalSource {
+    type Error = surrealdb_types::Error;
+
+    fn try_from(value: InternalSource) -> Result<Self, Self::Error> {
+        match value {
+            InternalSource::System => Ok(ExternalSource::System),
+            InternalSource::User(t) => Ok(ExternalSource::User(t.try_into()?)),
+        }
+    }
+}
+
+#[derive(
+    Debug,
+    ToSchema,
+    Clone,
+    Serialize,
+    Deserialize,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    SurrealValue,
+)]
 pub enum Class {
     /// Anything like addon, overhaul, bugfix, patch
     Type,
@@ -312,59 +395,14 @@ pub struct DisplayUser {
     id: UserID,
     name: String,
 }
-#[derive(Serialize, Deserialize, PartialOrd, PartialEq, Eq, Debug)]
-#[serde(transparent)]
-struct Id(RecordId);
-
-impl From<RecordId> for Id {
-    fn from(value: RecordId) -> Self {
-        Self(value)
-    }
-}
-impl From<Id> for RecordId {
-    fn from(val: Id) -> Self {
-        val.0
-    }
-}
-
-impl Deref for Id {
-    type Target = RecordId;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Id {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-impl salvo::oapi::ToSchema for Id {
-    fn to_schema(
-        components: &mut salvo::oapi::Components,
-    ) -> salvo::oapi::RefOr<salvo::oapi::schema::Schema> {
-        let name = salvo::oapi::naming::assign_name::<Id>(salvo::oapi::naming::NameRule::Auto);
-        let ref_or = salvo::oapi::RefOr::Ref(salvo::oapi::Ref::new(format!(
-            "#/components/schemas/{name}"
-        )));
-        if !components.schemas.contains_key(&name) {
-            components.schemas.insert(name.clone(), ref_or.clone());
-            let schema = salvo::oapi::Object::new().schema_type(
-                salvo::oapi::schema::SchemaType::basic(salvo::oapi::schema::BasicType::String),
-            );
-            components.schemas.insert(name, schema);
-        }
-        ref_or
-    }
-}
 
 #[cfg(test)]
 mod test {
     use serde::{Deserialize, Serialize};
     use surrealdb_types::RecordId;
+
     use crate::db::{
-        model::{Class, Id, Source}, IItemID,
+        model::{Class, Id, InternalSource, Source}, IItemID,
         IUserID,
     };
 
@@ -380,7 +418,7 @@ mod test {
 
     #[test]
     fn test_source_de_ser() {
-        let system: Source<String> = Source::System;
+        let system: InternalSource = Source::System;
         let system_text = serde_json::to_string(&system).unwrap();
         let system2 = serde_json::from_str(&system_text).unwrap();
         assert_eq!(system, system2);
@@ -401,7 +439,7 @@ mod test {
 
         #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
         struct Test {
-            source: Source<String>,
+            source: InternalSource,
         }
 
         let t_user = Test { source: user };
