@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
-use crate::db::IUsernameID;
+use crate::db::{IUserID, IUsernameID};
 
 #[derive(Debug, Serialize, Deserialize, Clone, SurrealValue)]
 pub struct UserName {

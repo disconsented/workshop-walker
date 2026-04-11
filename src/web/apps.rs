@@ -13,7 +13,6 @@ use snafu::{ErrorCompat, Snafu};
 use crate::{
     db::{
         apps_actor::{APPS_ACTOR, AppsMsg},
-        model::{App},
     },
     domain::apps::AppError,
 };

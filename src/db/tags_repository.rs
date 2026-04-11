@@ -28,7 +28,7 @@ impl TagsPort for TagsSilo {
                 .query("COMMIT")
                 .bind(("record", tag.id.clone()))
                 .bind(("tag", tag))
-                .bind(("id", app_id));
+                .bind(("id", app_id.clone()));
             if let Err(error) = query.await.map(surrealdb::IndexedResults::check) {
                 error!(?error, "failed to upsert tag");
                 return Err(TagError::Internal {

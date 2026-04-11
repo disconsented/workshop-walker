@@ -7,10 +7,12 @@ use crate::{
     application::admin_service::AdminService,
     db::{
         admin_repository::AdminSilo,
-        model::{Property, User, WorkshopItemProperties},
+        model::{Property},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };
+use crate::db::IUserID;
+use crate::db::model::{InternalUser, InternalWorkshopItemProperties};
 
 pub static ADMIN_ACTOR: OnceLock<ActorRef<AdminMsg>> = OnceLock::new();
 
@@ -25,10 +27,10 @@ pub struct AdminState {
 }
 
 pub enum AdminMsg {
-    ListUsers(RpcReplyPort<Result<Vec<User<String>>, AdminError>>),
+    ListUsers(RpcReplyPort<Result<Vec<InternalUser>, AdminError>>),
     PatchUser(PatchUserData, RpcReplyPort<Result<(), AdminError>>),
     ListWorkshopItemProperties(
-        RpcReplyPort<Result<Vec<WorkshopItemProperties<String, Property>>, AdminError>>,
+        RpcReplyPort<Result<Vec<InternalWorkshopItemProperties>, AdminError>>,
     ),
     PatchWorkshopItemProperty(PatchRelationshipData, RpcReplyPort<Result<(), AdminError>>),
 }

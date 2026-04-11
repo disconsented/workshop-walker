@@ -6,10 +6,11 @@ use tracing::{debug, error};
 use crate::{
     db::{
         IItemID, IUserID, ItemID, UserID,
-        model::{Property, Source, Status, WorkshopItemProperties},
+        model::{Property, Status},
     },
     domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
 };
+use crate::db::model::{InternalSource, InternalWorkshopItemProperties};
 
 pub struct PropertiesSilo {
     pub db: Surreal<Db>,
@@ -25,7 +26,7 @@ impl PropertiesPort for PropertiesSilo {
     async fn create_or_link_property(
         &self,
         new_property: NewProperty,
-        source: Source<String>,
+        source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError> {
         let workshop_id = IItemID::from(new_property.workshop_item);
@@ -69,7 +70,7 @@ impl PropertiesPort for PropertiesSilo {
                 debug!(?similar_properties, "Similar properties exist");
                 return Err(PropertiesError::Conflict);
             }
-            let existing_properties: Vec<WorkshopItemProperties<String, Property>> =
+            let existing_properties: Vec<InternalWorkshopItemProperties> =
                 res.take(1).unwrap_or_default();
             existing_properties
                 .iter()
@@ -96,8 +97,8 @@ impl PropertiesPort for PropertiesSilo {
             .bind((
                 "source",
                 match source {
-                    Source::System => Source::System,
-                    Source::User(userid) => Source::User(IUserID::from(userid)),
+                    InternalSource::System => InternalSource::System,
+                    InternalSource::User(userid) => InternalSource::User(IUserID::from(userid)),
                 },
             ))
             .bind(("status", status))

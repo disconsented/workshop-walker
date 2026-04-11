@@ -6,11 +6,12 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::properties_service::PropertiesService,
     db::{
-        model::{Source, Status},
+        model::{Status},
         properties_repository::PropertiesSilo,
     },
     domain::properties::{NewProperty, PropertiesError, VoteData},
 };
+use crate::db::model::InternalSource;
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
 
@@ -32,7 +33,7 @@ pub struct PropertiesState {
 pub enum PropertiesMsg {
     NewProperty(
         NewProperty,
-        Source<String>,
+        InternalSource,
         Status,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),

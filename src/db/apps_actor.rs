@@ -7,12 +7,12 @@ use crate::{
     application::apps_service::AppsService,
     db::{
         apps_repository::AppsSilo,
-        model::{App},
     },
     domain::apps::AppError,
     steam::steam_download_actor::SteamDownloadMsg,
 };
-use crate::db::ITagID;
+use crate::db::{IAppID, ITagID};
+use crate::db::model::InternalApp;
 
 pub static APPS_ACTOR: OnceLock<ActorRef<AppsMsg>> = OnceLock::new();
 
@@ -29,11 +29,11 @@ pub struct AppsState {
 }
 
 pub enum AppsMsg {
-    ListAvailable(RpcReplyPort<Result<Vec<App<ITagID>>, AppError>>),
-    Upsert(App<ITagID>, RpcReplyPort<Result<(), AppError>>),
-    Remove(u32, RpcReplyPort<Result<(), AppError>>),
-    List(RpcReplyPort<Result<Vec<App<ITagID>>, AppError>>),
-    Get(u32, RpcReplyPort<Result<App<ITagID>, AppError>>),
+    ListAvailable(RpcReplyPort<Result<Vec<InternalApp>, AppError>>),
+    Upsert(InternalApp, RpcReplyPort<Result<(), AppError>>),
+    Remove(IAppID, RpcReplyPort<Result<(), AppError>>),
+    List(RpcReplyPort<Result<Vec<InternalApp>, AppError>>),
+    Get(IAppID, RpcReplyPort<Result<InternalApp, AppError>>),
 }
 
 #[async_trait]
@@ -65,7 +65,7 @@ impl Actor for AppsActor {
                 let _ = reply.send(state.service.list_available().await);
             }
             AppsMsg::Upsert(app, reply) => {
-                let app_id = app.id;
+                let app_id = app.id.clone();
                 let res = state.service.upsert(app).await;
                 if let Some(download_actor) = &state.download_actor {
                     let _ = download_actor.send_message(SteamDownloadMsg::AddApp(app_id));
@@ -73,7 +73,7 @@ impl Actor for AppsActor {
                 let _ = reply.send(res);
             }
             AppsMsg::Remove(id, reply) => {
-                let res = state.service.remove(id).await;
+                let res = state.service.remove(id.clone()).await;
                 if res.is_ok()
                     && let Some(download_actor) = &state.download_actor
                 {

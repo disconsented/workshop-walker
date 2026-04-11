@@ -9,10 +9,11 @@ use snafu::{ErrorCompat, prelude::*};
 use crate::{
     db::{
         admin_actor::{ADMIN_ACTOR, AdminMsg},
-        model::{Property, User, WorkshopItemProperties},
+        model::{Property,},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };
+use crate::db::model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser, InternalWorkshopItemProperties};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -75,15 +76,16 @@ impl From<AdminError> for InnerError {
 }
 
 #[endpoint]
-pub async fn get_users() -> Result<Json<Vec<User<String>>>> {
-    let actor = ADMIN_ACTOR
-        .get()
-        .cloned()
-        .ok_or(InnerError::InternalError)?;
-    let users: Vec<User<String>> = call!(actor, AdminMsg::ListUsers)
-        .map_err(InnerError::from)?
-        .map_err(InnerError::from)?;
-    Ok(Json(users))
+pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, InnerError> {
+    todo!()
+    // let actor = ADMIN_ACTOR
+    //     .get()
+    //     .cloned()
+    //     .ok_or(InnerError::InternalError)?;
+    // let users: Vec<InternalUser> = call!(actor, AdminMsg::ListUsers)
+    //     .map_err(InnerError::from)?
+    //     .map_err(InnerError::from)?;
+    // Ok(Json(users))
 }
 
 #[endpoint]
@@ -100,15 +102,16 @@ pub async fn patch_user(data: JsonBody<PatchUserData>) -> Result<()> {
 
 #[endpoint]
 pub async fn get_workshop_item_properties()
--> Result<Json<Vec<WorkshopItemProperties<String, Property>>>> {
-    let actor = ADMIN_ACTOR
-        .get()
-        .cloned()
-        .ok_or(InnerError::InternalError)?;
-    let list = call!(actor, AdminMsg::ListWorkshopItemProperties)
-        .map_err(InnerError::from)?
-        .map_err(InnerError::from)?;
-    Ok(Json(list))
+-> Result<Json<Vec<ExternalWorkshopItemProperties>>> {
+    todo!()
+    // let actor = ADMIN_ACTOR
+    //     .get()
+    //     .cloned()
+    //     .ok_or(InnerError::InternalError)?;
+    // let list = call!(actor, AdminMsg::ListWorkshopItemProperties)
+    //     .map_err(InnerError::from)?
+    //     .map_err(InnerError::from)?;
+    // Ok(Json(list))
 }
 
 #[endpoint]

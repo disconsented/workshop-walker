@@ -5,6 +5,7 @@ use crate::{
     db::IUsernameID,
     domain::user_names::{UserName, UserNameError, UserNamesPort},
 };
+use crate::db::IUserID;
 
 pub struct UserNamesService<R: UserNamesPort> {
     repo: R,

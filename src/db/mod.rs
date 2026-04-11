@@ -13,6 +13,7 @@ use macros::define_id;
 use surrealdb::{engine::local::Mem, Surreal};
 // use salvo::prelude::ToSchema;
 use surrealdb_types::SurrealValue;
+use crate::db::model::InternalTag;
 
 define_id!("users", IUserID, UserID, String);
 
@@ -20,7 +21,7 @@ define_id!("users", IUserID, UserID, String);
 // for RecordId`
 define_id!("workshop_items", IItemID, ItemID, i64);
 define_id!("apps", IAppID, AppID, i64);
-define_id!("tags", ITagID, TagID, String);
+define_id!("tags", ITagID, TagID, InternalTag);
 define_id!("usernames", IUsernameID, UsernameID, i64);
 define_id!("properties", IPropertyID, PropertyID, String);
 define_id!("votes", IVoteID, VoteID, String);

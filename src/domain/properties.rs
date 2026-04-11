@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 use crate::db::IItemID;
-use crate::db::model::{Class, Source, Status};
+use crate::db::model::{Class, InternalSource, Status};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -42,7 +42,7 @@ pub trait PropertiesPort: Send + Sync + 'static {
     async fn create_or_link_property(
         &self,
         new_prop: NewProperty,
-        source: Source<String>,
+        source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError>;
     async fn vote(&self, vote: VoteData, userid: String) -> Result<(), PropertiesError>;
