@@ -40,7 +40,7 @@ impl<R: UserNamesPort> UserNamesService<R> {
         Ok(())
     }
 
-    pub async fn should_update_user(&self, id: &IUsernameID) -> Result<bool, UserNameError> {
+    pub async fn should_update_user(&self, id: IUsernameID) -> Result<bool, UserNameError> {
         match self.repo.get_by_id(id).await? {
             Some(existing) => {
                 Ok(Utc::now().signed_duration_since(existing.last_updated) > Duration::weeks(1))

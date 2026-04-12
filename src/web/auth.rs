@@ -27,11 +27,13 @@ use serde_json::to_value;
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_core::sql::data::Data;
+use surrealdb_core::sql::{AssignOperator, Idiom, Part};
+use surrealdb_core::sql::AssignOperator::Assign;
+use surrealdb_core::sql::data::{Assignment, Data};
 use surrealdb_core::sql::expression::Expr;
 use surrealdb_core::sql::statements::InsertStatement;
 use surrealdb_core::syn::token::Operator;
-use surrealdb_types::RecordId;
+use surrealdb_types::{RecordId, SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
@@ -517,13 +519,13 @@ impl AuthActor {
             let mut stmt = InsertStatement::default();
             stmt.into = Some(Expr::Table("users".into()));
             stmt.data = Data::SingleExpression(
-                to_value(user.clone()).map_err(|_| InnerError::PeerValidationFailed)?,
+                Expr::from_public_value(user.clone().into_value())
             );
-            stmt.update = Some(Data::UpdateExpression(vec![(
-                idiom("last_logged_in").map_err(|_| InnerError::PeerValidationFailed)?,
-                Operator::Equal,
-                Utc::now().into(),
-            )]));
+            stmt.update = Some(Data::UpdateExpression(vec![Assignment{
+                place: Idiom(vec![Part::Field("last_logged_in".into())]),
+                operator: AssignOperator::Assign,
+                value: Expr::from_public_value(Value::Datetime(Utc::now().into())),
+            }]));
             for (i, error) in state
                 .database
                 .query(stmt)

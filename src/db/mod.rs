@@ -21,16 +21,16 @@ define_id!("users", IUserID, UserID, String);
 // for RecordId`
 define_id!("workshop_items", IItemID, ItemID, i64);
 define_id!("apps", IAppID, AppID, i64);
-// define_id!("tags", ITagID, TagID, InternalTag);
+define_id!("tags", ITagID, TagID, String);
 define_id!("usernames", IUsernameID, UsernameID, i64);
 define_id!("properties", IPropertyID, PropertyID, String);
 define_id!("votes", IVoteID, VoteID, String);
-// define_id!(
-//     "item_dependencies",
-//     IItemDependencyID,
-//     ItemDependencyID,
-//     Vec<surrealdb_types::Value>
-// );
+define_id!(
+    "item_dependencies",
+    IItemDependencyID,
+    ItemDependencyID,
+    Vec<String>
+);
 // define_id!("companions", ICompanionID, CompanionID, String);
 // define_id!(
 //     "workshop_item_properties",

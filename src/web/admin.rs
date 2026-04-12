@@ -4,6 +4,7 @@ use salvo::{
     prelude::{endpoint, Json, StatusCode, StatusError},
     Writer,
 };
+use salvo::prelude::EndpointOutRegister;
 use snafu::{prelude::*, ErrorCompat};
 
 use crate::{
@@ -13,6 +14,7 @@ use crate::{
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };
+use crate::db::model::Status;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -75,7 +77,7 @@ impl From<AdminError> for InnerError {
 }
 
 #[endpoint]
-pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, InnerError> {
+pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, StatusError> {
     let actor = ADMIN_ACTOR
         .get()
         .cloned()
@@ -83,14 +85,12 @@ pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, InnerError> {
     let users: Vec<InternalUser> = call!(actor, AdminMsg::ListUsers)
         .map_err(InnerError::from)?
         .map_err(InnerError::from)?;
-    Ok(Json(
-        users
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<_, _>>()
-            .map_err(InnerError::from)?
-            .map_err(InnerError::from)?,
-    ))
+    let users: Vec<ExternalUser> = users
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_|InnerError::InternalError)?;
+    Ok(Json(users))
 }
 
 #[endpoint]

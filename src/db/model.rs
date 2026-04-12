@@ -14,9 +14,11 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::SurrealValue;
 
 use crate::{
-    db::{AppID, IAppID, IItemID, IUserID, ItemID, UserID},
+    db::{AppID, IAppID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
     processing::language_actor::DetectedLanguage,
 };
+use crate::db::IItemDependencyID;
+
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
 pub enum OrderBy {
     Alphabetical,
@@ -59,6 +61,7 @@ pub struct Tag {
     pub app_id: AppID,
     #[dual_type(ITagID)]
     pub id: TagID,
+    pub display_name: String,
 }
 
 fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surrealdb_types::Error> {
@@ -76,7 +79,8 @@ fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
 pub struct WorkshopItem {
     #[dual_type(IAppID)]
     pub app_id: AppID,
-    pub author: String,
+    #[dual_type(IUserID)]
+    pub author: UserID,
     pub description: String,
     #[dual_type(IItemID)]
     pub id: ItemID,
@@ -116,7 +120,7 @@ pub struct FullWorkshopItem {
     pub score: f32, // The "quality" score assigned by steam
 
     // Author and timing
-    #[dual_type(Option<IUserID>)]
+    #[dual_type(Option<IUserID>, to_external = to_external_user, to_internal = to_internal_user)]
     pub author: Option<UserID>, // Authors steam ID
     pub last_updated: u64, // Timestamp in milliseconds
 
@@ -133,6 +137,14 @@ pub struct FullWorkshopItem {
     pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
 }
 
+fn to_external_user(internal: Option<IUserID>) -> Result<Option<UserID>, surrealdb_types::Error> {
+    internal.map(TryInto::try_into).transpose()
+}
+
+fn to_internal_user(external: Option<UserID>) -> Option<IUserID> {
+    external.map(Into::into)
+}
+
 fn to_external_full_item(
     internal: Vec<InternalFullWorkshopItem>,
 ) -> Result<Vec<ExternalFullWorkshopItem>, surrealdb_types::Error> {
@@ -146,7 +158,7 @@ fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<Interna
     external.into_iter().map(Into::into).collect()
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, SurrealValue)]
 pub struct Dependencies {
     pub id: IItemDependencyID,
     #[serde(rename = "in")]

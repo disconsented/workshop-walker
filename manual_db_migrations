@@ -1,0 +1,14 @@
+-- Delete rows that are set extensions like `-- DEFINE FIELD default_tags.* ON apps TYPE record<tags> REFERENCE PERMISSIONS FULL;`
+
+DEFINE TABLE usernames TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+DEFINE FIELD username ON usernames TYPE record<users> REFERENCE PERMISSIONS FULL;
+DEFINE FIELD last_updated ON usernames TYPE datetime PERMISSIONS FULL;
+DEFINE FIELD name ON usernames TYPE string PERMISSIONS FULL;
+DEFINE INDEX unique_username ON usernames FIELDS username;
+-- renamed id to username
+
+-- id:usernames:
+-- username:usernames:
+
+-- INSERT [{username:usernames:
+-- INSERT INTO usernames [{username:usernames:
