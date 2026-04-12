@@ -27,7 +27,6 @@ use crate::{
         steam_user_actor::SteamUserMsg,
     },
 };
-use crate::db::IItemDependencyID;
 
 pub struct ItemUpdateActor {}
 
@@ -197,10 +196,10 @@ async fn insert_data(
             .map(|child| {
                 let dep_id = IItemID::from(child.publishedfileid);
                 Dependencies {
-                    id: IItemDependencyID::from(vec![
-                        item.id.clone().into(),
-                        dep_id.clone().into(),
-                    ]),
+                    id: vec![
+                        item.id.clone(),
+                        dep_id.clone(),
+                    ],
                     this: IItemID::from(item.id.clone()),
                     dependency: dep_id.into(),
                 }
@@ -226,8 +225,8 @@ async fn insert_data(
         .bind(("id", id))
         .bind((
             "tags",
-            tags.iter()
-                .map(|tag| tag.id.clone().into())
+            tags.into_iter()
+                .map(|tag| tag.id)
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");

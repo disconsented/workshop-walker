@@ -17,7 +17,6 @@ use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
     processing::language_actor::DetectedLanguage,
 };
-use crate::db::IItemDependencyID;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
 pub enum OrderBy {
@@ -160,7 +159,7 @@ fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<Interna
 
 #[derive(Serialize, Deserialize, Clone, Debug, SurrealValue)]
 pub struct Dependencies {
-    pub id: IItemDependencyID,
+    pub id: Vec<IItemID>,
     #[serde(rename = "in")]
     pub this: IItemID,
     #[serde(rename = "out")]
