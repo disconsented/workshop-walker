@@ -1,4 +1,4 @@
-
+use std::ops::Deref;
 pub use proc_macros::dual_struct;
 
 /// A helper macro to define a newtype for a SurrealDB record ID.
@@ -30,9 +30,9 @@ macro_rules! define_id {
         )]
         #[serde(transparent)]
         pub struct $external($external_type);
-        impl Into<$external_type> for $external {
-            fn into(self) -> $external_type {
-                self.0
+        impl From<$external> for  $external_type{
+            fn from(id: $external) -> $external_type {
+                id.0
             }
         }
 
@@ -58,6 +58,10 @@ macro_rules! define_id {
         pub struct $internal(surrealdb_types::RecordId);
         impl $internal {
             const TABLE_NAME: &'static str = $table;
+            // An alias of TryInto<$external> for $internal to make it easier to use
+            pub fn try_into_external(self) -> Result<$external, surrealdb_types::Error> {
+                self.try_into()
+            }
         }
         impl From<$external> for $internal {
             fn from(id: $external) -> Self {
@@ -78,19 +82,27 @@ macro_rules! define_id {
             }
         }
 
-        impl Into<surrealdb_types::RecordId> for $internal {
-            fn into(self) -> surrealdb_types::RecordId {
-                self.0
+        impl From<$internal> for surrealdb_types::RecordId {
+            fn from(id: $internal) -> surrealdb_types::RecordId {
+              id.0
             }
         }
 
-        impl TryInto<$external> for $internal {
+        impl TryFrom<$internal> for $external {
             type Error = surrealdb_types::Error;
 
-            fn try_into(self) -> Result<$external, Self::Error> {
+            fn try_from(id: $internal) -> Result<$external, Self::Error> {
                 Ok($external(
-                    surrealdb_types::SurrealValue::into_value(self.0.key).into_t()?,
+                     id.0.key.into_value().into_t()?,
                 ))
+            }
+        }
+
+        impl std::ops::Deref for $internal {
+            type Target = surrealdb_types::RecordId;
+
+            fn deref(&self) -> &Self::Target {
+                &self.0
             }
         }
     };

@@ -2,8 +2,10 @@ use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
-use crate::db::IItemID;
+use macros::dual_struct;
+use crate::db::{IItemID, ItemID};
 use crate::db::model::{Class, InternalSource, Status};
+use crate::steam::model::VoteData;
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -19,9 +21,10 @@ pub enum PropertiesError {
 }
 
 /// Data required to create/link a new property to a workshop item
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct NewProperty {
-    pub workshop_item: IItemID,
+    #[dual_type(IItemID)]
+    pub workshop_item: ItemID,
     pub class: Class,
     pub value: String,
     /// Reasoning or justification for an inclusion
@@ -29,9 +32,10 @@ pub struct NewProperty {
 }
 
 /// Data required to cast or update a vote on a property
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, SurrealValue)]
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct VoteData {
-    pub item: i64,
+    #[dual_type(IItemID)]
+    pub item: ItemID,
     pub class: Class,
     pub value: String,
     pub score: i32,
@@ -41,10 +45,10 @@ pub struct VoteData {
 pub trait PropertiesPort: Send + Sync + 'static {
     async fn create_or_link_property(
         &self,
-        new_prop: NewProperty,
+        new_prop: InternalNewProperty,
         source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError>;
-    async fn vote(&self, vote: VoteData, userid: String) -> Result<(), PropertiesError>;
-    async fn remove_vote(&self, vote: VoteData, userid: String) -> Result<(), PropertiesError>;
+    async fn vote(&self, vote: InternalVoteData, userid: String) -> Result<(), PropertiesError>;
+    async fn remove_vote(&self, vote: InternalVoteData, userid: String) -> Result<(), PropertiesError>;
 }

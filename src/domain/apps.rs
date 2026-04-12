@@ -1,5 +1,5 @@
 use snafu::prelude::*;
-use crate::db::{IAppID, ITagID};
+use crate::db::{IAppID};
 use crate::db::model::InternalApp;
 
 #[derive(Debug, Snafu, Clone)]

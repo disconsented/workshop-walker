@@ -63,12 +63,12 @@ impl Actor for SteamUserActor {
                 // work
                 let Some(first) = rx.recv().await else { break };
 
-                if should_update_user(&user_names_service, first).await {
+                if should_update_user(&user_names_service, &first).await {
                     user_ids.insert(first);
                 }
 
                 while let Ok(next) = rx.try_recv() {
-                    if should_update_user(&user_names_service, next).await {
+                    if should_update_user(&user_names_service, &next).await {
                         user_ids.insert(next);
                     }
                     if user_ids.len() == 100 {
@@ -82,7 +82,7 @@ impl Actor for SteamUserActor {
 
                 let id_string = user_ids
                     .drain()
-                    .map(|id| UsernameID::try_from(id).unwrap().into().to_string())
+                    .map(|id| i64::from(id.try_into_external().unwrap()).to_string())
                     .join(",");
                 let url = format!(
                     "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key={}&steamids={id_string}",
@@ -157,7 +157,7 @@ impl Actor for SteamUserActor {
 
 async fn should_update_user(
     user_names_service: &UserNamesService<UserNamesSilo>,
-    id: IUsernameID,
+    id: &IUsernameID,
 ) -> bool {
     user_names_service
         .should_update_user(id)

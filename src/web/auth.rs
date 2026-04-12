@@ -31,14 +31,16 @@ use surrealdb_core::sql::data::Data;
 use surrealdb_core::sql::expression::Expr;
 use surrealdb_core::sql::statements::InsertStatement;
 use surrealdb_core::syn::token::Operator;
+use surrealdb_types::RecordId;
 use tracing::{debug, error};
 
 use crate::{
     app_config::BiscuitConfig,
-    db::{UserID, model::User},
+    db::{UserID},
     steam::steam_user_actor::SteamUserMsg,
 };
 use crate::db::IUserID;
+use crate::db::model::InternalUser;
 
 static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
 
@@ -97,7 +99,7 @@ impl From<InnerError> for StatusError {
             .unwrap_or_default()
             .to_string();
         error.brief = value.to_string();
-        error.detail = value.backtrace().map(std::string::ToString::to_string);
+        error.detail = value.backtrace().map(ToString::to_string);
         error
     }
 }
@@ -194,7 +196,7 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         None => Err(InnerError::Unauthorized)?,
         Some(userid) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
-            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid, reply) })
+            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid.into(), reply) })
                 .map_err(|_| InnerError::InternalError)??;
 
             if admin {
@@ -213,12 +215,12 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     Ok(())
 }
 /// Returns the user id of the current user, if any.
-pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
+pub fn get_user_from_depot(depot: &mut Depot) -> Option<UserID> {
     let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
     let (userid, _): (String, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
         .ok()?;
-    Some(IUserID::from(userid))
+    Some(UserID::from(userid))
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -244,7 +246,7 @@ pub enum AuthMessage {
     GetAuthUrl(String, RpcReplyPort<String>),
     VerifySteamResponse(MultiMap<String, String>, RpcReplyPort<String>),
     ValidateToken(Cookie<'static>, RpcReplyPort<Result<Authorizer>>),
-    IsAdmin(String, RpcReplyPort<Result<bool>>),
+    IsAdmin(IUserID, RpcReplyPort<Result<bool>>),
 }
 pub struct AuthState {
     open_id_info: Info,
@@ -333,7 +335,7 @@ impl AuthActor {
     async fn is_admin(db: &Surreal<Db>, userid: IUserID) -> Result<bool> {
         match db
             .query("SELECT admin FROM $user")
-            .bind(("user", userid.into()))
+            .bind(("user", userid))
             .await
             .map(surrealdb::IndexedResults::check)
         {
@@ -486,7 +488,7 @@ impl AuthActor {
         if let Ok(id) = user_id.parse::<i64>() {
             let _ = state
                 .steam_user_actor_ref
-                .send_message(SteamUserMsg::Fetch(id));
+                .send_message(SteamUserMsg::Fetch(id.into()));
         }
 
         let keypair = &KeyPair::from(&state.biscuit.private_key);
@@ -506,7 +508,7 @@ impl AuthActor {
             .map_err(|_| InnerError::PeerValidationFailed)?;
 
         {
-            let user = User {
+            let user = InternalUser {
                 id: UserID::from(user_id.to_owned()).into(),
                 admin: false,
                 banned: false,

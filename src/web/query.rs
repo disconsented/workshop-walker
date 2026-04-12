@@ -1,34 +1,31 @@
-use surrealdb_types::Value;
 use std::str::FromStr;
 
 use itertools::Itertools;
 use salvo::{
-    Request, Writer,
-    oapi::{endpoint, extract::QueryParam},
-    prelude::Json,
+    oapi::{endpoint, extract::QueryParam}, prelude::Json,
+    Request,
+    Writer,
 };
 use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{
-    Surreal,
-    engine::local::Db,
-
+use surrealdb::{engine::local::Db, Surreal};
+use surrealdb_core::{
+    sql::{statements::SelectStatement, Cond, Field, Limit, Start},
+    syn::token::Keyword::Limit,
 };
-use surrealdb_core::sql::Cond;
-use surrealdb_core::sql::statements::SelectStatement;
-use surrealdb_core::syn::token::Keyword::Limit;
-use surrealdb_types::RecordId;
-use tracing::{Instrument, info, info_span, instrument};
+use surrealdb_types::{RecordId, Value};
+use tracing::{info, info_span, instrument, Instrument};
 
 use crate::{
     db::{
-        ITagID, TagID,
-        model::{OrderBy, WorkshopItem},
+        model::{ExternalWorkshopItem, OrderBy}, ITagID,
+        TagID,
     },
     processing::language_actor::DetectedLanguage,
     web,
     web::DB_POOL,
 };
+
 #[instrument(skip_all)]
 #[endpoint]
 pub async fn list(
@@ -41,7 +38,7 @@ pub async fn list(
     mut title: QueryParam<String, false>,
     last_updated: QueryParam<u64, false>,
     mut order_by: QueryParam<OrderBy, false>,
-) -> web::Result<Json<Vec<WorkshopItem<String>>>> {
+) -> web::Result<Json<Vec<ExternalWorkshopItem>>> {
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
@@ -56,7 +53,7 @@ pub async fn list(
         last_updated: Option<u64>,
         order_by: Option<OrderBy>,
         db: &Surreal<Db>,
-    ) -> web::Result<Vec<WorkshopItem<String>>, Whatever> {
+    ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
         let mut stmt = SelectStatement::default();
         {
             stmt.expr.0.append(&mut vec![Field::All]);
@@ -101,18 +98,13 @@ pub async fn list(
             }
         }
 
-        stmt.limit = Some({
-            let mut d = Limit::default();
-            d.0 = to_value(limit).whatever_context("limit")?;
-            d
-        });
+        stmt.limit = Some({ Limit(to_value(limit).whatever_context("limit")?) });
         stmt.start = Some({
             let mut s = Start::default();
             s.0 = to_value(limit * page).whatever_context("start limit")?;
             s
         });
 
-        stmt.parallel = true;
         stmt.what.0.push(Value::Table("workshop_items".into()));
         stmt.cond = {
             let conditions = vec![
@@ -254,8 +246,6 @@ pub async fn list(
             )])))
             .unwrap()
         });
-
-        stmt.parallel = true;
 
         info!("{stmt}");
         let mut results = db.query(stmt).await.whatever_context("querying")?;

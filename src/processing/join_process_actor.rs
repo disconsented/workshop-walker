@@ -16,7 +16,7 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
-use crate::db::{IAppID, ITagID};
+use crate::db::{IAppID};
 use crate::db::model::InternalWorkshopItem;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
@@ -99,7 +99,7 @@ impl InternalWorkshopItem {
             author: data.creator.whatever_context("Missing author")?,
             languages,
             description,
-            id: IItemID::from(data.publishedfileid.parse()?),
+            id: data.publishedfileid.into(),
             title: data.title.whatever_context("Missing title")?,
             preview_url: data
                 .preview_url

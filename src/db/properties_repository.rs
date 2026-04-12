@@ -5,10 +5,10 @@ use tracing::{debug, error};
 
 use crate::{
     db::{
-        IItemID, IUserID, ItemID, UserID,
+        IItemID, IUserID, UserID,
         model::{Property, Status},
     },
-    domain::properties::{NewProperty, PropertiesError, PropertiesPort, VoteData},
+    domain::properties::{InternalNewProperty, PropertiesError, PropertiesPort, InternalVoteData},
 };
 use crate::db::model::{InternalSource, InternalWorkshopItemProperties};
 
@@ -25,7 +25,7 @@ impl PropertiesSilo {
 impl PropertiesPort for PropertiesSilo {
     async fn create_or_link_property(
         &self,
-        new_property: NewProperty,
+        new_property: InternalNewProperty,
         source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError> {
@@ -120,7 +120,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
-    async fn vote(&self, vote_data: VoteData, userid: String) -> Result<(), PropertiesError> {
+    async fn vote(&self, vote_data: InternalVoteData, userid: String) -> Result<(), PropertiesError> {
         let user = UserID::from(userid);
         let query = self
             .db
@@ -171,7 +171,7 @@ impl PropertiesPort for PropertiesSilo {
 
     async fn remove_vote(
         &self,
-        vote_data: VoteData,
+        vote_data: InternalVoteData,
         userid: String,
     ) -> Result<(), PropertiesError> {
         let user = UserID::from(userid);

@@ -9,9 +9,11 @@ use crate::{
         model::{Status},
         properties_repository::PropertiesSilo,
     },
-    domain::properties::{NewProperty, PropertiesError, VoteData},
+    domain::properties::{ PropertiesError, },
 };
 use crate::db::model::InternalSource;
+use crate::domain::properties::{InternalNewProperty, InternalVoteData};
+use crate::steam::model::VoteData;
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
 
@@ -32,13 +34,13 @@ pub struct PropertiesState {
 /// Messages handled by `PropertiesActor`.
 pub enum PropertiesMsg {
     NewProperty(
-        NewProperty,
+        InternalNewProperty,
         InternalSource,
         Status,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),
-    Vote(VoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
-    Remove(VoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
+    Vote(InternalVoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
+    Remove(InternalVoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
 }
 
 #[async_trait]
