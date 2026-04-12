@@ -1,14 +1,13 @@
 use std::mem::take;
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
+use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef};
 use snafu::{OptionExt, Whatever};
 use tracing::error;
 
 use crate::{
     db::{
-        IItemID, ItemID,
-        item_update_actor::ItemUpdateMsg,
-        model,
+        item_update_actor::ItemUpdateMsg, model, model::InternalWorkshopItem, IAppID, IItemID, ITagID,
+        ItemID,
     },
     processing::{
         bb_actor::BBMsg,
@@ -16,8 +15,7 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
-use crate::db::{IAppID};
-use crate::db::model::InternalWorkshopItem;
+use crate::db::model::InternalTag;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`
@@ -93,10 +91,11 @@ impl InternalWorkshopItem {
         let app_id: IAppID = data
             .consumer_appid
             .whatever_context("Missing app id")
-            .inspect_err(|_| error!(?data, "creating new item"))?.into();
+            .inspect_err(|_| error!(?data, "creating new item"))?
+            .into();
         Ok(Self {
             app_id: app_id.clone(),
-            author: data.creator.whatever_context("Missing author")?,
+            author: data.creator.whatever_context("Missing author")?.into(),
             languages,
             description,
             id: data.publishedfileid.into(),
@@ -105,17 +104,16 @@ impl InternalWorkshopItem {
                 .preview_url
                 .or_else(|| data.previews.first().map(|preview| preview.url.clone())),
             last_updated: data.time_updated.unwrap_or_default() as _,
-            // tags: data
-            //     .tags
-            //     .iter()
-            //     .cloned()
-            //     .map(|tag| model::InternalTag {
-            //         app_id,
-            //
-            //         id: ITagID,
-            //     })
-            //     .collect::<Vec<_>>(),
-            tags: vec![], // ToDo: this
+            tags: data
+                .tags
+                .iter()
+                .cloned()
+                .map(|tag| InternalTag {
+                    app_id: app_id.clone(),
+                    id: ITagID::from(tag.tag.clone()),
+                    display_name: tag.display_name.clone(),
+                })
+                .collect::<Vec<_>>(),
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
             properties: vec![],
         })

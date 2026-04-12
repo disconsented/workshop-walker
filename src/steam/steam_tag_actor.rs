@@ -1,20 +1,17 @@
 use std::time::Duration;
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use reqwest::Client;
 use scraper::{Html, Selector};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use tracing::{debug, error, info};
 
 use crate::{
     application::{apps_service::AppsService, tags_service::TagsService},
     db::{
-        apps_repository::AppsSilo,
-        tags_repository::TagsSilo,
+        apps_repository::AppsSilo, model::InternalTag, tags_repository::TagsSilo, IAppID, ITagID,
     },
 };
-use crate::db::IAppID;
-use crate::steam::model::Tag;
 
 pub struct SteamTagActor;
 
@@ -73,19 +70,22 @@ impl Actor for SteamTagActor {
 
                 for app in apps {
                     info!(app_id = ?app.id, app_name = %app.name, "Scraping tags for app");
-                    let url = format!("https://steamcommunity.com/app/{}/workshop/", app.clone().id.try_into_external()?.into());
+                    let url = format!(
+                        "https://steamcommunity.com/app/{}/workshop/",
+                        i64::from(app.clone().id.clone().try_into_external()?).to_string()
+                    );
                     match state.client.get(&url).send().await {
                         Ok(resp) => {
                             if let Ok(html) = resp.text().await {
-                                let tags = extract_tags(app.id, &html);
+                                let tags = extract_tags(app.id.clone(), &html);
                                 debug!(app_id = ?app.id, tag_count = tags.len(), "Extracted tags");
-                                if let Err(error) = state.tags.update_tags(app.id, tags).await {
-                                    error!(?error, app_id = app.id, "Failed to update tags");
+                                if let Err(error) = state.tags.update_tags(app.id.clone(), tags).await {
+                                    error!(?error, app_id = ?app.id, "Failed to update tags");
                                 }
                             }
                         }
                         Err(error) => {
-                            error!(?error, app_id = app.id, "Failed to fetch workshop page");
+                            error!(?error, app_id = ?app.id, "Failed to fetch workshop page");
                         }
                     }
                 }
@@ -95,7 +95,7 @@ impl Actor for SteamTagActor {
     }
 }
 
-fn extract_tags(app_id: IAppID, html: &str) -> Vec<Tag> {
+fn extract_tags(app_id: IAppID, html: &str) -> Vec<InternalTag> {
     Html::parse_document(html)
         .select(&Selector::parse(".tag_label").unwrap())
         .filter_map(|node| {
@@ -105,13 +105,10 @@ fn extract_tags(app_id: IAppID, html: &str) -> Vec<Tag> {
                 .next()
                 .map(String::from)
         })
-        .map(|text| Tag {
-
-            app_id: app_id.into(),
-            tag_ref: TagRef {
-                display_name: text.clone(),
-                tag: text,
-            },
+        .map(|text| InternalTag {
+            app_id: app_id.clone(),
+            id: ITagID::from(text.clone()),
+            display_name: text.clone(),
         })
         .collect::<Vec<_>>()
 }

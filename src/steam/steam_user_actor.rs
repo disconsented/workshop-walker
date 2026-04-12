@@ -1,16 +1,16 @@
-use std::{collections::HashSet, sync::Arc, time::Duration};
-
 use itertools::Itertools;
+use std::{collections::HashSet, sync::Arc};
+use std::time::Duration;
 use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use reqwest::{Client, Response, StatusCode};
 use surrealdb::{engine::local::Db, Surreal};
-use surrealdb_core::{map, syn::token::Keyword::Into};
-use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
+use tokio::{sync::mpsc, task::JoinHandle};
+use tokio::time::sleep;
 use tracing::{debug, error};
 
 use crate::{
     application::user_names_service::UserNamesService,
-    db::{user_names_repository::UserNamesSilo, IUserID, IUsernameID, UsernameID},
+    db::{user_names_repository::UserNamesSilo, IUsernameID},
     steam::model::{SteamRoot, SteamUserResponse},
 };
 
@@ -57,18 +57,18 @@ impl Actor for SteamUserActor {
         // because we're trying to minimise calls to Steams API.
         let handle = tokio::spawn(async move {
             let mut total_processed = 0;
-            let mut user_ids = HashSet::with_capacity(200);
+            let mut user_ids: HashSet<IUsernameID> = HashSet::with_capacity(200);
             loop {
                 // Process the first message to ensure that we sleep the task until there is
                 // work
-                let Some(first) = rx.recv().await else { break };
+                let Some(first): Option<IUsernameID> = rx.recv().await else { break };
 
-                if should_update_user(&user_names_service, &first).await {
+                if should_update_user(&user_names_service, first.clone()).await {
                     user_ids.insert(first);
                 }
 
                 while let Ok(next) = rx.try_recv() {
-                    if should_update_user(&user_names_service, &next).await {
+                    if should_update_user(&user_names_service, next.clone()).await {
                         user_ids.insert(next);
                     }
                     if user_ids.len() == 100 {
@@ -157,7 +157,7 @@ impl Actor for SteamUserActor {
 
 async fn should_update_user(
     user_names_service: &UserNamesService<UserNamesSilo>,
-    id: &IUsernameID,
+    id: IUsernameID,
 ) -> bool {
     user_names_service
         .should_update_user(id)

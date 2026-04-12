@@ -1,16 +1,20 @@
-use surrealdb_core::sql::Expr;
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use salvo::affix_state::insert;
 use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_core::sql::data::Data;
-use surrealdb_core::sql::statements::{InsertStatement, UpsertStatement};
-use surrealdb_types::{RecordId, Value};
+use surrealdb::{engine::local::Db, Surreal};
+use surrealdb_core::sql::{
+    data::Data,
+    statements::{InsertStatement, UpsertStatement},
+    Expr,
+};
+use surrealdb_types::{RecordId, SurrealValue, Table, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        model::{Dependencies},
+        model::{Dependencies, InternalWorkshopItem}, IItemID,
+        ITagID,
     },
     processing::{
         bb_actor::BBMsg,
@@ -23,8 +27,7 @@ use crate::{
         steam_user_actor::SteamUserMsg,
     },
 };
-use crate::db::IItemID;
-use crate::db::model::InternalWorkshopItem;
+use crate::db::IItemDependencyID;
 
 pub struct ItemUpdateActor {}
 
@@ -119,17 +122,10 @@ impl Actor for ItemUpdateActor {
                 let title = item.title.clone();
                 let item_id = item.id.clone();
 
-                match item.author.parse() {
-                    Ok(author_id) => {
-                        let _ = state
-                            .steam_user_actor
-                            .send_message(SteamUserMsg::Fetch(author_id));
-                    }
-
-                    Err(error) => {
-                        error!(?error, author = %item.author, "parsing author ID");
-                    }
-                }
+                // ToDo: Update this, considerations around the ID kind needed
+                // let _ = state
+                //     .steam_user_actor
+                //     .send_message(SteamUserMsg::Fetch(item.author.into()));
 
                 if let Err(error) = insert_data(&state.database, item, children).await {
                     error!(?error, title, ?item_id, "upserting item");
@@ -200,26 +196,25 @@ async fn insert_data(
             .into_iter()
             .map(|child| {
                 let dep_id = IItemID::from(child.publishedfileid);
-                to_value(Dependencies {
+                Dependencies {
                     id: IItemDependencyID::from(vec![
                         item.id.clone().into(),
                         dep_id.clone().into(),
                     ]),
                     this: IItemID::from(item.id.clone()),
                     dependency: dep_id.into(),
-                })
-                .unwrap()
+                }
             })
             .collect::<Vec<_>>();
-        stmt.data = Data::SingleExpression(Value::Array(data.into()));
+        stmt.data = Data::SingleExpression(Expr::from_public_value(Value::Array(data.into())));
         stmt.ignore = true;
         stmt
     };
 
     let upsert_item = {
         let mut stmt = UpsertStatement::default();
-        stmt.data = Some(Data::ReplaceExpression(to_value(item.clone()).unwrap()));
-        stmt.what = vec![Value::Table("workshop_items".into())].into();
+        stmt.data = Some(Data::ReplaceExpression(Expr::from_public_value(item.clone().into_value())));
+        stmt.what = vec![Expr::Table("workshop_items".into())].into();
         stmt
     };
 
@@ -232,7 +227,7 @@ async fn insert_data(
         .bind((
             "tags",
             tags.iter()
-                .map(|tag| ITagID::from(tag.tag_ref.tag.clone()).into())
+                .map(|tag| tag.id.clone().into())
                 .collect::<Vec<_>>(),
         ))
         .query("COMMIT");
