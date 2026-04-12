@@ -25,12 +25,12 @@ define_id!("tags", ITagID, TagID, String);
 define_id!("usernames", IUsernameID, UsernameID, i64);
 define_id!("properties", IPropertyID, PropertyID, String);
 define_id!("votes", IVoteID, VoteID, String);
-define_id!(
-    "item_dependencies",
-    IItemDependencyID,
-    ItemDependencyID,
-    Vec<String>
-);
+// define_id!(
+//     "item_dependencies",
+//     IItemDependencyID,
+//     ItemDependencyID,
+//     Vec<IItemID>
+// );
 // define_id!("companions", ICompanionID, CompanionID, String);
 // define_id!(
 //     "workshop_item_properties",
