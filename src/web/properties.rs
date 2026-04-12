@@ -1,15 +1,15 @@
-use ractor::{call, ActorProcessingErr, RactorErr};
+use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
-    oapi::extract::JsonBody, prelude::{endpoint, StatusCode, StatusError},
-    Depot,
-    Writer,
+    Depot, Writer,
+    oapi::extract::JsonBody,
+    prelude::{StatusCode, StatusError, endpoint},
 };
-use snafu::{prelude::*, ErrorCompat};
+use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
         model::{ExternalSource, Status},
-        properties_actor::{PropertiesMsg, PROPERTIES_ACTOR},
+        properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
     },
     domain::properties::{ExternalNewProperty, ExternalVoteData, PropertiesError},
     web::auth,
@@ -135,7 +135,9 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
-    let source = ExternalSource::User(userid).try_into().map_err(|_|InnerError::InternalError)?;
+    let source = ExternalSource::User(userid)
+        .try_into()
+        .map_err(|_| InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::NewProperty(
         new_property.0.into(),
         source,
@@ -149,7 +151,7 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{engine::local::Mem, Surreal};
+    use surrealdb::{Surreal, engine::local::Mem};
 
     use crate::db::model::{Class, Property};
 

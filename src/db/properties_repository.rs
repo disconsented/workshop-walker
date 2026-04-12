@@ -6,11 +6,10 @@ use tracing::{debug, error};
 use crate::{
     db::{
         IItemID, IUserID, UserID,
-        model::{Property, Status},
+        model::{InternalSource, InternalWorkshopItemProperties, Property, Status},
     },
-    domain::properties::{InternalNewProperty, PropertiesError, PropertiesPort, InternalVoteData},
+    domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
-use crate::db::model::{InternalSource, InternalWorkshopItemProperties};
 
 pub struct PropertiesSilo {
     pub db: Surreal<Db>,
@@ -106,9 +105,7 @@ impl PropertiesPort for PropertiesSilo {
             .map(surrealdb::IndexedResults::check)
         {
             Ok(Ok(_)) => Ok(()),
-            Ok(Err(err)) if err.is_already_exists() => {
-                Err(PropertiesError::Conflict)
-            }
+            Ok(Err(err)) if err.is_already_exists() => Err(PropertiesError::Conflict),
             Ok(Err(other)) => {
                 error!(?other, "unexpected DB error");
                 Err(PropertiesError::Internal)
@@ -120,7 +117,11 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
-    async fn vote(&self, vote_data: InternalVoteData, userid: String) -> Result<(), PropertiesError> {
+    async fn vote(
+        &self,
+        vote_data: InternalVoteData,
+        userid: String,
+    ) -> Result<(), PropertiesError> {
         let user = UserID::from(userid);
         let query = self
             .db

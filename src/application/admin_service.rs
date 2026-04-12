@@ -1,8 +1,10 @@
 use crate::{
+    db::{
+        IUserID,
+        model::{InternalUser, InternalWorkshopItemProperties},
+    },
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
-use crate::db::IUserID;
-use crate::db::model::{InternalUser, InternalWorkshopItemProperties};
 
 pub struct AdminService<R: AdminPort> {
     repo: R,

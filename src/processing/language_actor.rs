@@ -5,7 +5,7 @@ use lingua::{
     Language::{Chinese, English, French, Japanese, Korean, Portuguese, Russian, Spanish},
     LanguageDetector, LanguageDetectorBuilder,
 };
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
+use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::SurrealValue;

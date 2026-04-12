@@ -2,10 +2,9 @@ use chrono::{Duration, Utc};
 use tracing::debug;
 
 use crate::{
-    db::IUsernameID,
+    db::{IUserID, IUsernameID},
     domain::user_names::{UserName, UserNameError, UserNamesPort},
 };
-use crate::db::IUserID;
 
 pub struct UserNamesService<R: UserNamesPort> {
     repo: R,

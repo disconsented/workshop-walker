@@ -1,5 +1,5 @@
 use crate::{
-    db::{model::InternalApp, IAppID},
+    db::{IAppID, model::InternalApp},
     domain::apps::{AppError, AppsPort},
 };
 

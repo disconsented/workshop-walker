@@ -12,12 +12,12 @@ use snafu::{ErrorCompat, Snafu};
 
 use crate::{
     db::{
+        TagID,
         apps_actor::{APPS_ACTOR, AppsMsg},
+        model::ExternalApp,
     },
     domain::apps::AppError,
 };
-use crate::db::model::ExternalApp;
-use crate::db::TagID;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;

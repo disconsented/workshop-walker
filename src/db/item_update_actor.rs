@@ -1,20 +1,20 @@
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use salvo::affix_state::insert;
 use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
+    Expr,
     data::Data,
     statements::{InsertStatement, UpsertStatement},
-    Expr,
 };
 use surrealdb_types::{RecordId, SurrealValue, Table, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        model::{Dependencies, InternalWorkshopItem}, IItemID,
-        ITagID,
+        IItemID, ITagID,
+        model::{Dependencies, InternalWorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,
@@ -196,10 +196,7 @@ async fn insert_data(
             .map(|child| {
                 let dep_id = IItemID::from(child.publishedfileid);
                 Dependencies {
-                    id: vec![
-                        item.id.clone(),
-                        dep_id.clone(),
-                    ],
+                    id: vec![item.id.clone(), dep_id.clone()],
                     this: IItemID::from(item.id.clone()),
                     dependency: dep_id.into(),
                 }
@@ -212,7 +209,9 @@ async fn insert_data(
 
     let upsert_item = {
         let mut stmt = UpsertStatement::default();
-        stmt.data = Some(Data::ReplaceExpression(Expr::from_public_value(item.clone().into_value())));
+        stmt.data = Some(Data::ReplaceExpression(Expr::from_public_value(
+            item.clone().into_value(),
+        )));
         stmt.what = vec![Expr::Table("workshop_items".into())].into();
         stmt
     };
@@ -225,9 +224,7 @@ async fn insert_data(
         .bind(("id", id))
         .bind((
             "tags",
-            tags.into_iter()
-                .map(|tag| tag.id)
-                .collect::<Vec<_>>(),
+            tags.into_iter().map(|tag| tag.id).collect::<Vec<_>>(),
         ))
         .query("COMMIT");
     let sql = format!("{query:#?}");

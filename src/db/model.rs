@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use macros::dual_struct;
 use ractor::Message;
 use salvo::prelude::ToSchema;
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -432,8 +432,8 @@ mod test {
     use surrealdb_types::RecordId;
 
     use crate::db::{
-        model::{Class, Id, InternalSource, Source}, IItemID,
-        IUserID,
+        IItemID, IUserID,
+        model::{Class, Id, InternalSource, Source},
     };
 
     #[test]
@@ -493,7 +493,7 @@ mod test {
     }
     #[tokio::test]
     async fn test_source_surreal() {
-        use surrealdb::{engine::local::Mem, Surreal};
+        use surrealdb::{Surreal, engine::local::Mem};
 
         #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
         struct Foo {

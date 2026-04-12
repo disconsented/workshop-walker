@@ -1,10 +1,10 @@
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
 use crate::{
     db::{
-        model::{InternalUser, InternalWorkshopItemProperties, Property}, ItemID,
-        UserID,
+        ItemID, UserID,
+        model::{InternalUser, InternalWorkshopItemProperties, Property},
     },
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };

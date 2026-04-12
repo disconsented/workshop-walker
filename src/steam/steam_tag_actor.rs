@@ -1,15 +1,15 @@
 use std::time::Duration;
 
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use scraper::{Html, Selector};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{debug, error, info};
 
 use crate::{
     application::{apps_service::AppsService, tags_service::TagsService},
     db::{
-        apps_repository::AppsSilo, model::InternalTag, tags_repository::TagsSilo, IAppID, ITagID,
+        IAppID, ITagID, apps_repository::AppsSilo, model::InternalTag, tags_repository::TagsSilo,
     },
 };
 
@@ -79,7 +79,9 @@ impl Actor for SteamTagActor {
                             if let Ok(html) = resp.text().await {
                                 let tags = extract_tags(app.id.clone(), &html);
                                 debug!(app_id = ?app.id, tag_count = tags.len(), "Extracted tags");
-                                if let Err(error) = state.tags.update_tags(app.id.clone(), tags).await {
+                                if let Err(error) =
+                                    state.tags.update_tags(app.id.clone(), tags).await
+                                {
                                     error!(?error, app_id = ?app.id, "Failed to update tags");
                                 }
                             }

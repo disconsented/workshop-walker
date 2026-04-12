@@ -6,14 +6,12 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::properties_service::PropertiesService,
     db::{
-        model::{Status},
+        model::{InternalSource, Status},
         properties_repository::PropertiesSilo,
     },
-    domain::properties::{ PropertiesError, },
+    domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError},
+    steam::model::VoteData,
 };
-use crate::db::model::InternalSource;
-use crate::domain::properties::{InternalNewProperty, InternalVoteData};
-use crate::steam::model::VoteData;
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
 
@@ -39,8 +37,16 @@ pub enum PropertiesMsg {
         Status,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),
-    Vote(InternalVoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
-    Remove(InternalVoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
+    Vote(
+        InternalVoteData,
+        String,
+        RpcReplyPort<Result<(), PropertiesError>>,
+    ),
+    Remove(
+        InternalVoteData,
+        String,
+        RpcReplyPort<Result<(), PropertiesError>>,
+    ),
 }
 
 #[async_trait]

@@ -1,19 +1,26 @@
-use salvo::oapi::__private::serde_json;
-use serde::{Serialize, Deserialize};
-use salvo::prelude::ToSchema;
-use surrealdb_types::SurrealValue;
 use proc_macros::dual_struct;
+use salvo::{oapi::__private::serde_json, prelude::ToSchema};
+use serde::{Deserialize, Serialize};
+use surrealdb_types::SurrealValue;
 
 // Mock types to simulate the User's environment
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue, ToSchema)]
 #[surreal(transparent)]
 pub struct ItemID(i64);
-impl From<i64> for ItemID { fn from(v: i64) -> Self { Self(v) } }
+impl From<i64> for ItemID {
+    fn from(v: i64) -> Self {
+        Self(v)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue, ToSchema)]
 #[surreal(transparent)]
 pub struct AppID(i64);
-impl From<i64> for AppID { fn from(v: i64) -> Self { Self(v) } }
+impl From<i64> for AppID {
+    fn from(v: i64) -> Self {
+        Self(v)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue)]
 pub struct IItemID(surrealdb_types::RecordId);
@@ -55,7 +62,7 @@ fn to_internal_ids(external: Vec<ItemID>) -> Vec<IItemID> {
 struct ExampleItem {
     /// The item's ID
     #[dual_type(IItemID)]
-    pub id: ItemID,   
+    pub id: ItemID,
     #[dual_type(IAppID)]
     pub appid: AppID, // Inferred external as AppID, internal as IAppID
 
@@ -110,9 +117,10 @@ fn test_serde_rename() {
 
     let json = serde_json::to_string(&external).unwrap();
     // Should be renamed to "ExampleItem" in JSON if used in a map or similar,
-    // but #[serde(rename = "ExampleItem")] on a struct itself usually affects how it's named
-    // when it's a field in another struct or when using certain formats.
-    // Actually, for a top-level struct, it doesn't change the JSON unless it's in a container.
+    // but #[serde(rename = "ExampleItem")] on a struct itself usually affects how
+    // it's named when it's a field in another struct or when using certain
+    // formats. Actually, for a top-level struct, it doesn't change the JSON
+    // unless it's in a container.
 
     #[derive(Serialize)]
     struct Container {
@@ -121,5 +129,4 @@ fn test_serde_rename() {
     let container = Container { item: external };
     let json = serde_json::to_string(&container).unwrap();
     // This doesn't actually test the rename because "item" is the field name.
-
 }
