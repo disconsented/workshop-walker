@@ -16,6 +16,7 @@ use crate::{
     },
     domain::apps::AppError,
 };
+use crate::db::model::ExternalApp;
 use crate::db::TagID;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -84,7 +85,7 @@ impl From<AppError> for InnerError {
 }
 
 #[endpoint]
-pub async fn list_available() -> Result<Json<Vec<App<TagID>>>> {
+pub async fn list_available() -> Result<Json<Vec<ExternalApp>>> {
     todo!();
     // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     // let apps = call!(actor, AppsMsg::ListAvailable)
@@ -95,7 +96,7 @@ pub async fn list_available() -> Result<Json<Vec<App<TagID>>>> {
 }
 
 #[endpoint]
-pub async fn upsert(app: JsonBody<App<TagID>>) -> Result<()> {
+pub async fn upsert(app: JsonBody<ExternalApp>) -> Result<()> {
     todo!();
     // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     // call!(actor, |reply| AppsMsg::Upsert(app.0, reply))
@@ -114,7 +115,7 @@ pub async fn remove(id: QueryParam<u32, true>) -> Result<()> {
 }
 
 #[endpoint]
-pub async fn list() -> Result<Json<Vec<App<TagID>>>> {
+pub async fn list() -> Result<Json<Vec<ExternalApp>>> {
     todo!();
     // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     // let apps = call!(actor, AppsMsg::List)
@@ -124,7 +125,7 @@ pub async fn list() -> Result<Json<Vec<App<TagID>>>> {
 }
 
 #[endpoint]
-pub async fn get(id: PathParam<u32>) -> Result<Json<App<TagID>>> {
+pub async fn get(id: PathParam<u32>) -> Result<Json<ExternalApp>> {
     todo!();
     // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
     // let app = call!(actor, |reply| AppsMsg::Get(*id, reply))

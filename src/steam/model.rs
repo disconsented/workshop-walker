@@ -208,7 +208,7 @@ pub struct IPublishedStruct {
     pub previews: Vec<Preview>,
     pub preview_file_size: Option<String>,
     pub preview_url: Option<String>,
-    pub publishedfileid: String,
+    pub publishedfileid: i64,
     pub result: i64,
     pub revision: Option<i64>,
     pub revision_change_number: Option<String>,

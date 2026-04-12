@@ -13,6 +13,7 @@ use crate::{
         tags_repository::TagsSilo,
     },
 };
+use crate::db::IAppID;
 use crate::steam::model::Tag;
 
 pub struct SteamTagActor;
@@ -71,13 +72,13 @@ impl Actor for SteamTagActor {
                 };
 
                 for app in apps {
-                    info!(app_id = app.id, app_name = %app.name, "Scraping tags for app");
-                    let url = format!("https://steamcommunity.com/app/{}/workshop/", app.id);
+                    info!(app_id = ?app.id, app_name = %app.name, "Scraping tags for app");
+                    let url = format!("https://steamcommunity.com/app/{}/workshop/", app.clone().id.try_into_external()?.into());
                     match state.client.get(&url).send().await {
                         Ok(resp) => {
                             if let Ok(html) = resp.text().await {
                                 let tags = extract_tags(app.id, &html);
-                                debug!(app_id = app.id, tag_count = tags.len(), "Extracted tags");
+                                debug!(app_id = ?app.id, tag_count = tags.len(), "Extracted tags");
                                 if let Err(error) = state.tags.update_tags(app.id, tags).await {
                                     error!(?error, app_id = app.id, "Failed to update tags");
                                 }

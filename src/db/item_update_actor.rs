@@ -10,7 +10,6 @@ use tracing::{debug, error};
 
 use crate::{
     db::{
-        IItemDependencyID, IItemID, ITagID, ItemDependencyID, ItemID, TagID,
         model::{Dependencies},
     },
     processing::{
@@ -24,6 +23,7 @@ use crate::{
         steam_user_actor::SteamUserMsg,
     },
 };
+use crate::db::IItemID;
 use crate::db::model::InternalWorkshopItem;
 
 pub struct ItemUpdateActor {}

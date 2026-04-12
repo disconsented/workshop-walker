@@ -14,7 +14,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::SurrealValue;
 
 use crate::{
-    db::{AppID, IAppID, IItemDependencyID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
+    db::{AppID, IAppID, IItemID, IUserID, ItemID, UserID},
     processing::language_actor::DetectedLanguage,
 };
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
@@ -91,12 +91,13 @@ pub struct WorkshopItem {
     #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props)]
     pub properties: Vec<ExternalWorkshopItemProperties>,
 }
-// An externally represented workshop item with full details
-// Read only, no need for DB interfacing
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+// Read only, dual still needed for ID conversion
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct FullWorkshopItem {
     // Core identifiers
-    pub id: ItemID,    // The item's ID
+    #[dual_type(IItemID)]
+    pub id: ItemID, // The item's ID
+    #[dual_type(IAppID)]
     pub app_id: AppID, // The steam ID of the app this belongs to
 
     // Content information
@@ -107,24 +108,42 @@ pub struct FullWorkshopItem {
 
     // Metadata and categorisation
     #[serde(default)]
+    #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
     pub tags: Vec<ExternalTag>, // The list of tags found
+    #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props)]
     #[serde(default)]
     pub properties: Vec<ExternalWorkshopItemProperties>, // Approved or owned properties
     pub score: f32, // The "quality" score assigned by steam
 
     // Author and timing
+    #[dual_type(Option<IUserID>)]
     pub author: Option<UserID>, // Authors steam ID
-    pub last_updated: u64,      // Timestamp in milliseconds
+    pub last_updated: u64, // Timestamp in milliseconds
 
     // Localization
     #[serde(default)]
     pub languages: Vec<DetectedLanguage>, // All languages found in the items description
 
     // Dependencies
+    #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item)]
     #[serde(default)]
-    pub dependencies: Vec<FullWorkshopItem>, // A list of dependencies found
+    pub dependencies: Vec<ExternalFullWorkshopItem>, // A list of dependencies found
+    #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item)]
     #[serde(default)]
-    pub dependants: Vec<FullWorkshopItem>, // A list of dependants found
+    pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
+}
+
+fn to_external_full_item(
+    internal: Vec<InternalFullWorkshopItem>,
+) -> Result<Vec<ExternalFullWorkshopItem>, surrealdb_types::Error> {
+    Ok(internal
+        .into_iter()
+        .map(TryFrom::try_from)
+        .collect::<Result<_, _>>()?)
+}
+
+fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<InternalFullWorkshopItem> {
+    external.into_iter().map(Into::into).collect()
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

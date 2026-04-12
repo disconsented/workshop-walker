@@ -53,8 +53,8 @@ async fn main() -> Result<()> {
 
     // Signin as db user (root)
     db.signin(Root {
-        username: &settings.database.user,
-        password: &settings.database.password,
+        username: settings.database.user.clone(),
+        password: settings.database.password.clone(),
     })
     .await
     .whatever_context("signing in to db")?;

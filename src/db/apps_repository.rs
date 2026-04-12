@@ -7,7 +7,6 @@ use crate::{
     },
     domain::apps::{AppError, AppsPort},
 };
-use crate::db::ITagID;
 use crate::db::model::InternalApp;
 
 pub struct AppsSilo {

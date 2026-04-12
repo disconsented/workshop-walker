@@ -1,17 +1,17 @@
-use ractor::{ActorProcessingErr, RactorErr, call};
+use ractor::{call, ActorProcessingErr, RactorErr};
 use salvo::{
-    Depot, Writer,
-    oapi::extract::JsonBody,
-    prelude::{StatusCode, StatusError, endpoint},
+    oapi::extract::JsonBody, prelude::{endpoint, StatusCode, StatusError},
+    Depot,
+    Writer,
 };
-use snafu::{ErrorCompat, prelude::*};
+use snafu::{prelude::*, ErrorCompat};
 
 use crate::{
     db::{
-        model::{Source, Status},
-        properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
+        model::{ExternalSource, Status},
+        properties_actor::{PropertiesMsg, PROPERTIES_ACTOR},
     },
-    domain::properties::{NewProperty, PropertiesError, VoteData},
+    domain::properties::{ExternalNewProperty, ExternalVoteData, PropertiesError},
     web::auth,
 };
 
@@ -84,7 +84,7 @@ impl From<PropertiesError> for InnerError {
 /// Add or change a vote for a property.
 /// Property must exist; score must be either 1 or -1.
 #[endpoint]
-pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()> {
+pub async fn vote(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> Result<()> {
     let Some(userid) = auth::get_user_from_depot(depot) else {
         return Err(InnerError::Unauthorized.into());
     };
@@ -93,8 +93,8 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()
         .cloned()
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::Vote(
-        vote_data.0,
-        userid,
+        vote_data.0.into(),
+        userid.into(),
         reply
     ))
     .map_err(InnerError::from)?
@@ -104,7 +104,7 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()
 
 /// Remove a vote previously cast for a property by the current user.
 #[endpoint]
-pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()> {
+pub async fn remove(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> Result<()> {
     let Some(userid) = auth::get_user_from_depot(depot) else {
         return Err(InnerError::Unauthorized.into());
     };
@@ -113,8 +113,8 @@ pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<
         .cloned()
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::Remove(
-        vote_data.0,
-        userid,
+        vote_data.0.into(),
+        userid.into(),
         reply
     ))
     .map_err(InnerError::from)?
@@ -127,7 +127,7 @@ pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<
 /// - Likeness checks are done on the value only using Damerau–Levenshtein
 ///   distance.
 #[endpoint]
-pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Result<()> {
+pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot) -> Result<()> {
     let Some(userid) = auth::get_user_from_depot(depot) else {
         return Err(InnerError::Unauthorized.into());
     };
@@ -136,8 +136,8 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Resu
         .cloned()
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::NewProperty(
-        new_property.0,
-        Source::User(userid),
+        new_property.0.into(),
+        ExternalSource::User(userid).try_into().map_err(|_|InnerError::InternalError)?,
         Status::Pending,
         reply,
     ))
@@ -148,7 +148,7 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Resu
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{Surreal, engine::local::Mem};
+    use surrealdb::{engine::local::Mem, Surreal};
 
     use crate::db::model::{Class, Property};
 

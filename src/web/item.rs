@@ -1,19 +1,21 @@
 use std::sync::OnceLock;
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
+use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
 use salvo::{
-    Depot, Writer,
-    oapi::{endpoint, extract::PathParam},
-    prelude::{Json, StatusCode, StatusError},
+    oapi::{endpoint, extract::PathParam}, prelude::{Json, StatusCode, StatusError},
+    Depot,
+    Writer,
 };
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use tracing::{debug, error, instrument};
 
 use crate::{
-    db::{IItemID, ItemID, model::FullWorkshopItem},
+    db::{
+        model::{ExternalFullWorkshopItem, InternalFullWorkshopItem}, IItemID, IUserID,
+        ItemID,
+    },
     web::auth,
 };
-use crate::db::IUserID;
 
 static ITEM_ACTOR: OnceLock<ActorRef<ItemMsg>> = OnceLock::new();
 
@@ -62,7 +64,7 @@ pub enum ItemMsg {
     Get(
         IItemID,
         Option<IUserID>,
-        RpcReplyPort<Result<FullWorkshopItem>>,
+        RpcReplyPort<Result<InternalFullWorkshopItem>>,
     ),
 }
 
@@ -101,11 +103,19 @@ impl Actor for ItemActor {
     }
 }
 
-async fn get_item(db: &Surreal<Db>, id: IItemID, user: Option<IUserID>) -> Result<FullWorkshopItem> {
-
+async fn get_item(
+    db: &Surreal<Db>,
+    id: IItemID,
+    user: Option<IUserID>,
+) -> Result<InternalFullWorkshopItem> {
     let properties = match user {
-        Some(user) => format!(
-            "filter(|$prop: any| $prop.status == 1 OR $prop.source == {user})[*].{{
+        Some(user) => {
+            let user: String = user
+                .try_into_external()
+                .map_err(|_| InnerError::InternalError)?
+                .into();
+            format!(
+                "filter(|$prop: any| $prop.status == 1 OR $prop.source == {user})[*].{{
                         id: id.id(),
                         in: in.to_string(),
                         out: out.id.{{
@@ -122,8 +132,9 @@ async fn get_item(db: &Surreal<Db>, id: IItemID, user: Option<IUserID>) -> Resul
                             user: {{ 0 }}
                         }}.score
                     }}",
-            user = String::from(user)
-        ),
+                user = String::from(user)
+            )
+        }
         None => "filter(|$prop: any| $prop.status == 1)[*].{
                         id: id.id(),
                         in: in.to_string(),
@@ -207,14 +218,19 @@ async fn get_item(db: &Surreal<Db>, id: IItemID, user: Option<IUserID>) -> Resul
 /// Retrieves a full workshop item by id, including dependencies and dependants.
 #[endpoint]
 #[instrument(skip_all)]
-pub async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWorkshopItem>> {
+pub async fn get(
+    id: PathParam<i64>,
+    depot: &mut Depot,
+) -> Result<Json<ExternalFullWorkshopItem>> {
     // Lazily spawn the actor on first use and keep a global reference like auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
-    let user = auth::get_user_from_depot(depot);
-    let data = call!(actor, |reply| { ItemMsg::Get(IItemID::from(id.0), user, reply) })
-        .map_err(|_| InnerError::InternalError)??;
-    Ok(Json(data))
+    let user = auth::get_user_from_depot(depot).map(Into::into);
+    let data = call!(actor, |reply| {
+        ItemMsg::Get(id.0.into(), user, reply)
+    })
+    .map_err(|_| InnerError::InternalError)??;
+    Ok(Json(data.try_into().map_err(|_| InnerError::InternalError)?))
 }
 
 /// GET /api/item/{id}/app
@@ -222,14 +238,16 @@ pub async fn get(id: PathParam<String>, depot: &mut Depot) -> Result<Json<FullWo
 #[endpoint]
 #[instrument(skip_all)]
 pub async fn app_from_item(
-    id: PathParam<String>,
+    id: PathParam<i64>,
     depot: &mut Depot,
-) -> Result<Json<FullWorkshopItem>> {
+) -> Result<Json<ExternalFullWorkshopItem>> {
     // Lazily spawn the actor on first use and keep a global reference like auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
-    let user = auth::get_user_from_depot(depot);
-    let data = call!(actor, |reply| { ItemMsg::Get(IItemID::from(id.0), user, reply) })
-        .map_err(|_| InnerError::InternalError)??;
-    Ok(Json(data))
+    let user = auth::get_user_from_depot(depot).map(Into::into);
+    let data = call!(actor, |reply| {
+        ItemMsg::Get(id.0.into(), user, reply)
+    })
+    .map_err(|_| InnerError::InternalError)??;
+    Ok(Json(data.try_into().map_err(|_| InnerError::InternalError)?))
 }
