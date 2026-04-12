@@ -5,14 +5,10 @@ use surrealdb::{Surreal, engine::local::Db};
 
 use crate::{
     application::apps_service::AppsService,
-    db::{
-        apps_repository::AppsSilo,
-    },
+    db::{IAppID, ITagID, apps_repository::AppsSilo, model::InternalApp},
     domain::apps::AppError,
     steam::steam_download_actor::SteamDownloadMsg,
 };
-use crate::db::{IAppID, ITagID};
-use crate::db::model::InternalApp;
 
 pub static APPS_ACTOR: OnceLock<ActorRef<AppsMsg>> = OnceLock::new();
 

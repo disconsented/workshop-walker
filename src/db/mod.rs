@@ -10,9 +10,10 @@ pub mod tags_repository;
 pub mod user_names_repository;
 
 use macros::define_id;
-use surrealdb::{engine::local::Mem, Surreal};
+use surrealdb::{Surreal, engine::local::Mem};
 // use salvo::prelude::ToSchema;
 use surrealdb_types::SurrealValue;
+
 use crate::db::model::InternalTag;
 
 define_id!("users", IUserID, UserID, String);
@@ -41,7 +42,7 @@ define_id!("votes", IVoteID, VoteID, String);
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{engine::local::Mem, Surreal};
+    use surrealdb::{Surreal, engine::local::Mem};
 
     use crate::db::*;
 

@@ -1,20 +1,18 @@
-use ractor::{call, ActorProcessingErr, RactorErr};
+use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
-    oapi::extract::JsonBody,
-    prelude::{endpoint, Json, StatusCode, StatusError},
     Writer,
+    oapi::extract::JsonBody,
+    prelude::{EndpointOutRegister, Json, StatusCode, StatusError, endpoint},
 };
-use salvo::prelude::EndpointOutRegister;
-use snafu::{prelude::*, ErrorCompat};
+use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
-        admin_actor::{AdminMsg, ADMIN_ACTOR},
-        model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser},
+        admin_actor::{ADMIN_ACTOR, AdminMsg},
+        model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser, Status},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };
-use crate::db::model::Status;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -89,7 +87,7 @@ pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, StatusError> {
         .into_iter()
         .map(TryInto::try_into)
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|_|InnerError::InternalError)?;
+        .map_err(|_| InnerError::InternalError)?;
     Ok(Json(users))
 }
 

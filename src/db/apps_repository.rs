@@ -1,13 +1,10 @@
-use surrealdb::{Surreal, engine::local::Db, IndexedResults};
+use surrealdb::{IndexedResults, Surreal, engine::local::Db};
 use tracing::{debug, error};
 
 use crate::{
-    db::{
-        AppID, IAppID,
-    },
+    db::{AppID, IAppID, model::InternalApp},
     domain::apps::{AppError, AppsPort},
 };
-use crate::db::model::InternalApp;
 
 pub struct AppsSilo {
     pub db: Surreal<Db>,
@@ -59,12 +56,7 @@ impl AppsPort for AppsSilo {
     }
 
     async fn remove(&self, id: IAppID) -> Result<(), AppError> {
-        if let Err(error) = self
-            .db
-            .query("DELETE $id")
-            .bind(("id", id))
-            .await
-        {
+        if let Err(error) = self.db.query("DELETE $id").bind(("id", id)).await {
             error!(?error, "failed to remove app");
             return Err(AppError::Internal);
         }

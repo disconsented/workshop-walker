@@ -1,4 +1,5 @@
 use std::ops::Deref;
+
 pub use proc_macros::dual_struct;
 
 /// A helper macro to define a newtype for a SurrealDB record ID.
@@ -30,7 +31,7 @@ macro_rules! define_id {
         )]
         #[serde(transparent)]
         pub struct $external($external_type);
-        impl From<$external> for  $external_type{
+        impl From<$external> for $external_type {
             fn from(id: $external) -> $external_type {
                 id.0
             }
@@ -58,6 +59,7 @@ macro_rules! define_id {
         pub struct $internal(surrealdb_types::RecordId);
         impl $internal {
             const TABLE_NAME: &'static str = $table;
+
             // An alias of TryInto<$external> for $internal to make it easier to use
             pub fn try_into_external(self) -> Result<$external, surrealdb_types::Error> {
                 self.try_into()
@@ -84,7 +86,7 @@ macro_rules! define_id {
 
         impl From<$internal> for surrealdb_types::RecordId {
             fn from(id: $internal) -> surrealdb_types::RecordId {
-              id.0
+                id.0
             }
         }
 
@@ -92,9 +94,7 @@ macro_rules! define_id {
             type Error = surrealdb_types::Error;
 
             fn try_from(id: $internal) -> Result<$external, Self::Error> {
-                Ok($external(
-                     id.0.key.into_value().into_t()?,
-                ))
+                Ok($external(id.0.key.into_value().into_t()?))
             }
         }
 

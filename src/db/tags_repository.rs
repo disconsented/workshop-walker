@@ -2,10 +2,9 @@ use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
 use crate::{
-    db::{AppID, IAppID, ITagID, TagID},
+    db::{AppID, IAppID, ITagID, TagID, model::InternalTag},
     domain::tags::{TagError, TagsPort},
 };
-use crate::db::model::InternalTag;
 
 pub struct TagsSilo {
     db: Surreal<Db>,

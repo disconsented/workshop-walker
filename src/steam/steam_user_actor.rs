@@ -1,16 +1,15 @@
+use std::{collections::HashSet, sync::Arc, time::Duration};
+
 use itertools::Itertools;
-use std::{collections::HashSet, sync::Arc};
-use std::time::Duration;
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::{Client, Response, StatusCode};
-use surrealdb::{engine::local::Db, Surreal};
-use tokio::{sync::mpsc, task::JoinHandle};
-use tokio::time::sleep;
+use surrealdb::{Surreal, engine::local::Db};
+use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
 use tracing::{debug, error};
 
 use crate::{
     application::user_names_service::UserNamesService,
-    db::{user_names_repository::UserNamesSilo, IUsernameID},
+    db::{IUsernameID, user_names_repository::UserNamesSilo},
     steam::model::{SteamRoot, SteamUserResponse},
 };
 
@@ -61,7 +60,9 @@ impl Actor for SteamUserActor {
             loop {
                 // Process the first message to ensure that we sleep the task until there is
                 // work
-                let Some(first): Option<IUsernameID> = rx.recv().await else { break };
+                let Some(first): Option<IUsernameID> = rx.recv().await else {
+                    break;
+                };
 
                 if should_update_user(&user_names_service, first.clone()).await {
                     user_ids.insert(first);

@@ -2,23 +2,21 @@ use std::str::FromStr;
 
 use itertools::Itertools;
 use salvo::{
-    oapi::{endpoint, extract::QueryParam}, prelude::Json,
-    Request,
-    Writer,
+    Request, Writer,
+    oapi::{endpoint, extract::QueryParam},
+    prelude::Json,
 };
 use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
-use surrealdb_core::{
-    sql::{statements::SelectStatement, Cond, Field, Limit, Start},
-};
+use surrealdb::{Surreal, engine::local::Db};
+use surrealdb_core::sql::{Cond, Field, Limit, Start, statements::SelectStatement};
 use surrealdb_types::{RecordId, Value};
-use tracing::{info, info_span, instrument, Instrument};
+use tracing::{Instrument, info, info_span, instrument};
 
 use crate::{
     db::{
-        model::{ExternalWorkshopItem, OrderBy}, ITagID,
-        TagID,
+        ITagID, TagID,
+        model::{ExternalWorkshopItem, OrderBy},
     },
     processing::language_actor::DetectedLanguage,
     web,
@@ -60,9 +58,9 @@ pub async fn list(
         //
         //     {
         //         stmt.expr.0.push(Field::Single {
-        //             expr: idiom("tags.{id: id.to_string(), app_id, display_name}")
-        //                 .expect("expanding tags idiom")
-        //                 .into(),
+        //             expr: idiom("tags.{id: id.to_string(), app_id,
+        // display_name}")                 .expect("expanding tags
+        // idiom")                 .into(),
         //             alias: Some("tags".into()),
         //         });
         //     }
@@ -70,7 +68,8 @@ pub async fn list(
         //         stmt.expr.0.push(Field::Single {
         //             // Select _approved_ props only
         //             expr: idiom(
-        //                 r"->workshop_item_properties.filter(|$prop|$prop.status == 1)[*].{
+        //                 
+        // r"->workshop_item_properties.filter(|$prop|$prop.status == 1)[*].{
         //                                 id: id.to_string(),
         //                                 in: in.to_string(),
         //                                 out: out.id.{
@@ -98,8 +97,8 @@ pub async fn list(
         //     }
         // }
         //
-        // stmt.limit = Some({ Limit(to_value(limit).whatever_context("limit")?) });
-        // stmt.start = Some({
+        // stmt.limit = Some({ Limit(to_value(limit).whatever_context("limit")?)
+        // }); stmt.start = Some({
         //     let mut s = Start::default();
         //     s.0 = to_value(limit * page).whatever_context("start limit")?;
         //     s
@@ -110,10 +109,10 @@ pub async fn list(
         //     let conditions = vec![
         //         languages.map(|lang| {
         //             Expression::new(
-        //                 Value::Array(vec![(lang as u8).into(), Value::Number(0.into())].into()),
-        //                 Operator::ContainAny,
-        //                 Value::Idiom("languages".into()),
-        //             )
+        //                 Value::Array(vec![(lang as u8).into(),
+        // Value::Number(0.into())].into()),                 
+        // Operator::ContainAny,                 
+        // Value::Idiom("languages".into()),             )
         //         }),
         //         last_updated.map(|updated| {
         //             Expression::new(
@@ -134,9 +133,9 @@ pub async fn list(
         //                                 to_value(
         //                                     RecordId::from_str(tag)
         //                                         .map(ITagID::from)
-        //                                         .unwrap_or(ITagID::from(tag.to_string())),
-        //                                 )
-        //                                 .unwrap()
+        //                                         
+        // .unwrap_or(ITagID::from(tag.to_string())),                   
+        // )                                 .unwrap()
         //                             })
         //                             .collect::<Vec<_>>()
         //                             .into(),
@@ -152,9 +151,9 @@ pub async fn list(
         //                                 .map(|tag| format!(
         //                                     "$var.id == {}",
         //                                     RecordId::from_str(&tag)
-        //                                         .unwrap_or(RecordId::new("tags", tag))
-        //                                 ))
-        //                                 .join(" OR ")
+        //                                         
+        // .unwrap_or(RecordId::new("tags", tag))                       
+        // ))                                 .join(" OR ")
         //                         ))
         //                         .unwrap(),
         //                     ),
@@ -189,31 +188,31 @@ pub async fn list(
         //             let c2 = condition.next();
         //             match (values, c1, c2) {
         //                 (Value::None, Some(expr1), Some(expr2)) => {
-        //                     values = Value::Expression(Box::from(Expression::new(
-        //                         expr1.into(),
-        //                         Operator::And,
+        //                     values =
+        // Value::Expression(Box::from(Expression::new(                 
+        // expr1.into(),                         Operator::And,
         //                         expr2.into(),
         //                     )));
         //                 }
         //                 (Value::None, Some(expr1), None) => {
         //                     values = Value::Expression(Box::from(expr1));
         //                 }
-        //                 (Value::Expression(old), Some(expr1), Some(expr2)) => {
-        //                     values = Value::Expression(Box::from(Expression::new(
-        //                         Value::Expression(old),
-        //                         Operator::And,
-        //                         Value::Expression(Box::from(Expression::new(
-        //                             expr1.into(),
-        //                             Operator::And,
+        //                 (Value::Expression(old), Some(expr1), Some(expr2)) =>
+        // {                     values =
+        // Value::Expression(Box::from(Expression::new(                 
+        // Value::Expression(old),                         
+        // Operator::And,                         
+        // Value::Expression(Box::from(Expression::new(                 
+        // expr1.into(),                             Operator::And,
         //                             expr2.into(),
         //                         ))),
         //                     )));
         //                 }
         //                 (Value::Expression(old), Some(expr1), None) => {
-        //                     values = Value::Expression(Box::from(Expression::new(
-        //                         Value::Expression(old),
-        //                         Operator::And,
-        //                         expr1.into(),
+        //                     values =
+        // Value::Expression(Box::from(Expression::new(                 
+        // Value::Expression(old),                         
+        // Operator::And,                         expr1.into(),
         //                     )));
         //                 }
         //                 (other, ..) => {
@@ -227,15 +226,16 @@ pub async fn list(
         //     }
         // };
         //
-        // // A horrendous hack for ordering, because, the types are not exposed.
-        // stmt.order = order_by.map(|order_term| {
+        // // A horrendous hack for ordering, because, the types are not
+        // exposed. stmt.order = order_by.map(|order_term| {
         //     use serde_json::{Map, Value};
         //     use str_macro::str;
         //     let terms = Map::from_iter([
         //         (
         //             str!("value"),
-        //             serde_json::to_value(idiom(order_term.column_name()).unwrap()).unwrap(),
-        //         ),
+        //             
+        // serde_json::to_value(idiom(order_term.column_name()).unwrap()).
+        // unwrap(),         ),
         //         (str!("collate"), Value::Bool(false)),
         //         (str!("numeric"), Value::Bool(false)),
         //         (str!("direction"), Value::Bool(false)),
@@ -259,8 +259,8 @@ pub async fn list(
         //         appid: res.appid,
         //         author: res.author,
         //         description: res.description,
-        //         id: res.id.key().to_string().replace("⟩", "").replace("⟨", ""),
-        //         languages: res.languages,
+        //         id: res.id.key().to_string().replace("⟩", "").replace("⟨",
+        // ""),         languages: res.languages,
         //         title: res.title,
         //         preview_url: res.preview_url,
         //         last_updated: res.last_updated,

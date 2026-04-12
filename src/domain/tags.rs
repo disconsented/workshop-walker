@@ -1,6 +1,6 @@
 use snafu::prelude::*;
-use crate::db::IAppID;
-use crate::db::model::{InternalTag};
+
+use crate::db::{IAppID, model::InternalTag};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]

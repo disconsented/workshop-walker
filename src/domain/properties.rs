@@ -1,11 +1,16 @@
+use macros::dual_struct;
 use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
-use macros::dual_struct;
-use crate::db::{IItemID, ItemID};
-use crate::db::model::{Class, InternalSource, Status};
-use crate::steam::model::VoteData;
+
+use crate::{
+    db::{
+        IItemID, ItemID,
+        model::{Class, InternalSource, Status},
+    },
+    steam::model::VoteData,
+};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -50,5 +55,9 @@ pub trait PropertiesPort: Send + Sync + 'static {
         status: Status,
     ) -> Result<(), PropertiesError>;
     async fn vote(&self, vote: InternalVoteData, userid: String) -> Result<(), PropertiesError>;
-    async fn remove_vote(&self, vote: InternalVoteData, userid: String) -> Result<(), PropertiesError>;
+    async fn remove_vote(
+        &self,
+        vote: InternalVoteData,
+        userid: String,
+    ) -> Result<(), PropertiesError>;
 }

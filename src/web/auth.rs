@@ -27,22 +27,25 @@ use serde_json::to_value;
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_core::sql::{AssignOperator, Idiom, Part};
-use surrealdb_core::sql::AssignOperator::Assign;
-use surrealdb_core::sql::data::{Assignment, Data};
-use surrealdb_core::sql::expression::Expr;
-use surrealdb_core::sql::statements::InsertStatement;
-use surrealdb_core::syn::token::Operator;
+use surrealdb_core::{
+    sql::{
+        AssignOperator,
+        AssignOperator::Assign,
+        Idiom, Part,
+        data::{Assignment, Data},
+        expression::Expr,
+        statements::InsertStatement,
+    },
+    syn::token::Operator,
+};
 use surrealdb_types::{RecordId, SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     app_config::BiscuitConfig,
-    db::{UserID},
+    db::{IUserID, UserID, model::InternalUser},
     steam::steam_user_actor::SteamUserMsg,
 };
-use crate::db::IUserID;
-use crate::db::model::InternalUser;
 
 static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
 
@@ -198,8 +201,10 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         None => Err(InnerError::Unauthorized)?,
         Some(userid) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
-            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid.into(), reply) })
-                .map_err(|_| InnerError::InternalError)??;
+            let admin = call!(actor, |reply| {
+                AuthMessage::IsAdmin(userid.into(), reply)
+            })
+            .map_err(|_| InnerError::InternalError)??;
 
             if admin {
                 Ok(())
@@ -518,10 +523,8 @@ impl AuthActor {
             };
             let mut stmt = InsertStatement::default();
             stmt.into = Some(Expr::Table("users".into()));
-            stmt.data = Data::SingleExpression(
-                Expr::from_public_value(user.clone().into_value())
-            );
-            stmt.update = Some(Data::UpdateExpression(vec![Assignment{
+            stmt.data = Data::SingleExpression(Expr::from_public_value(user.clone().into_value()));
+            stmt.update = Some(Data::UpdateExpression(vec![Assignment {
                 place: Idiom(vec![Part::Field("last_logged_in".into())]),
                 operator: AssignOperator::Assign,
                 value: Expr::from_public_value(Value::Datetime(Utc::now().into())),

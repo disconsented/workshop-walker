@@ -5,15 +5,15 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info, info_span, Instrument};
+use tracing::{Instrument, debug, error, info, info_span};
 
 use crate::{
-    db::{item_update_actor::ItemUpdateMsg, IAppID},
+    db::{IAppID, item_update_actor::ItemUpdateMsg},
     steam::model::{EPublishedFileQueryType, GetPage, IPublishedResponse, SteamRoot},
 };
 

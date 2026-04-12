@@ -8,12 +8,11 @@ use tracing::{debug, error, info};
 use crate::{
     db::{
         IItemID, ItemID,
-        model::{Class, Status},
+        model::{Class, InternalSource, Status},
         properties_actor::PropertiesMsg,
     },
     domain::properties::InternalNewProperty,
 };
-use crate::db::model::InternalSource;
 
 pub struct MLQueueActor;
 
@@ -84,7 +83,10 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
         .take((0, "description"))
         .whatever_context("Taking description from response")?;
     let (Some(title), Some(description)) = (title, description) else {
-        debug!(?workshop_item, "No item found or missing fields for ML extraction");
+        debug!(
+            ?workshop_item,
+            "No item found or missing fields for ML extraction"
+        );
         return Ok(());
     };
 

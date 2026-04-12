@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse::Parser, parse_macro_input, DeriveInput, Type, Expr};
+use syn::{DeriveInput, Expr, Type, parse::Parser, parse_macro_input};
 
 struct DualTypeAttr {
     internal_ty: Type,
@@ -36,7 +36,10 @@ impl syn::parse::Parse for DualTypeAttr {
             } else if ident == "to_internal" {
                 to_internal = Some(expr);
             } else {
-                return Err(syn::Error::new(ident.span(), "expected `to_external` or `to_internal`"));
+                return Err(syn::Error::new(
+                    ident.span(),
+                    "expected `to_external` or `to_internal`",
+                ));
             }
             if input.peek(syn::Token![,]) {
                 input.parse::<syn::Token![,]>()?;
@@ -122,8 +125,14 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
                 match parse_res {
                     Ok(dual_attr) => {
                         let internal_ty = dual_attr.internal_ty;
-                        let external_ty = dual_attr.external_ty.unwrap_or_else(|| original_ty.clone());
-                        dual_type = Some((internal_ty, external_ty, dual_attr.to_external, dual_attr.to_internal));
+                        let external_ty =
+                            dual_attr.external_ty.unwrap_or_else(|| original_ty.clone());
+                        dual_type = Some((
+                            internal_ty,
+                            external_ty,
+                            dual_attr.to_external,
+                            dual_attr.to_internal,
+                        ));
                     }
                     Err(e) => {
                         errors.push(e);
@@ -139,7 +148,9 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
         let mut internal_field = field.clone();
         let mut external_field = field.clone();
 
-        if let Some((ref internal_ty, ref external_ty, ref to_external, ref to_internal)) = dual_type {
+        if let Some((ref internal_ty, ref external_ty, ref to_external, ref to_internal)) =
+            dual_type
+        {
             internal_field.ty = internal_ty.clone();
             external_field.ty = external_ty.clone();
             internal_fields.push(quote! { #internal_field });

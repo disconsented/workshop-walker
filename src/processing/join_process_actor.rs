@@ -1,13 +1,15 @@
 use std::mem::take;
 
-use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{OptionExt, Whatever};
 use tracing::error;
 
 use crate::{
     db::{
-        item_update_actor::ItemUpdateMsg, model, model::InternalWorkshopItem, IAppID, IItemID, ITagID,
-        ItemID,
+        IAppID, IItemID, ITagID, ItemID,
+        item_update_actor::ItemUpdateMsg,
+        model,
+        model::{InternalTag, InternalWorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,
@@ -15,7 +17,6 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
-use crate::db::model::InternalTag;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`

@@ -6,13 +6,12 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::admin_service::AdminService,
     db::{
+        IUserID,
         admin_repository::AdminSilo,
-        model::{Property},
+        model::{InternalUser, InternalWorkshopItemProperties, Property},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };
-use crate::db::IUserID;
-use crate::db::model::{InternalUser, InternalWorkshopItemProperties};
 
 pub static ADMIN_ACTOR: OnceLock<ActorRef<AdminMsg>> = OnceLock::new();
 
