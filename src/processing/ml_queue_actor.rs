@@ -2,12 +2,11 @@ use classification::actor::ExtractionMsg;
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_types::Value::RecordId;
 use tracing::{debug, error, info};
 
 use crate::{
     db::{
-        IItemID, ItemID,
+        IItemID,
         model::{Class, InternalSource, Status},
         properties_actor::PropertiesMsg,
     },

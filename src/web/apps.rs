@@ -12,7 +12,7 @@ use snafu::{ErrorCompat, Snafu};
 
 use crate::{
     db::{
-        TagID,
+        AppID,
         apps_actor::{APPS_ACTOR, AppsMsg},
         model::ExternalApp,
     },
@@ -86,50 +86,58 @@ impl From<AppError> for InnerError {
 
 #[endpoint]
 pub async fn list_available() -> Result<Json<Vec<ExternalApp>>> {
-    todo!();
-    // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    // let apps = call!(actor, AppsMsg::ListAvailable)
-    //     .map_err(InnerError::from)?
-    //     .map_err(InnerError::from)?;
-    // todo!();
-    // Ok(Json(apps))
+    let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
+    let apps = call!(actor, AppsMsg::ListAvailable)
+        .map_err(InnerError::from)?
+        .map_err(InnerError::from)?;
+    let apps: Vec<ExternalApp> = apps
+        .into_iter()
+        .map(TryFrom::try_from)
+        .collect::<Result<_, _>>()
+        .map_err(|_| InnerError::InternalError)?;
+    Ok(Json(apps))
 }
 
 #[endpoint]
 pub async fn upsert(app: JsonBody<ExternalApp>) -> Result<()> {
-    todo!();
-    // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    // call!(actor, |reply| AppsMsg::Upsert(app.0, reply))
-    //     .map_err(InnerError::from)?
-    //     .map_err(InnerError::from)?;
-    // Ok(())
+    let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
+    call!(actor, |reply| AppsMsg::Upsert(app.0.into(), reply))
+        .map_err(InnerError::from)?
+        .map_err(InnerError::from)?;
+    Ok(())
 }
 #[endpoint]
-pub async fn remove(id: QueryParam<u32, true>) -> Result<()> {
-    todo!();
-    // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    // call!(actor, |reply| AppsMsg::Remove(*id, reply))
-    //     .map_err(InnerError::from)?
-    //     .map_err(InnerError::from)?;
-    // Ok(())
+pub async fn remove(id: QueryParam<AppID, true>) -> Result<()> {
+    let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
+    call!(actor, |reply| AppsMsg::Remove(
+        id.into_inner().into(),
+        reply
+    ))
+    .map_err(InnerError::from)?
+    .map_err(InnerError::from)?;
+    Ok(())
 }
 
 #[endpoint]
 pub async fn list() -> Result<Json<Vec<ExternalApp>>> {
-    todo!();
-    // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    // let apps = call!(actor, AppsMsg::List)
-    //     .map_err(InnerError::from)?
-    //     .map_err(InnerError::from)?;
-    // Ok(Json(apps))
+    let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
+    let apps = call!(actor, AppsMsg::List)
+        .map_err(InnerError::from)?
+        .map_err(InnerError::from)?;
+    let apps: Vec<ExternalApp> = apps
+        .into_iter()
+        .map(TryFrom::try_from)
+        .collect::<Result<_, _>>()
+        .map_err(|_| InnerError::InternalError)?;
+    Ok(Json(apps))
 }
 
 #[endpoint]
-pub async fn get(id: PathParam<u32>) -> Result<Json<ExternalApp>> {
-    todo!();
-    // let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    // let app = call!(actor, |reply| AppsMsg::Get(*id, reply))
-    //     .map_err(InnerError::from)?
-    //     .map_err(InnerError::from)?;
-    // Ok(Json(app))
+pub async fn get(id: PathParam<AppID>) -> Result<Json<ExternalApp>> {
+    let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
+    let app = call!(actor, |reply| AppsMsg::Get(id.into_inner().into(), reply))
+        .map_err(InnerError::from)?
+        .map_err(InnerError::from)?;
+    let app = app.try_into().map_err(|_| InnerError::InternalError)?;
+    Ok(Json(app))
 }

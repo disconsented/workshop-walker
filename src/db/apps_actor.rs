@@ -5,7 +5,7 @@ use surrealdb::{Surreal, engine::local::Db};
 
 use crate::{
     application::apps_service::AppsService,
-    db::{IAppID, ITagID, apps_repository::AppsSilo, model::InternalApp},
+    db::{IAppID, apps_repository::AppsSilo, model::InternalApp},
     domain::apps::AppError,
     steam::steam_download_actor::SteamDownloadMsg,
 };

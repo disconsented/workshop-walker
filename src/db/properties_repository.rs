@@ -28,7 +28,7 @@ impl PropertiesPort for PropertiesSilo {
         source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError> {
-        let workshop_id = IItemID::from(new_property.workshop_item);
+        let workshop_id = new_property.workshop_item;
 
         let test_prop = Property {
             class: new_property.class,
@@ -97,7 +97,7 @@ impl PropertiesPort for PropertiesSilo {
                 "source",
                 match source {
                     InternalSource::System => InternalSource::System,
-                    InternalSource::User(userid) => InternalSource::User(IUserID::from(userid)),
+                    InternalSource::User(userid) => InternalSource::User(userid),
                 },
             ))
             .bind(("status", status))
@@ -151,7 +151,7 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("user", IUserID::from(user)))
             .bind((
                 "item",
-                IItemID::from(vote_data.item),
+                vote_data.item,
             ))
             .bind(("score", vote_data.score));
 
@@ -193,7 +193,7 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("class", vote_data.class))
             .bind(("value", vote_data.value))
             .bind(("user", IUserID::from(user)))
-            .bind(("item", IItemID::from(vote_data.item)))
+            .bind(("item", vote_data.item))
             .await;
 
         match result.map(surrealdb::IndexedResults::check) {

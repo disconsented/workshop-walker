@@ -72,7 +72,7 @@ impl Actor for SteamTagActor {
                     info!(app_id = ?app.id, app_name = %app.name, "Scraping tags for app");
                     let url = format!(
                         "https://steamcommunity.com/app/{}/workshop/",
-                        i64::from(app.clone().id.clone().try_into_external()?).to_string()
+                        i64::from(app.clone().id.clone().try_into_external()?)
                     );
                     match state.client.get(&url).send().await {
                         Ok(resp) => {

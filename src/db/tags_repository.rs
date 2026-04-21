@@ -2,7 +2,7 @@ use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
 use crate::{
-    db::{AppID, IAppID, ITagID, TagID, model::InternalTag},
+    db::{IAppID, model::InternalTag},
     domain::tags::{TagError, TagsPort},
 };
 

@@ -11,7 +11,7 @@ use tracing::{debug, error, instrument};
 
 use crate::{
     db::{
-        IItemID, IUserID, ItemID,
+        IItemID, IUserID,
         model::{ExternalFullWorkshopItem, InternalFullWorkshopItem},
     },
     web::auth,
@@ -132,7 +132,6 @@ async fn get_item(
                             user: {{ 0 }}
                         }}.score
                     }}",
-                user = String::from(user)
             )
         }
         None => "filter(|$prop: any| $prop.status == 1)[*].{

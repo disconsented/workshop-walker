@@ -1,4 +1,3 @@
-use std::ops::Deref;
 
 pub use proc_macros::dual_struct;
 

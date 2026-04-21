@@ -1,11 +1,7 @@
-use std::{
-    fmt::{Display, Formatter},
-    ops::{Deref, DerefMut},
-};
+use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Utc};
 use macros::dual_struct;
-use ractor::Message;
 use salvo::prelude::ToSchema;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_content::{Value, ValueVisitor};
@@ -64,10 +60,10 @@ pub struct Tag {
 }
 
 fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surrealdb_types::Error> {
-    Ok(internal
+    internal
         .into_iter()
         .map(ExternalTag::try_from)
-        .collect::<Result<_, _>>()?)
+        .collect::<Result<_, _>>()
 }
 
 fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
@@ -147,10 +143,10 @@ fn to_internal_user(external: Option<UserID>) -> Option<IUserID> {
 fn to_external_full_item(
     internal: Vec<InternalFullWorkshopItem>,
 ) -> Result<Vec<ExternalFullWorkshopItem>, surrealdb_types::Error> {
-    Ok(internal
+    internal
         .into_iter()
         .map(TryFrom::try_from)
-        .collect::<Result<_, _>>()?)
+        .collect::<Result<_, _>>()
 }
 
 fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<InternalFullWorkshopItem> {
@@ -255,10 +251,10 @@ pub struct WorkshopItemProperties {
 fn to_external_props(
     internal: Vec<InternalWorkshopItemProperties>,
 ) -> Result<Vec<ExternalWorkshopItemProperties>, surrealdb_types::Error> {
-    Ok(internal
+    internal
         .into_iter()
         .map(TryFrom::try_from)
-        .collect::<Result<_, _>>()?)
+        .collect::<Result<_, _>>()
 }
 
 fn to_internal_props(

@@ -1,16 +1,12 @@
 use macros::dual_struct;
-use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 
-use crate::{
-    db::{
+use crate::db::{
         IItemID, ItemID,
         model::{Class, InternalSource, Status},
-    },
-    steam::model::VoteData,
-};
+    };
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]

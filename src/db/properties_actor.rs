@@ -10,7 +10,6 @@ use crate::{
         properties_repository::PropertiesSilo,
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError},
-    steam::model::VoteData,
 };
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();

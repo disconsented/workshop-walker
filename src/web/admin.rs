@@ -2,14 +2,14 @@ use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
     Writer,
     oapi::extract::JsonBody,
-    prelude::{EndpointOutRegister, Json, StatusCode, StatusError, endpoint},
+    prelude::{Json, StatusCode, StatusError, endpoint},
 };
 use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
         admin_actor::{ADMIN_ACTOR, AdminMsg},
-        model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser, Status},
+        model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };
