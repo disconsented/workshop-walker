@@ -2,7 +2,7 @@ use chrono::{Duration, Utc};
 use tracing::debug;
 
 use crate::{
-    db::{IUserID, IUsernameID},
+    db::IUsernameID,
     domain::user_names::{UserName, UserNameError, UserNamesPort},
 };
 

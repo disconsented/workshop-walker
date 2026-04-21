@@ -6,9 +6,8 @@ use tracing::error;
 
 use crate::{
     db::{
-        IAppID, IItemID, ITagID, ItemID,
+        IAppID, ITagID,
         item_update_actor::ItemUpdateMsg,
-        model,
         model::{InternalTag, InternalWorkshopItem},
     },
     processing::{

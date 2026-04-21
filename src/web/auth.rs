@@ -23,22 +23,17 @@ use salvo::{
     prelude::{Redirect, StatusCode, StatusError, endpoint},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::to_value;
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_core::{
-    sql::{
+use surrealdb_core::sql::{
         AssignOperator,
-        AssignOperator::Assign,
         Idiom, Part,
         data::{Assignment, Data},
         expression::Expr,
         statements::InsertStatement,
-    },
-    syn::token::Operator,
-};
-use surrealdb_types::{RecordId, SurrealValue, Value};
+    };
+use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{

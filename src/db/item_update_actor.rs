@@ -1,6 +1,4 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
-use salvo::affix_state::insert;
-use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
@@ -8,12 +6,12 @@ use surrealdb_core::sql::{
     data::Data,
     statements::{InsertStatement, UpsertStatement},
 };
-use surrealdb_types::{RecordId, SurrealValue, Table, Value};
+use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        IItemID, ITagID,
+        IItemID,
         model::{Dependencies, InternalWorkshopItem},
     },
     processing::{
@@ -197,8 +195,8 @@ async fn insert_data(
                 let dep_id = IItemID::from(child.publishedfileid);
                 Dependencies {
                     id: vec![item.id.clone(), dep_id.clone()],
-                    this: IItemID::from(item.id.clone()),
-                    dependency: dep_id.into(),
+                    this: item.id.clone(),
+                    dependency: dep_id,
                 }
             })
             .collect::<Vec<_>>();
@@ -212,7 +210,7 @@ async fn insert_data(
         stmt.data = Some(Data::ReplaceExpression(Expr::from_public_value(
             item.clone().into_value(),
         )));
-        stmt.what = vec![Expr::Table("workshop_items".into())].into();
+        stmt.what = vec![Expr::Table("workshop_items".into())];
         stmt
     };
 

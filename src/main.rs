@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
     .whatever_context("signing in to db")?;
 
     debug!("checking migrations");
-    // // Run migrations
+    // Run migrations
     // MigrationRunner::new(&db)
     //     .up()
     //     .instrument(info_span!(parent: &span, "run migrations"))

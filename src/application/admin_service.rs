@@ -1,8 +1,5 @@
 use crate::{
-    db::{
-        IUserID,
-        model::{InternalUser, InternalWorkshopItemProperties},
-    },
+    db::model::{InternalUser, InternalWorkshopItemProperties},
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
 

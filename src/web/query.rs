@@ -1,25 +1,20 @@
-use std::str::FromStr;
 
 use itertools::Itertools;
 use salvo::{
-    oapi::{endpoint, extract::QueryParam}, prelude::Json,
-    Request,
-    Writer,
+    Request, Writer,
+    oapi::{endpoint, extract::QueryParam},
+    prelude::Json,
 };
-use serde_json::to_value;
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-    field::Selector, statements::SelectStatement, Cond, Expr, Field, Fields, Limit, Start,
+    Expr, Fields, Limit, Start, statements::SelectStatement,
 };
-use surrealdb_types::{RecordId, SurrealValue, Table, Value};
-use tracing::{info, info_span, instrument, Instrument};
+use surrealdb_types::{SurrealValue, Table, ToSql};
+use tracing::{Instrument, debug, info_span, instrument};
 
 use crate::{
-    db::{
-        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy}, ITagID,
-        TagID,
-    },
+    db::model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy},
     processing::language_actor::DetectedLanguage,
     web,
     web::DB_POOL,
@@ -43,14 +38,14 @@ pub async fn list(
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     #[instrument(skip_all)]
     async fn query(
-        app: i64,
+        _app: i64,
         page: u64,
         limit: u64,
-        languages: Option<DetectedLanguage>,
-        tags: Vec<String>,
-        title: Option<String>,
-        last_updated: Option<u64>,
-        order_by: Option<OrderBy>,
+        _languages: Option<DetectedLanguage>,
+        _tags: Vec<String>,
+        _title: Option<String>,
+        _last_updated: Option<u64>,
+        _order_by: Option<OrderBy>,
         db: &Surreal<Db>,
     ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
         let mut stmt = SelectStatement::default();
@@ -107,7 +102,7 @@ pub async fn list(
         stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
         stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
         stmt.what.push(Expr::from_public_value(
-            Table::new("workshop_item").into_value(),
+            Table::new("workshop_items").into_value(),
         ));
 
         // stmt.cond = {
@@ -252,17 +247,17 @@ pub async fn list(
         //     .unwrap()
         // });
 
-        // info!("{stmt}");
+        debug!(sql = stmt.to_sql(), "running big query");
         let mut results = db.query(stmt).await.whatever_context("querying")?;
 
         let results: Vec<InternalWorkshopItem> =
             results.take(0).whatever_context("taking result")?;
 
-        Ok(results
+        results
             .into_iter()
-            .map(|item| ExternalWorkshopItem::try_from(item))
+            .map(ExternalWorkshopItem::try_from)
             .collect::<Result<_, _>>()
-            .whatever_context("converting internal to external")?)
+            .whatever_context("converting internal to external")
     }
     let results = query(
         app.into_inner(),

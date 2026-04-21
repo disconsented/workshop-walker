@@ -6,9 +6,8 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::admin_service::AdminService,
     db::{
-        IUserID,
         admin_repository::AdminSilo,
-        model::{InternalUser, InternalWorkshopItemProperties, Property},
+        model::{InternalUser, InternalWorkshopItemProperties},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
 };

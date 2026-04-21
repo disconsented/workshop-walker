@@ -2,7 +2,7 @@ use surrealdb::{IndexedResults, Surreal, engine::local::Db};
 use tracing::{debug, error};
 
 use crate::{
-    db::{AppID, IAppID, model::InternalApp},
+    db::{IAppID, model::InternalApp},
     domain::apps::{AppError, AppsPort},
 };
 
@@ -21,9 +21,10 @@ impl AppsPort for AppsSilo {
         match self
             .db
             .query(
-                "SELECT *, tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
-                 default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
-                 id.id() FROM apps WHERE available = true",
+                // ToDo: Fix this after migrating the app_id to a record link from an int, also,
+                // funny bug, [] as tags doesn't return a blank array sometimes
+                "SELECT available, banner, description, developer, enabled, id, name, [] as tags, \
+                 [] as default_tags FROM apps WHERE available = true",
             )
             .await
             .map(|mut q| q.take(0))
@@ -67,9 +68,8 @@ impl AppsPort for AppsSilo {
         match self
             .db
             .query(
-                "SELECT *, tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
-                 default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
-                 id.id() FROM apps",
+                "SELECT available, banner, description, developer, enabled, id, name, [] as tags, \
+                 [] as default_tags FROM apps",
             )
             .await
             .map(|mut q| q.take(0))
@@ -86,9 +86,8 @@ impl AppsPort for AppsSilo {
         match self
             .db
             .query(
-                "SELECT *, tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
-                 default_tags.map(|$v|{id: $v.to_string(), display_name: $v.id().to_string()}), \
-                 id.id() FROM $id",
+                "SELECT available, banner, description, developer, enabled, id, name, [] as tags, \
+                 [] as default_tags FROM $id",
             )
             .bind(("id", id))
             .await

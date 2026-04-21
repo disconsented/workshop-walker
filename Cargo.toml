@@ -63,7 +63,6 @@ surrealdb = { features = [
 surrealdb-core = "3.0"
 surrealdb-migrations = "2.2"
 surrealdb-types = "3.0"
-surrealdb-types-derive = "3.0"
 syn = "2.0"
 tokenizers = "0.22"
 tokio = { features = ["full"], version = "1.48" }
@@ -135,7 +134,6 @@ tokio = { features = [
 tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
-surrealdb-types-derive.workspace = true
 
 [features]
 default = ["ml-classification"]
@@ -143,7 +141,7 @@ ml-classification = ["classification", "classification/mkl"]
 
 
 [patch.crates-io]
-surrealdb-migrations = { git = "https://github.com/disconsented/surrealdb-migrations.git" }
+surrealdb-migrations = { path ="../surrealdb-migrations" }
 surrealdb-core = { path = "../surrealdb/surrealdb/core" }
 surrealdb = { path = "../surrealdb/surrealdb" }
 surrealdb-types = { path = "../surrealdb/surrealdb/types" }

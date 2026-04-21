@@ -136,7 +136,7 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
         .cloned()
         .ok_or(InnerError::InternalError)?;
     let source = ExternalSource::User(userid)
-        .try_into()
+        .into()
         .map_err(|_| InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::NewProperty(
         new_property.0.into(),

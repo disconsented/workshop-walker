@@ -7671,7 +7671,7 @@ dependencies = [
  "serde_json",
  "surrealdb-core",
  "surrealdb-types",
- "surrealdb-types-derive 3.0.5",
+ "surrealdb-types-derive",
  "tokio",
  "tokio-tungstenite 0.28.0",
  "tokio-tungstenite-wasm",
@@ -7845,7 +7845,7 @@ dependencies = [
  "serde",
  "serde_json",
  "surrealdb-protocol",
- "surrealdb-types-derive 3.0.5",
+ "surrealdb-types-derive",
  "ulid",
  "uuid",
 ]
@@ -7853,17 +7853,6 @@ dependencies = [
 [[package]]
 name = "surrealdb-types-derive"
 version = "3.0.5"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "surrealdb-types-derive"
-version = "3.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a76abdbfc597e062daae5269251e18a84553f9090cfff423591f57c8c6765aa8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9724,7 +9713,6 @@ dependencies = [
  "surrealdb",
  "surrealdb-core",
  "surrealdb-types",
- "surrealdb-types-derive 3.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -9979,4 +9967,3 @@ dependencies = [
 [[patch.unused]]
 name = "surrealdb-migrations"
 version = "2.3.0"
-source = "git+https://github.com/disconsented/surrealdb-migrations.git#e8c9a439310d163da6dc7f655661250d9e491f9f"

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 
-use crate::db::{IUserID, IUsernameID};
+use crate::db::IUsernameID;
 
 #[derive(Debug, Serialize, Deserialize, Clone, SurrealValue)]
 pub struct UserName {

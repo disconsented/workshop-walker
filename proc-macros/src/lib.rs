@@ -94,11 +94,10 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
             }
         });
 
-        if !attr_ts.is_empty() {
-            if let Err(e) = attr_parser.parse(attr_ts) {
+        if !attr_ts.is_empty()
+            && let Err(e) = attr_parser.parse(attr_ts) {
                 return TokenStream::from(e.to_compile_error());
             }
-        }
     }
 
     for d in shared_derives {
