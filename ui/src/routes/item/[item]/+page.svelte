@@ -118,9 +118,12 @@
 </script>
 
 <svelte:head>
-
 	{#await data then data}
-		<title>{data.data.title ? 'Workshop Walker - ' + data.data.title : 'Workshop Walker - Loading'}</title>
+		<title
+			>{data.data.title
+				? 'Workshop Walker - ' + data.data.title
+				: 'Workshop Walker - Loading'}</title
+		>
 		<meta property="og:title" content={'Workshop Walker - ' + data.title} />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content={window.location.href} />
@@ -286,7 +289,7 @@
 				</a></span
 			>
 			<span>Last Updated: <TimeAgo date={item.last_updated}></TimeAgo></span>
-			<span>Upvote Percentage: {(Math.round(item.score * 100) / 100)*100}%</span>
+			<span>Upvote Percentage: {(Math.round(item.score * 100) / 100) * 100}%</span>
 			<span
 				>Languages:
 				{#each item.languages as lang}
@@ -325,7 +328,7 @@
 			<span>
 				Properties:
 				<div class="flex flex-row flex-wrap items-center gap-2">
-									{#each item.properties as property}
+					{#each item.properties as property}
 						<!--{@debug property}-->
 						<Property
 							loggedIn={logged_in}
