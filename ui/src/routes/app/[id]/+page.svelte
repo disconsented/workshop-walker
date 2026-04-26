@@ -13,6 +13,7 @@
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
 	import { tags, orderBy, language, limit, title, app } from './store.svelte';
+	import ItemCard from './itemCard.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
@@ -95,7 +96,7 @@
 						{/if}
 					</div>
 
-					<div class="flex flex-row place-content-between">
+					<div class="flex flex-row place-content-stretch">
 						<span>{value.length} Result(s)</span>
 						<div>{@render pagination({ data: value })}</div>
 					</div>
@@ -187,90 +188,90 @@
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-			<tr>
-				{#if showTableImages === true}
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
-				{/if}
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-					Last Updated
-				</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-					Description
-				</th>
-			</tr>
+				<tr>
+					{#if showTableImages === true}
+						<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
+					{/if}
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+						Last Updated
+					</th>
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+						Description
+					</th>
+				</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
-			{#each slicedSource(data) as item (item.id)}
-				<tr class="group hover:bg-gray-50">
-					{#if showTableImages === true}
-						<td class="w-52 p-0">
-							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
-								<img
-									class="aspect-video object-cover lg:h-32 lg:min-w-48"
-									class:hue-rotate-90={!item.preview_url}
-									class:grayscale={!item.preview_url}
-									src={item.preview_url ||
+				{#each slicedSource(data) as item (item.id)}
+					<tr class="group hover:bg-gray-50">
+						{#if showTableImages === true}
+							<td class="w-52 p-0">
+								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
+									<img
+										class="aspect-video object-cover lg:h-32 lg:min-w-48"
+										class:hue-rotate-90={!item.preview_url}
+										class:grayscale={!item.preview_url}
+										src={item.preview_url ||
 											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-									alt="banner"
-									loading="lazy"
-								/></a
+										alt="banner"
+										loading="lazy"
+									/></a
+								>
+							</td>
+						{/if}
+						<td class="px-6 py-4 text-sm">
+							<a
+								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class=""
+							>
+								{item.title}
+							</a>
+							<br />
+							<span class="text-xs text-gray-500"
+								>Lookup: <a
+									href="/item/{item.id}"
+									target="_self"
+									rel="noopener noreferrer"
+									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+								></span
 							>
 						</td>
-					{/if}
-					<td class="px-6 py-4 text-sm">
-						<a
-							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-							target="_blank"
-							rel="noopener noreferrer"
-							class=""
-						>
-							{item.title}
-						</a>
-						<br />
-						<span class="text-xs text-gray-500"
-						>Lookup: <a
-							href="/item/{item.id}"
-							target="_self"
-							rel="noopener noreferrer"
-							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-						></span
-						>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						<a
-							href="https://steamcommunity.com/profiles/{item.author}"
-							class="anchor whitespace-nowrap"
-						>
-							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-							Author
-						</a>
-						<br />
-						<small class="text-gray-500">
-							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
-							>Details
-								<Icon data={faLink} class="fa-fw"></Icon>
+						<td class="px-6 py-4 text-sm">
+							<a
+								href="https://steamcommunity.com/profiles/{item.author}"
+								class="anchor whitespace-nowrap"
+							>
+								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+								Author
 							</a>
-						</small>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						<TimeAgo date={item.last_updated}></TimeAgo>
-					</td>
-					<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
-						<div class="relative h-full">
-							<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
-							<div
-								class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
-							></div>
-						</div>
-					</td>
-				</tr>
-			{:else}
-				<tr>
-					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
-				</tr>
-			{/each}
+							<br />
+							<small class="text-gray-500">
+								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
+									>Details
+									<Icon data={faLink} class="fa-fw"></Icon>
+								</a>
+							</small>
+						</td>
+						<td class="px-6 py-4 text-sm">
+							<TimeAgo date={item.last_updated}></TimeAgo>
+						</td>
+						<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
+							<div class="relative h-full">
+								<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
+								<div
+									class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
+								></div>
+							</div>
+						</td>
+					</tr>
+				{:else}
+					<tr>
+						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+					</tr>
+				{/each}
 			</tbody>
 		</table>
 
@@ -295,76 +296,7 @@
 {#snippet rgrid(data)}
 	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
-			<div
-				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block w-md divide-y overflow-hidden border-[1px]"
-			>
-				<header>
-					<img
-						src={item.preview_url ||
-							'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-						class="h-48 w-full w-full object-cover"
-						alt="banner"
-						class:hue-rotate-90={!item.preview_url}
-						class:grayscale={!item.preview_url}
-						onerror={(e) =>
-							(e.target.src =
-								'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
-						loading="lazy"
-					/>
-				</header>
-				<article class="space-y-4 p-4">
-					<h6 class="h6">
-						<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class="hover:anchor">
-							{item.title}
-							<Icon data={faLink} class="fa-fw"></Icon>
-						</a>
-					</h6>
-					<div class="mb-2 flex items-center justify-between">
-						<span class="text-sm text-gray-500"
-						>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
-						>
-						<small class="text-xs text-gray-500">
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class="anchor hover:text-gray-700"
-							>Steam
-								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-							</a>
-						</small>
-					</div>
-					<div
-						class="mb-2 max-h-[3lh] overflow-hidden text-sm text-wrap text-ellipsis
-						text-gray-600 transition-[height] duration-150 ease-in-out hover:max-h-[10lh]"
-					>
-						{@html item.description}
-					</div>
-				</article>
-				<footer class="m-2">
-					<div class="flex flex-wrap gap-1">
-						{#each item.tags as tag (tag.id)}
-							<span class="badge preset-filled">{tag.display_name}</span>
-						{:else}
-							<span class="badge preset-filled">-</span>
-						{/each}
-					</div>
-					{#if item.properties && item.properties.length > 0}
-						<hr class="hr my-1" />
-						<div class="flex flex-wrap gap-1">
-							{#each item.properties as prop}
-								{@debug prop}
-								<Property
-									loggedIn={logged_in}
-									property={{ class: prop.out.class, value: prop.out.value, ...prop }}
-									hideVote={true}
-									itemID={item.id}
-								></Property>
-							{/each}
-						</div>
-					{/if}
-				</footer>
-			</div>
+			<ItemCard {item} {logged_in}></ItemCard>
 		{:else}
 			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}
