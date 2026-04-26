@@ -3,6 +3,7 @@
 	import {
 		faCircleXmark,
 		faClock,
+		faLock,
 		faThumbsDown,
 		faThumbsUp
 	} from '@fortawesome/free-solid-svg-icons';
@@ -76,18 +77,25 @@
 			})
 		});
 	};
+
+	const accentColour = () => {
+		console.log(property.class);
+		switch (property.class) {
+			case 'genre':
+				return 'green-500';
+			case 'theme':
+				return 'blue-500';
+			case 'type':
+				return 'purple-500';
+			case 'feature':
+				return 'orange-500';
+		}
+	};
 </script>
 
-<div
-	class={[
-		'badge preset-outlined-surface-200-800 flex w-fit grow justify-between overflow-hidden p-0'
-	]}
->
-	<div class="w-4px inline-block h-full shrink-0 bg-amber-300">&nbsp</div>
-	<div
-		class="flex grow items-stretch justify-between"
-		style="padding-block: calc(var(--spacing) * 1);"
-	>
+<div class={['badge preset-outlined-surface-200-800 flex grow overflow-hidden p-0']}>
+	<div class="w-4px inline-block h-full shrink-0 bg-{accentColour}">&nbsp</div>
+	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
 		<div class="flex h-full">
 			<div class="h-auto">
 				{#if property.status === -1}
@@ -97,36 +105,48 @@
 					<Icon data={faClock} class="text-warning-500 flex-shrink-0" />
 					Pending
 				{/if}
-				<span class="text-xs uppercase opacity-70">{property.class}:</span>
+				<span class="text-xs uppercase text-{accentColour}">{property.class}:</span>
 				<span class="capitalize">{property.value}</span>
 			</div>
 		</div>
 
 		{#if property.status === 1 && !hideVote}
 			{@const score = property.vote_count ?? 0}
-			{@const textColour = score > 0 ? 'text-success-500' : score < 0 ? 'text-error-500' : ''}
+			{@const textColour = loggedIn
+				? score > 0
+					? 'text-success-500'
+					: score < 0
+						? 'text-error-500'
+						: ''
+				: 'text-gray-600'}
 			<div class="flex">
-				<span class="vr border-tertiary-500 border-l-2"></span>
+				<span class="vr"></span>
 				<!-- Voting -->
-				<div class="ml-1 flex items-center gap-1">
-					<button
-						class={[voteState === 1 ? 'text-success-500' : 'hover:text-success-500', 'p-0.5']}
-						disabled={!loggedIn}
-						onclick={upvote}
-					>
-						<Icon data={faThumbsUp} class="text-xs" scale={0.8} />
-					</button>
+				<div class="ml-1 flex items-center gap-1 pr-1">
+					{#if loggedIn}
+						<button
+							class={[voteState === 1 ? 'text-success-500' : 'hover:text-success-500', 'p-0.5']}
+							disabled={!loggedIn}
+							onclick={upvote}
+						>
+							<Icon data={faThumbsUp} class="text-xs" scale={0.8} />
+						</button>
+					{:else}
+						<Icon data={faLock} class="text-xs text-gray-600" scale={0.8} />
+					{/if}
 
 					<span class={['min-w-[1ch] font-mono text-xs', textColour]}
 						>{#if score > 0}+{/if}{score}</span
 					>
-					<button
-						class={[voteState === -1 ? 'text-error-500' : 'hover:text-error-500', 'p-0.5']}
-						disabled={!loggedIn}
-						onclick={downvote}
-					>
-						<Icon data={faThumbsDown} class="text-xs" scale={0.8} />
-					</button>
+					{#if loggedIn}
+						<button
+							class={[voteState === -1 ? 'text-error-500' : 'hover:text-error-500', 'p-0.5']}
+							disabled={!loggedIn}
+							onclick={downvote}
+						>
+							<Icon data={faThumbsDown} class="text-xs" scale={0.8} />
+						</button>
+					{/if}
 				</div>
 			</div>
 		{/if}
