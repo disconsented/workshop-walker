@@ -20,7 +20,7 @@
 	import { Shadow } from 'svelte-loading-spinners';
 	import PropertyPrompt from './PropertyPrompt.svelte';
 	import Property from './Property.svelte';
-	import { Modal } from '@skeletonlabs/skeleton-svelte';
+	import { Dialog } from '@skeletonlabs/skeleton-svelte';
 	import { onNavigate } from '$app/navigation';
 	import type { PageData } from '*.svelte';
 
@@ -841,7 +841,7 @@
 {/snippet}
 
 {#snippet loginModal()}
-	<Modal
+	<Dialog
 		open={loginModalState}
 		onOpenChange={(e) => (loginModalState = e.open)}
 		triggerBase="btn preset-tonal"
@@ -868,5 +868,5 @@
 				</button>
 			</footer>
 		{/snippet}
-	</Modal>
+	</Dialog>
 {/snippet}
