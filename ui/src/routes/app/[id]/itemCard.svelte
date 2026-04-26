@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { faLink } from '@fortawesome/free-solid-svg-icons';
+	import { faChevronDown, faChevronUp, faLink, faLock } from '@fortawesome/free-solid-svg-icons';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import Property from '../../item/[item]/Property.svelte';
 	import Icon from 'svelte-awesome';
-	import { Collapsible } from '@skeletonlabs/skeleton-svelte';
 
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting
@@ -12,7 +11,8 @@
 	}
 
 	let { loggedIn = $bindable(), item }: Props = $props();
-	item.properties = [
+	let item2 = $state(item);
+	item2.properties = [
 		{
 			class: 'feature',
 			value: 'Weapons',
@@ -22,7 +22,7 @@
 			vote_state: 1
 		},
 		{
-			class: 'feature',
+			class: 'theme',
 			value: 'Mechanoids',
 			upvote_count: 24,
 			vote_count: 24,
@@ -46,8 +46,8 @@
 			vote_state: 1
 		},
 		{
-			class: 'feature',
-			value: 'Turrets',
+			class: 'type',
+			value: 'Something',
 			upvote_count: 11,
 			vote_count: 11,
 			status: 1,
@@ -70,29 +70,38 @@
 			vote_state: 0
 		}
 	];
+
+	let first_props = $derived(item2.properties.slice(0, 6));
+	let remaining_props = $derived(item2.properties.slice(6));
+	$inspect(first_props, remaining_props);
+	let open = $state(false);
 </script>
 
 <div
 	class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block w-md divide-y overflow-hidden border-[1px]"
 >
 	<header class="relative h-48">
-		<img
-			src={item.preview_url ||
+		<div>
+			<img
+				src={item.preview_url ||
 				'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-			class="absolute h-48 w-full w-full object-cover"
-			alt="banner"
-			class:hue-rotate-90={!item.preview_url}
-			class:grayscale={!item.preview_url}
-			onerror={(e) =>
+				class="absolute h-48 w-full object-cover"
+				alt="banner"
+				class:hue-rotate-90={!item.preview_url}
+				class:grayscale={!item.preview_url}
+				onerror={(e) =>
 				(e.target.src =
 					'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
-			loading="lazy"
-		/>
+				loading="lazy"
+			/>
+			<div class="bg-linear-to-t from-black to-[transparent] absolute w-full h-48">&nbsp</div>
+		</div>
+
 		<!--Details overlayed-->
 		<div class="t-0 absolute left-0 flex h-full w-full flex-col justify-between">
 			<!--Top-->
 			<div class="flex w-full justify-end">
-				<button class="btn preset-outlined mt-1 text-xs text-gray-500">
+				<button class="btn preset-filled-surface-50-950 opacity-80 mt-1 text-xs text-gray-500">
 					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 					<a
 						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
@@ -104,7 +113,7 @@
 				</button>
 			</div>
 			<!--Bottom (Title, author, updated-->
-			<div class="preset-glass-surface flex w-full flex-col">
+			<div class="flex w-full flex-col">
 				<div class="w-full">
 					<h6 class="h6">
 						<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class="card p-1">
@@ -123,7 +132,7 @@
 						<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 						FUJIKENGAWA</a
 					>
-					<div class="mb-2 flex  items-center">
+					<div class="mb-2 flex items-center">
 						<span class="text-[0.5rem] text-gray-500">
 							Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
 						>
@@ -148,18 +157,40 @@
 		</div>
 	</article>
 	<footer class="m-2">
-		{#if item.properties && item.properties.length > 0}
+		{#if first_props}
+			{@debug first_props}
 			<div class="flex flex-wrap gap-1">
-				{#each item.properties as prop}
-					{@debug prop}
+				{#each first_props as prop}
 					<Property {loggedIn} property={{ ...prop }} hideVote={false} itemID={item.id}></Property>
 				{/each}
-				<Collapsible>
-					<Collapsible.Trigger />
-					<Collapsible.Content />
-				</Collapsible>
+				{#if remaining_props.length > 0}
+					{#if open}
+						{#each remaining_props as prop}
+							<Property {loggedIn} property={{ ...prop }} hideVote={false} itemID={item.id}
+							></Property>
+						{/each}
+					{/if}
+					<button
+						class="text-primary-500 ca w-full text-left text-sm"
+						onclick={() => {
+							open = !open;
+						}}
+					>
+						{#if open}
+							<Icon data={faChevronUp} class="fa-fw"></Icon>
+						{:else}
+							<Icon data={faChevronDown} class="fa-fw"></Icon>
+						{/if}<span class="pl-1">{remaining_props.length} more properties</span>
+					</button>
+				{/if}
 			</div>
 		{/if}
+		<button class="pt-1 mt-1 btn btn-sm preset-outlined-primary-500 opacity-50 w-full justify-between text-primary-500"
+			><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
+			<span class="btn btn-sm preset-filled-primary-500"
+				><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
+			></button
+		>
 	</footer>
 </div>
 

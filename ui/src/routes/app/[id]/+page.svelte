@@ -296,7 +296,7 @@
 {#snippet rgrid(data)}
 	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
-			<ItemCard {item} {logged_in}></ItemCard>
+			<ItemCard {item} loggedIn={false}></ItemCard>
 		{:else}
 			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}
