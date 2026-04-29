@@ -516,14 +516,16 @@ impl AuthActor {
                 banned: false,
                 last_logged_in: Utc::now(),
             };
-            let mut stmt = InsertStatement::default();
-            stmt.into = Some(Expr::Table("users".into()));
-            stmt.data = Data::SingleExpression(Expr::from_public_value(user.clone().into_value()));
-            stmt.update = Some(Data::UpdateExpression(vec![Assignment {
-                place: Idiom(vec![Part::Field("last_logged_in".into())]),
-                operator: AssignOperator::Assign,
-                value: Expr::from_public_value(Value::Datetime(Utc::now().into())),
-            }]));
+            let stmt = InsertStatement{
+                into: Some(Expr::Table("users".into())),
+                data: Data::SingleExpression(Expr::from_public_value(user.clone().into_value())),
+                update: Some(Data::UpdateExpression(vec![Assignment {
+                    place: Idiom(vec![Part::Field("last_logged_in".into())]),
+                    operator: AssignOperator::Assign,
+                    value: Expr::from_public_value(Value::Datetime(Utc::now().into())),
+                }])),
+                ..Default::default()
+            };
             for (i, error) in state
                 .database
                 .query(stmt)

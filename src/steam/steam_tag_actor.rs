@@ -77,7 +77,7 @@ impl Actor for SteamTagActor {
                     match state.client.get(&url).send().await {
                         Ok(resp) => {
                             if let Ok(html) = resp.text().await {
-                                let tags = extract_tags(app.id.clone(), &html);
+                                let tags = extract_tags(&app.id, &html);
                                 debug!(app_id = ?app.id, tag_count = tags.len(), "Extracted tags");
                                 if let Err(error) =
                                     state.tags.update_tags(app.id.clone(), tags).await
@@ -97,7 +97,7 @@ impl Actor for SteamTagActor {
     }
 }
 
-fn extract_tags(app_id: IAppID, html: &str) -> Vec<InternalTag> {
+fn extract_tags(app_id: &IAppID, html: &str) -> Vec<InternalTag> {
     Html::parse_document(html)
         .select(&Selector::parse(".tag_label").unwrap())
         .filter_map(|node| {

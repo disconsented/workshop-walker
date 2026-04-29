@@ -1,18 +1,18 @@
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    Expr,
     data::Data,
     statements::{InsertStatement, UpsertStatement},
+    Expr,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        IItemID,
         model::{Dependencies, InternalWorkshopItem},
+        IItemID,
     },
     processing::{
         bb_actor::BBMsg,
@@ -185,8 +185,7 @@ async fn insert_data(
     let id = item.id.clone();
 
     let insert_item_deps = {
-        let mut stmt = InsertStatement::default();
-        stmt.relation = true;
+        let mut stmt = InsertStatement{ relation: true, into: Some(Expr::Table("item_dependencies".into())), ..Default::default() };
 
         stmt.into = Some(Expr::Table("item_dependencies".into()));
         let data = children
@@ -205,13 +204,12 @@ async fn insert_data(
         stmt
     };
 
-    let upsert_item = {
-        let mut stmt = UpsertStatement::default();
-        stmt.data = Some(Data::ReplaceExpression(Expr::from_public_value(
+    let upsert_item = UpsertStatement {
+        data: Some(Data::ReplaceExpression(Expr::from_public_value(
             item.clone().into_value(),
-        )));
-        stmt.what = vec![Expr::Table("workshop_items".into())];
-        stmt
+        ))),
+        what: vec![Expr::Table("workshop_items".into())],
+        ..Default::default()
     };
 
     let query = db

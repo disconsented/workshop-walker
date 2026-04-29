@@ -8,7 +8,7 @@ use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::SurrealValue;
-
+use tracing::error;
 use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
     processing::language_actor::DetectedLanguage,
@@ -63,7 +63,7 @@ fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surre
     internal
         .into_iter()
         .map(ExternalTag::try_from)
-        .collect::<Result<_, _>>()
+        .collect::<Result<_, _>>().inspect_err(|error| error!(?error, "to_external_tag"))
 }
 
 fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
@@ -90,7 +90,7 @@ pub struct WorkshopItem {
     #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props)]
     pub properties: Vec<ExternalWorkshopItemProperties>,
 }
-// Read only, dual still needed for ID conversion
+// Read-only, dual still needed for ID conversion
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct FullWorkshopItem {
     // Core identifiers
@@ -146,7 +146,7 @@ fn to_external_full_item(
     internal
         .into_iter()
         .map(TryFrom::try_from)
-        .collect::<Result<_, _>>()
+        .collect::<Result<_, _>>().inspect_err(|error| error!(?error, "to_external_full_item"))
 }
 
 fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<InternalFullWorkshopItem> {

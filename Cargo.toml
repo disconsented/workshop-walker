@@ -153,7 +153,7 @@ panic = 'abort'
 #codegen-units = 1
 
 [profile.dev.package."*"]
-opt-level = 3
+#opt-level = 3
 
 [lints.clippy]
 allow-dbg-in-tests = { level = "allow", priority = 9 }

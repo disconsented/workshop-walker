@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, Expr, Type, parse::Parser, parse_macro_input};
+use syn::{parse::Parser, parse_macro_input, DeriveInput, Expr, Type};
 
 struct DualTypeAttr {
     internal_ty: Type,
@@ -95,9 +95,10 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
         });
 
         if !attr_ts.is_empty()
-            && let Err(e) = attr_parser.parse(attr_ts) {
-                return TokenStream::from(e.to_compile_error());
-            }
+            && let Err(e) = attr_parser.parse(attr_ts)
+        {
+            return TokenStream::from(e.to_compile_error());
+        }
     }
 
     for d in shared_derives {
@@ -159,7 +160,7 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
                 quote! { #func(item.#field_ident)? }
             } else {
                 quote! { item.#field_ident.try_into().map_err(|e| {
-                    let err_str = format!("{:?}", e);
+                    let err_str = format!("failed to convert field `{}`: {e:?}", stringify!(#field_ident));
                     surrealdb_types::Error::thrown(err_str)
                 })? }
             };
