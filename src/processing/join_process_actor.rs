@@ -107,7 +107,6 @@ impl InternalWorkshopItem {
             tags: data
                 .tags
                 .iter()
-                .cloned()
                 .map(|tag| InternalTag {
                     app_id: app_id.clone(),
                     id: ITagID::from(tag.tag.clone()),

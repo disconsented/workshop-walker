@@ -8,9 +8,8 @@ use lingua::{
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use surrealdb_types::SurrealValue;
+use surrealdb_types::{Error, Kind, SurrealValue, Value};
 
-use crate::processing::language_actor::DetectedLanguage::Unknown;
 
 // The threshold of total words a language must be, to be considered valid for
 // detection.
@@ -28,7 +27,6 @@ const WORD_PERCENTAGE: f32 = 0.2;
     PartialEq,
     Ord,
     PartialOrd,
-    SurrealValue,
 )]
 #[repr(u8)]
 pub enum DetectedLanguage {
@@ -60,7 +58,34 @@ impl From<Language> for DetectedLanguage {
             Spanish => Self::Spanish,
             Portuguese => Self::Portuguese,
             French => Self::French,
-            _ => Unknown,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+impl SurrealValue for DetectedLanguage {
+    fn kind_of() -> Kind {
+        Kind::Int
+    }
+
+    fn into_value(self) -> Value {
+        Value::Number((self as i64).into())
+    }
+
+    fn from_value(value: Value) -> Result<Self, Error>
+    where
+        Self: Sized
+    {
+        match value.into_u8()? {
+            1 => Ok(DetectedLanguage::English),
+            2 => Ok(DetectedLanguage::Russian),
+            3 => Ok(DetectedLanguage::Chinese),
+            4 => Ok(DetectedLanguage::Japanese),
+            5 => Ok(DetectedLanguage::Korean),
+            6 => Ok(DetectedLanguage::Spanish),
+            7 => Ok(DetectedLanguage::Portuguese),
+            9 => Ok(DetectedLanguage::French),
+            _ => Ok(DetectedLanguage::Unknown),
         }
     }
 }

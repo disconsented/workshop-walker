@@ -148,7 +148,7 @@ async fn get_item(
                     }"
         .to_string(),
     };
-    let query = "SELECT *,type::number(id.id()) as id, type::thing('usernames', \
+    let query = "SELECT *, type::number(id.id()) as id, type::record('usernames', \
                  type::number(author)).{
                 id: type::number(id.id()),
                 name
@@ -156,13 +156,13 @@ async fn get_item(
                 id: id.id(),
                 app_id,
                 display_name
-            } AS tags, ->workshop_item_properties."
+            } AS tags, appid as app_id ->workshop_item_properties."
         .to_string()
         + &properties
         + " AS properties, $id->item_dependencies[*].{
                 id: type::number(out.id.id()),
                 title: out.title,
-                appid: out.appid,
+                app_id: out.appid,
                 author: type::record('usernames:⟨' + out.author + '⟩').{
                     id: type::number(id.id()),
                     name
@@ -181,7 +181,7 @@ async fn get_item(
             } AS dependencies, id<-item_dependencies[*].{
                 id: type::number(in.id.id()),
                 title: in.title,
-                appid: in.appid,
+                app_id: in.appid,
                 author: type::record('usernames:⟨' + in.author + '⟩').{
                     id: type::number(id.id()),
                     name

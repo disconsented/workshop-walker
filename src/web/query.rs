@@ -1,17 +1,15 @@
-
-use itertools::Itertools;
 use salvo::{
-    Request, Writer,
-    oapi::{endpoint, extract::QueryParam},
-    prelude::Json,
+    oapi::{endpoint, extract::QueryParam}, prelude::Json,
+    Request,
+    Writer,
 };
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    Expr, Fields, Limit, Start, statements::SelectStatement,
+    field::Selector, statements::SelectStatement, Expr, Field, Fields, Idiom, Limit, Start,
 };
 use surrealdb_types::{SurrealValue, Table, ToSql};
-use tracing::{Instrument, debug, info_span, instrument};
+use tracing::{debug, info_span, instrument, Instrument};
 
 use crate::{
     db::model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy},
@@ -50,7 +48,13 @@ pub async fn list(
     ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
         let mut stmt = SelectStatement::default();
         {
-            stmt.fields = Fields::all();
+            // stmt.fields = Fields::Select(vec![
+            //     Field::All,
+            //     Field::Single(Selector {
+            //         expr: Expr::Idiom(Idiom::field("appid".into())),
+            //         alias: Some(Idiom::field("app_id".into())),
+            //     }),
+            // ]);
 
             //     {
             //         stmt.expr.0.push(Field::Single {
@@ -98,12 +102,12 @@ pub async fn list(
             //         });
             //     }
         }
-
-        stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
-        stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
-        stmt.what.push(Expr::from_public_value(
-            Table::new("workshop_items").into_value(),
-        ));
+        //
+        // stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
+        // stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
+        // stmt.what.push(Expr::from_public_value(
+        //     Table::new("workshop_items").into_value(),
+        // ));
 
         // stmt.cond = {
         //     let conditions = vec![
@@ -247,6 +251,17 @@ pub async fn list(
         //     .unwrap()
         // });
 
+        let stmt = r#"SELECT
+    *,
+    type::record("workshop_items", <int> id.id()) AS id,
+    type::record("apps", appid) AS app_id,
+    type::record("users", author) AS author,
+    ->workshop_item_properties AS properties,
+    tags.{id, app_id: type::record("apps", app_id), display_name}
+FROM workshop_items
+LIMIT 50
+START 0;
+"#;
         debug!(sql = stmt.to_sql(), "running big query");
         let mut results = db.query(stmt).await.whatever_context("querying")?;
 
