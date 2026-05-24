@@ -1,0 +1,26 @@
+[package]
+name = "migrations-tool"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[lib]
+name = "migrations_tool"
+path = "src/lib.rs"
+
+[dependencies]
+async-stream = "0.3"
+blake2 = "0.10"
+chrono = { workspace = true, features = ["serde"] }
+futures = "0.3"
+serde = { workspace = true, features = ["derive"] }
+snafu.workspace = true
+surrealdb.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+futures = "0.3"
+serde_json.workspace = true
+tempfile = "3"
+tokio.workspace = true
+tracing-subscriber.workspace = true

@@ -1,5 +1,5 @@
 [workspace]
-members = ["classification", "macros", "proc-macros", "scratch", "serde-hack"]
+members = ["classification", "macros", "migrations-tool", "proc-macros", "scratch", "serde-hack"]
 
 [workspace.package]
 edition = "2024"
@@ -10,6 +10,7 @@ version = "0.2.0"
 classification = { path = "./classification" }
 macros = { path = "./macros" }
 proc-macros = { path = "./proc-macros" }
+migrations-tool = { path = "./migrations-tool" }
 serde-hack = { path = "./serde-hack" }
 
 bbscope = "0.2"
@@ -19,6 +20,7 @@ candle-examples = "0.9"
 candle-nn = "0.9"
 candle-transformers = "0.9"
 chrono = "0.4"
+clap = { features = ["derive"], version = "4.6" }
 config = "0.15"
 hf-hub = "0.4"
 humantime = "2.2"
@@ -61,11 +63,12 @@ surrealdb = { features = [
     "rustls",
 ], version = "3.0" }
 surrealdb-core = "3.0"
-surrealdb-migrations = "2.2"
+surrealkit = "0.6.3"
 surrealdb-types = "3.0"
 syn = "2.0"
 tokenizers = "0.22"
 tokio = { features = ["full"], version = "1.48" }
+tokio-stream = { version = "0.1", features = ["fs"] }
 tracing = "0.1"
 tracing-subscriber = { features = ["env-filter"], version = "0.3.19" }
 veil = "0.3"
@@ -122,7 +125,7 @@ surrealdb = { features = [
     "rustls",
 ], workspace = true }
 surrealdb-core.workspace = true
-#surrealdb-migrations.workspace = true
+surrealkit.workspace = true
 surrealdb-types.workspace = true
 tokio = { features = [
     "fs",
@@ -131,6 +134,7 @@ tokio = { features = [
     "rt-multi-thread",
     "sync",
 ], workspace = true }
+tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
@@ -141,7 +145,6 @@ ml-classification = ["classification", "classification/mkl"]
 
 
 [patch.crates-io]
-surrealdb-migrations = { path ="../surrealdb-migrations" }
 surrealdb-core = { path = "../surrealdb/surrealdb/core" }
 surrealdb = { path = "../surrealdb/surrealdb" }
 surrealdb-types = { path = "../surrealdb/surrealdb/types" }
