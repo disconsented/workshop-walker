@@ -1,5 +1,12 @@
 [workspace]
-members = ["classification", "macros", "migrations-tool", "proc-macros", "scratch", "serde-hack"]
+members = [
+  "classification",
+  "macros",
+  "migrations-tool",
+  "proc-macros",
+  "scratch",
+  "serde-hack",
+]
 
 [workspace.package]
 edition = "2024"
@@ -9,12 +16,14 @@ version = "0.2.0"
 [workspace.dependencies]
 classification = { path = "./classification" }
 macros = { path = "./macros" }
-proc-macros = { path = "./proc-macros" }
 migrations-tool = { path = "./migrations-tool" }
+proc-macros = { path = "./proc-macros" }
 serde-hack = { path = "./serde-hack" }
 
+async-stream = "0.3.6"
 bbscope = "0.2"
 biscuit-auth = "6.0.0"
+blake2 = "0.10.6"
 candle-core = { version = "0.9" }
 candle-examples = "0.9"
 candle-nn = "0.9"
@@ -22,29 +31,31 @@ candle-transformers = "0.9"
 chrono = "0.4"
 clap = { features = ["derive"], version = "4.6" }
 config = "0.15"
+futures = "0.3.32"
 hf-hub = "0.4"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
 itertools = "0.14"
 lingua = { features = [
-    "chinese",
-    "english",
-    "french",
-    "japanese",
-    "korean",
-    "russian",
+  "chinese",
+  "english",
+  "french",
+  "japanese",
+  "korean",
+  "russian",
 ], version = "1.7" }
 multimap = "0.10"
+paste = "1.0"
 quote = "1.0"
 ractor = { features = ["async-trait", "monitors"], version = "0.15" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
-    "affix-state",
-    "cookie",
-    "logging",
-    "oapi",
-    "serve-static",
-    "size-limiter",
+  "affix-state",
+  "cookie",
+  "logging",
+  "oapi",
+  "serve-static",
+  "size-limiter",
 ], version = "0.89" }
 scraper = "0.25"
 serde = { features = ["derive"], version = "1.0" }
@@ -55,24 +66,23 @@ serde_repr = "0.1"
 snafu = "0.9"
 str-macro = "1"
 surrealdb = { features = [
-    "allocator",
-    "kv-mem",
-    "kv-rocksdb",
-    "protocol-http",
-    "protocol-ws",
-    "rustls",
+  "allocator",
+  "kv-mem",
+  "kv-rocksdb",
+  "protocol-http",
+  "protocol-ws",
+  "rustls",
 ], version = "3.0" }
 surrealdb-core = "3.0"
-surrealkit = "0.6.3"
 surrealdb-types = "3.0"
 syn = "2.0"
+tempfile = "3.27.0"
 tokenizers = "0.22"
 tokio = { features = ["full"], version = "1.48" }
-tokio-stream = { version = "0.1", features = ["fs"] }
+tokio-stream = { features = ["fs"], version = "0.1" }
 tracing = "0.1"
 tracing-subscriber = { features = ["env-filter"], version = "0.3.19" }
 veil = "0.3"
-paste = "1.0"
 
 [package]
 edition.workspace = true
@@ -89,23 +99,24 @@ config.workspace = true
 humantime.workspace = true
 itertools.workspace = true
 lingua = { features = [
-    "chinese",
-    "english",
-    "japanese",
-    "korean",
-    "russian",
+  "chinese",
+  "english",
+  "japanese",
+  "korean",
+  "russian",
 ], workspace = true }
 macros.workspace = true
+migrations-tool.workspace = true
 multimap.workspace = true
 ractor = { features = ["async-trait", "monitors"], workspace = true }
-reqwest = { features = ["json", "query"], workspace = true, version = "1.0.0" }
+reqwest = { features = ["json", "query"], version = "1.0.0", workspace = true }
 salvo = { features = [
-    "affix-state",
-    "cookie",
-    "logging",
-    "oapi",
-    "serve-static",
-    "size-limiter",
+  "affix-state",
+  "cookie",
+  "logging",
+  "oapi",
+  "serve-static",
+  "size-limiter",
 ], workspace = true }
 scraper.workspace = true
 serde = { features = ["derive"], workspace = true }
@@ -117,22 +128,21 @@ serde_repr.workspace = true
 snafu.workspace = true
 str-macro.workspace = true
 surrealdb = { features = [
-    "allocator",
-    "kv-mem",
-    "kv-rocksdb",
-    "protocol-http",
-    "protocol-ws",
-    "rustls",
+  "allocator",
+  "kv-mem",
+  "kv-rocksdb",
+  "protocol-http",
+  "protocol-ws",
+  "rustls",
 ], workspace = true }
 surrealdb-core.workspace = true
-surrealkit.workspace = true
 surrealdb-types.workspace = true
 tokio = { features = [
-    "fs",
-    "macros",
-    "rt",
-    "rt-multi-thread",
-    "sync",
+  "fs",
+  "macros",
+  "rt",
+  "rt-multi-thread",
+  "sync",
 ], workspace = true }
 tokio-stream.workspace = true
 tracing.workspace = true
@@ -145,8 +155,8 @@ ml-classification = ["classification", "classification/mkl"]
 
 
 [patch.crates-io]
-surrealdb-core = { path = "../surrealdb/surrealdb/core" }
 surrealdb = { path = "../surrealdb/surrealdb" }
+surrealdb-core = { path = "../surrealdb/surrealdb/core" }
 surrealdb-types = { path = "../surrealdb/surrealdb/types" }
 
 [profile.release]

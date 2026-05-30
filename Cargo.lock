@@ -3144,7 +3144,6 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
- "webpki-roots 1.0.6",
 ]
 
 [[package]]
@@ -4709,6 +4708,7 @@ dependencies = [
  "async-stream",
  "blake2",
  "chrono",
+ "clap",
  "futures",
  "serde",
  "serde_json",
@@ -6311,8 +6311,6 @@ dependencies = [
  "native-tls",
  "percent-encoding",
  "pin-project-lite",
- "quinn",
- "rustls",
  "rustls-pki-types",
  "serde",
  "serde_json",
@@ -6320,7 +6318,6 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tokio-native-tls",
- "tokio-rustls",
  "tokio-util",
  "tower",
  "tower-http",
@@ -6330,7 +6327,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams 0.4.2",
  "web-sys",
- "webpki-roots 1.0.6",
 ]
 
 [[package]]
@@ -6688,12 +6684,6 @@ dependencies = [
  "serde_json",
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "rust_dotenv"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fec1ab1b807e4a6acb09a19473f750362f24e1439c4dde6dd2000e43a91033a"
 
 [[package]]
 name = "rustc-hash"
@@ -7879,7 +7869,6 @@ dependencies = [
  "rayon",
  "reblessive",
  "regex",
- "reqwest 0.13.2",
  "revision",
  "ring",
  "roaring",
@@ -7995,43 +7984,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "surrealkit"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "672262a324d3a1f933c3c604969d074a2dcf1c3a7f84d3670c4ed7b493f6ccab"
-dependencies = [
- "anyhow",
- "clap",
- "hex",
- "regex",
- "reqwest 0.12.28",
- "rust_dotenv",
- "rustls",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "surrealdb",
- "surrealdb-types",
- "surrealkit-macros",
- "time",
- "tokio",
- "toml 0.8.23",
- "walkdir",
-]
-
-[[package]]
-name = "surrealkit-macros"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33a875f6987acfa65b8363f45e0a207f4ca6876315ab41e89532e49095e6cd68"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
- "walkdir",
 ]
 
 [[package]]
@@ -9878,6 +9830,7 @@ dependencies = [
  "itertools 0.14.0",
  "lingua",
  "macros",
+ "migrations-tool",
  "multimap",
  "ractor",
  "reqwest 0.13.2",
@@ -9894,7 +9847,6 @@ dependencies = [
  "surrealdb",
  "surrealdb-core",
  "surrealdb-types",
- "surrealkit",
  "tokio",
  "tokio-stream",
  "tracing",
