@@ -69,7 +69,7 @@ impl Actor for SteamTagActor {
                 };
 
                 for app in apps {
-                    info!(app_id = ?app.id, app_name = %app.name, "Scraping tags for app");
+                    info!(app = ?app.id, app_name = %app.name, "Scraping tags for app");
                     let url = format!(
                         "https://steamcommunity.com/app/{}/workshop/",
                         i64::from(app.clone().id.clone().try_into_external()?)
@@ -78,16 +78,16 @@ impl Actor for SteamTagActor {
                         Ok(resp) => {
                             if let Ok(html) = resp.text().await {
                                 let tags = extract_tags(&app.id, &html);
-                                debug!(app_id = ?app.id, tag_count = tags.len(), "Extracted tags");
+                                debug!(app = ?app.id, tag_count = tags.len(), "Extracted tags");
                                 if let Err(error) =
                                     state.tags.update_tags(app.id.clone(), tags).await
                                 {
-                                    error!(?error, app_id = ?app.id, "Failed to update tags");
+                                    error!(?error, app = ?app.id, "Failed to update tags");
                                 }
                             }
                         }
                         Err(error) => {
-                            error!(?error, app_id = ?app.id, "Failed to fetch workshop page");
+                            error!(?error, app = ?app.id, "Failed to fetch workshop page");
                         }
                     }
                 }
@@ -97,7 +97,7 @@ impl Actor for SteamTagActor {
     }
 }
 
-fn extract_tags(app_id: &IAppID, html: &str) -> Vec<InternalTag> {
+fn extract_tags(app: &IAppID, html: &str) -> Vec<InternalTag> {
     Html::parse_document(html)
         .select(&Selector::parse(".tag_label").unwrap())
         .filter_map(|node| {
@@ -108,7 +108,6 @@ fn extract_tags(app_id: &IAppID, html: &str) -> Vec<InternalTag> {
                 .map(String::from)
         })
         .map(|text| InternalTag {
-            app_id: app_id.clone(),
             id: ITagID::from(text.clone()),
             display_name: text.clone(),
         })

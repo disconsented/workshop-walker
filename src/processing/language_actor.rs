@@ -1,5 +1,5 @@
 use std::{collections::HashMap, convert::Into, fmt};
-
+use std::collections::HashSet;
 use lingua::{
     Language,
     Language::{Chinese, English, French, Japanese, Korean, Portuguese, Russian, Spanish},
@@ -27,6 +27,7 @@ const WORD_PERCENTAGE: f32 = 0.2;
     PartialEq,
     Ord,
     PartialOrd,
+    Hash
 )]
 #[repr(u8)]
 pub enum DetectedLanguage {

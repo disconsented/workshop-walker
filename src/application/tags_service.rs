@@ -14,9 +14,9 @@ impl<R: TagsPort> TagsService<R> {
 
     pub async fn update_tags(
         &self,
-        app_id: IAppID,
+        app: IAppID,
         tags: Vec<InternalTag>,
     ) -> Result<(), TagError> {
-        self.repo.upsert_tags(app_id, tags).await
+        self.repo.upsert_tags(app, tags).await
     }
 }

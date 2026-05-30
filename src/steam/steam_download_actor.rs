@@ -37,7 +37,7 @@ pub struct SteamDownloadState {
 }
 
 pub enum SteamDownloadMsg {
-    Download { app_id: IAppID, first_page: GetPage },
+    Download { app: IAppID, first_page: GetPage },
     AddApp(IAppID),
     RemoveApp(IAppID),
 }
@@ -66,10 +66,10 @@ impl Actor for SteamDownloadActor {
             apps: HashMap::new(),
             database: args.database,
         };
-        for app_id in apps {
-            let app_id = app_id.try_into_external()?.into();
-            start_downloader(&myself, &mut state, app_id, args.force)
-                .instrument(info_span!("start downloader", ?app_id))
+        for app in apps {
+            let app = app.try_into_external()?.into();
+            start_downloader(&myself, &mut state, app, args.force)
+                .instrument(info_span!("start downloader", ?app))
                 .await;
         }
 
@@ -84,28 +84,28 @@ impl Actor for SteamDownloadActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            SteamDownloadMsg::Download { app_id, first_page } => {
+            SteamDownloadMsg::Download { app, first_page } => {
                 if let Err(error) = download(
                     state,
-                    app_id.clone(),
+                    app.clone(),
                     first_page,
                     state.item_processing_actor_ref.clone(),
                 )
                 .await
                 {
-                    error!(?app_id, ?error, "Downloading workshop items");
+                    error!(?app, ?error, "Downloading workshop items");
                 }
             }
-            SteamDownloadMsg::AddApp(app_id) => {
-                if !state.apps.contains_key(&app_id) {
-                    let app_id = app_id.try_into_external()?.into();
-                    start_downloader(&myself, state, app_id, false).await;
+            SteamDownloadMsg::AddApp(app) => {
+                if !state.apps.contains_key(&app) {
+                    let app = app.try_into_external()?.into();
+                    start_downloader(&myself, state, app, false).await;
                 }
             }
-            SteamDownloadMsg::RemoveApp(app_id) => {
-                if let Some(handle) = state.apps.remove(&app_id) {
+            SteamDownloadMsg::RemoveApp(app) => {
+                if let Some(handle) = state.apps.remove(&app) {
                     handle.abort();
-                    info!(?app_id, "Stopped downloading workshop items");
+                    info!(?app, "Stopped downloading workshop items");
                 }
             }
         }
@@ -116,19 +116,19 @@ impl Actor for SteamDownloadActor {
 
 async fn download(
     state: &mut SteamDownloadState,
-    app_id: IAppID,
+    app: IAppID,
     mut page: GetPage,
     database_writer_actor_ref: ActorRef<ItemUpdateMsg>,
 ) -> Result<(), Whatever> {
-    let app_id = app_id
+    let app = app
         .try_into_external()
         .whatever_context("converting app id")?
         .into();
-    page.appid = app_id;
+    page.appid = app;
     let mut total = i64::MAX;
     let mut downloaded = 0;
     while total > downloaded {
-        page.appid = app_id;
+        page.appid = app;
         let request = page
             .into_request(&state.client, &state.steam_token)
             .whatever_context("building download request")?;
@@ -157,7 +157,7 @@ async fn download(
             progress = (downloaded * 100 / total * 100) / 100,
             downloaded,
             expected = total,
-            ?app_id,
+            ?app,
             "Downloaded items"
         );
     }
@@ -167,7 +167,7 @@ async fn download(
 async fn start_downloader(
     myself: &ActorRef<SteamDownloadMsg>,
     state: &mut SteamDownloadState,
-    app_id: i64, // Function needs to be infalliable, so, we handle the converion outside here
+    app: i64, // Function needs to be infalliable, so, we handle the converion outside here
     force: bool,
 ) {
     let timestamp: Option<u64> = state
@@ -176,7 +176,7 @@ async fn start_downloader(
             "SELECT last_updated FROM workshop_items WHERE appid = $appid ORDER BY last_updated \
              DESC LIMIT 1",
         )
-        .bind(("appid", app_id))
+        .bind(("appid", app))
         .await
         .unwrap()
         .take((0, "last_updated"))
@@ -187,7 +187,7 @@ async fn start_downloader(
         .unwrap();
     let h12 = Duration::from_hours(12);
     let message_builder = move || SteamDownloadMsg::Download {
-        app_id: IAppID::from(app_id),
+        app: IAppID::from(app),
         first_page: GetPage {
             query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
             ..Default::default()
@@ -195,11 +195,11 @@ async fn start_downloader(
     };
     if time_since > h12 || force {
         let _ = myself.send_message(message_builder());
-        info!(period = %humantime::Duration::from(time_since), app = ?app_id, "newest mod is at least 12 hours out of date; running update now");
+        info!(period = %humantime::Duration::from(time_since), app = ?app, "newest mod is at least 12 hours out of date; running update now");
     }
 
     if let Some(old) = state.apps.insert(
-        IAppID::from(app_id),
+        IAppID::from(app),
         myself.send_interval(h12, message_builder),
     ) {
         // Remember to abort the old timer

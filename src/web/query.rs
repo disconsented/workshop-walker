@@ -52,14 +52,14 @@ pub async fn list(
             //     Field::All,
             //     Field::Single(Selector {
             //         expr: Expr::Idiom(Idiom::field("appid".into())),
-            //         alias: Some(Idiom::field("app_id".into())),
+            //         alias: Some(Idiom::field("app".into())),
             //     }),
             // ]);
 
             //     {
             //         stmt.expr.0.push(Field::Single {
             //             expr: idiom(
-            //                 "tags.{id: id.to_string(), app_id,
+            //                 "tags.{id: id.to_string(), app,
             // display_name}",
             //             )
             //             .expect(
@@ -253,11 +253,8 @@ pub async fn list(
 
         let stmt = r#"SELECT
     *,
-    type::record("workshop_items", <int> id.id()) AS id,
-    type::record("apps", appid) AS app_id,
-    type::record("users", author) AS author,
     ->workshop_item_properties AS properties,
-    tags.{id, app_id: type::record("apps", app_id), display_name}
+    tags.{id, app, display_name}
 FROM workshop_items
 LIMIT 50
 START 0;

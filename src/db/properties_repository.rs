@@ -10,6 +10,7 @@ use crate::{
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
+use crate::db::model::InternalUser;
 
 pub struct PropertiesSilo {
     pub db: Surreal<Db>,
@@ -120,9 +121,8 @@ impl PropertiesPort for PropertiesSilo {
     async fn vote(
         &self,
         vote_data: InternalVoteData,
-        userid: String,
+        user: IUserID,
     ) -> Result<(), PropertiesError> {
-        let user = UserID::from(userid);
         let query = self
             .db
             .query("LET $link = properties:{class: $class, value: $value}")
@@ -148,7 +148,7 @@ impl PropertiesPort for PropertiesSilo {
             )
             .bind(("class", vote_data.class))
             .bind(("value", vote_data.value))
-            .bind(("user", IUserID::from(user)))
+            .bind(("user", user))
             .bind((
                 "item",
                 vote_data.item,
@@ -173,9 +173,8 @@ impl PropertiesPort for PropertiesSilo {
     async fn remove_vote(
         &self,
         vote_data: InternalVoteData,
-        userid: String,
+        user: IUserID,
     ) -> Result<(), PropertiesError> {
-        let user = UserID::from(userid);
         let result = self
             .db
             .query("BEGIN TRANSACTION;")
@@ -192,7 +191,7 @@ impl PropertiesPort for PropertiesSilo {
             .query("COMMIT TRANSACTION;")
             .bind(("class", vote_data.class))
             .bind(("value", vote_data.value))
-            .bind(("user", IUserID::from(user)))
+            .bind(("user", user))
             .bind(("item", vote_data.item))
             .await;
 

@@ -1,3 +1,4 @@
+use std::collections::{BTreeSet, HashSet};
 use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Utc};
@@ -52,8 +53,6 @@ impl Display for OrderBy {
     PartialOrd
 ))]
 pub struct Tag {
-    #[dual_type(IAppID)]
-    pub app_id: AppID,
     #[dual_type(ITagID)]
     pub id: TagID,
     pub display_name: String,
@@ -73,7 +72,7 @@ fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct WorkshopItem {
     #[dual_type(IAppID)]
-    pub app_id: AppID,
+    pub app: AppID,
     #[dual_type(IUserID)]
     pub author: UserID,
     pub description: String,
@@ -97,7 +96,7 @@ pub struct FullWorkshopItem {
     #[dual_type(IItemID)]
     pub id: ItemID, // The item's ID
     #[dual_type(IAppID)]
-    pub app_id: AppID, // The steam ID of the app this belongs to
+    pub app: AppID, // The steam ID of the app this belongs to
 
     // Content information
     pub title: String,       // The titles name
@@ -285,7 +284,7 @@ fn to_internal_props(
 pub struct Vote {
     /// The app this is associated with, for possible filtering
     #[dual_type(IAppID)]
-    pub app_id: AppID,
+    pub app: AppID,
     pub score: f32,
     pub when: DateTime<Utc>,
 }
