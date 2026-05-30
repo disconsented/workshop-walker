@@ -1,14 +1,14 @@
-use std::mem::take;
+use std::{collections::HashSet, mem::take};
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
-use snafu::{OptionExt, Whatever};
+use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef};
+use snafu::{OptionExt, ResultExt, Whatever};
 use tracing::error;
 
 use crate::{
     db::{
-        IAppID, ITagID,
-        item_update_actor::ItemUpdateMsg,
-        model::{InternalTag, InternalWorkshopItem},
+        item_update_actor::ItemUpdateMsg, model::{InternalTag, InternalWorkshopItem}, IAppID,
+        ITagID,
+        IUserID,
     },
     processing::{
         bb_actor::BBMsg,
@@ -88,14 +88,21 @@ impl InternalWorkshopItem {
         languages: Vec<DetectedLanguage>,
         description: String,
     ) -> Result<Self, Whatever> {
-        let app_id: IAppID = data
+        let app: IAppID = data
             .consumer_appid
             .whatever_context("Missing app id")
             .inspect_err(|_| error!(?data, "creating new item"))?
             .into();
+
+        let author = IUserID::from(
+            data.creator
+                .whatever_context("Missing author")?
+                .parse::<i64>()
+                .whatever_context("Invalid author format")?,
+        );
         Ok(Self {
-            app_id: app_id.clone(),
-            author: data.creator.whatever_context("Missing author")?.into(),
+            app: app.clone(),
+            author,
             languages,
             description,
             id: data.publishedfileid.into(),
@@ -108,7 +115,7 @@ impl InternalWorkshopItem {
                 .tags
                 .iter()
                 .map(|tag| InternalTag {
-                    app_id: app_id.clone(),
+                    // app: app.clone(),
                     id: ITagID::from(tag.tag.clone()),
                     display_name: tag.display_name.clone(),
                 })

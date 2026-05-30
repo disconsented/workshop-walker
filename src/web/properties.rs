@@ -1,15 +1,15 @@
-use ractor::{ActorProcessingErr, RactorErr, call};
+use ractor::{call, ActorProcessingErr, RactorErr};
 use salvo::{
-    Depot, Writer,
-    oapi::extract::JsonBody,
-    prelude::{StatusCode, StatusError, endpoint},
+    oapi::extract::JsonBody, prelude::{endpoint, StatusCode, StatusError},
+    Depot,
+    Writer,
 };
-use snafu::{ErrorCompat, prelude::*};
+use snafu::{prelude::*, ErrorCompat};
 
 use crate::{
     db::{
         model::{ExternalSource, Status},
-        properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
+        properties_actor::{PropertiesMsg, PROPERTIES_ACTOR},
     },
     domain::properties::{ExternalNewProperty, ExternalVoteData, PropertiesError},
     web::auth,
@@ -94,7 +94,7 @@ pub async fn vote(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> R
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::Vote(
         vote_data.0.into(),
-        userid.into(),
+        userid,
         reply
     ))
     .map_err(InnerError::from)?
@@ -135,9 +135,12 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
-    let source = ExternalSource::User(userid)
-        .into();
-        // .map_err(|_| InnerError::InternalError)?;
+    let source = ExternalSource::User(
+        userid
+            .try_into_external()
+            .map_err(|_| InnerError::InternalError)?,
+    )
+    .into();
     call!(actor, |reply| PropertiesMsg::NewProperty(
         new_property.0.into(),
         source,
@@ -151,7 +154,7 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{Surreal, engine::local::Mem};
+    use surrealdb::{engine::local::Mem, Surreal};
 
     use crate::db::model::{Class, Property};
 

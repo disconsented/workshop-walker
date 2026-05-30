@@ -8,9 +8,9 @@ pub use proc_macros::dual_struct;
 /// with an enum, which, makes sense as its a different type.
 ///
 /// ## Args:
-/// Table name: The name of the SurrealDB table
-/// Internal name: The name of the internal newtype (interfaces with the DB)
-/// External name: The name of the external newtype (exposed to users)
+/// Table name: The name of the SurrealDB table\
+/// Internal name: The name of the internal newtype (interfaces with the DB)\
+/// External name: The name of the external newtype (exposed to users)\
 /// External type: The underlying type of the external newtype
 #[macro_export]
 macro_rules! define_id {

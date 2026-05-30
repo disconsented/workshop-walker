@@ -217,12 +217,12 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     Ok(())
 }
 /// Returns the user id of the current user, if any.
-pub fn get_user_from_depot(depot: &mut Depot) -> Option<UserID> {
+pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
     let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
-    let (userid, _): (String, i64) = authorizer
+    let (userid, _): (i64, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
         .ok()?;
-    Some(UserID::from(userid))
+    Some(IUserID::from(userid))
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -487,12 +487,6 @@ impl AuthActor {
             .next()
             .ok_or(InnerError::PeerValidationFailed)?;
 
-        if let Ok(id) = user_id.parse::<i64>() {
-            let _ = state
-                .steam_user_actor_ref
-                .send_message(SteamUserMsg::Fetch(id.into()));
-        }
-
         let keypair = &KeyPair::from(&state.biscuit.private_key);
 
         let biscuit: Biscuit = biscuit!(
@@ -505,13 +499,21 @@ impl AuthActor {
         .build(keypair)
         .map_err(|_| InnerError::PeerValidationFailed)?;
 
+        let Ok(user_id) = user_id.parse::<i64>() else {
+            return Err(InnerError::PeerValidationFailed)?;
+        };
+
+        let _ = state
+            .steam_user_actor_ref
+            .send_message(SteamUserMsg::Fetch(user_id.into()));
+
         let based = biscuit
             .to_base64()
             .map_err(|_| InnerError::PeerValidationFailed)?;
 
         {
             let user = InternalUser {
-                id: UserID::from(user_id.to_owned()).into(),
+                id: UserID::from(user_id).into(),
                 admin: false,
                 banned: false,
                 last_logged_in: Utc::now(),

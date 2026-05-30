@@ -17,7 +17,7 @@ impl TagsSilo {
 }
 
 impl TagsPort for TagsSilo {
-    async fn upsert_tags(&self, app_id: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError> {
+    async fn upsert_tags(&self, app: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError> {
         for tag in tags {
             let query = self
                 .db
@@ -27,7 +27,7 @@ impl TagsPort for TagsSilo {
                 .query("COMMIT")
                 .bind(("record", tag.id.clone()))
                 .bind(("tag", tag))
-                .bind(("id", app_id.clone()));
+                .bind(("id", app.clone()));
             if let Err(error) = query.await.map(surrealdb::IndexedResults::check) {
                 error!(?error, "failed to upsert tag");
                 return Err(TagError::Internal {
@@ -56,7 +56,7 @@ mod test {
             -- FIELDS
             -- ------------------------------ 
             
-            DEFINE FIELD app_id ON tags TYPE int PERMISSIONS FULL;
+            DEFINE FIELD app ON tags TYPE int PERMISSIONS FULL;
             DEFINE FIELD display_name ON tags TYPE string PERMISSIONS FULL;
             DEFINE FIELD id ON tags TYPE string PERMISSIONS FULL;
             
@@ -64,7 +64,7 @@ mod test {
             -- INDEXES
             -- ------------------------------ 
             
-            DEFINE INDEX field_app_id_tag ON tags FIELDS app_id, display_name;
+            DEFINE INDEX field_app_tag ON tags FIELDS app, display_name;
             DEFINE TABLE apps TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
             -- ------------------------------

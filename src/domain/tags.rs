@@ -12,5 +12,5 @@ pub enum TagError {
 }
 
 pub trait TagsPort: Send + Sync + 'static {
-    async fn upsert_tags(&self, app_id: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError>;
+    async fn upsert_tags(&self, app: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError>;
 }

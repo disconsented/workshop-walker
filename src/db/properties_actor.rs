@@ -11,6 +11,7 @@ use crate::{
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError},
 };
+use crate::db::IUserID;
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
 
@@ -38,12 +39,12 @@ pub enum PropertiesMsg {
     ),
     Vote(
         InternalVoteData,
-        String,
+        IUserID,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),
     Remove(
         InternalVoteData,
-        String,
+        IUserID,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),
 }

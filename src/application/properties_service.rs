@@ -2,6 +2,7 @@ use crate::{
     db::model::{InternalSource, Status},
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
+use crate::db::IUserID;
 
 pub struct PropertiesService<R: PropertiesPort> {
     repo: R,
@@ -50,7 +51,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
     pub async fn vote(
         &self,
         vote: InternalVoteData,
-        userid: String,
+        userid: IUserID,
     ) -> Result<(), PropertiesError> {
         if vote.score != 1 && vote.score != -1 {
             return Err(PropertiesError::InvalidVoteScore);
@@ -61,7 +62,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
     pub async fn remove_vote(
         &self,
         vote: InternalVoteData,
-        userid: String,
+        userid: IUserID,
     ) -> Result<(), PropertiesError> {
         self.repo.remove_vote(vote, userid).await
     }

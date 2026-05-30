@@ -110,13 +110,13 @@ async fn get_item(
 ) -> Result<InternalFullWorkshopItem> {
     let properties = match user {
         Some(user) => {
-            let user: String = user
+            let user: i64 = user
                 .try_into_external()
                 .map_err(|_| InnerError::InternalError)?
                 .into();
             format!(
                 "filter(|$prop: any| $prop.status == 1 OR $prop.source == {user})[*].{{
-                        id: id.id(),
+                        id: id,
                         in: in.to_string(),
                         out: out.id.{{
                             class,
@@ -150,20 +150,20 @@ async fn get_item(
     };
     let query = "SELECT *, type::number(id.id()) as id, type::record('usernames', \
                  type::number(author)).{
-                id: type::number(id.id()),
+                id: id,
                 name
             } AS author, tags.{
                 id: id.id(),
-                app_id,
+                app,
                 display_name
-            } AS tags, appid as app_id ->workshop_item_properties."
+            } AS tags ->workshop_item_properties."
         .to_string()
         + &properties
         + " AS properties, $id->item_dependencies[*].{
-                id: type::number(out.id.id()),
+                id: id,
                 title: out.title,
-                app_id: out.appid,
-                author: type::record('usernames:⟨' + out.author + '⟩').{
+                app: out.app,
+                author: out.author.{
                     id: type::number(id.id()),
                     name
                 },
@@ -171,7 +171,7 @@ async fn get_item(
                 last_updated: out.last_updated,
                 tags: out.tags.{
                     id: id.to_string(),
-                    app_id,
+                    app,
                     display_name
                 },
                 preview_url: out.preview_url,
@@ -181,7 +181,7 @@ async fn get_item(
             } AS dependencies, id<-item_dependencies[*].{
                 id: type::number(in.id.id()),
                 title: in.title,
-                app_id: in.appid,
+                app: in.appid,
                 author: type::record('usernames:⟨' + in.author + '⟩').{
                     id: type::number(id.id()),
                     name

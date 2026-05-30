@@ -3,10 +3,8 @@ use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 
-use crate::db::{
-        IItemID, ItemID,
-        model::{Class, InternalSource, Status},
-    };
+use crate::db::{IItemID, ItemID, model::{Class, InternalSource, Status}, IUserID};
+use crate::db::model::InternalUser;
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -50,10 +48,10 @@ pub trait PropertiesPort: Send + Sync + 'static {
         source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError>;
-    async fn vote(&self, vote: InternalVoteData, userid: String) -> Result<(), PropertiesError>;
+    async fn vote(&self, vote: InternalVoteData, userid: IUserID) -> Result<(), PropertiesError>;
     async fn remove_vote(
         &self,
         vote: InternalVoteData,
-        userid: String,
+        userid: IUserID,
     ) -> Result<(), PropertiesError>;
 }
