@@ -1,15 +1,15 @@
 use salvo::{
-    oapi::{endpoint, extract::QueryParam}, prelude::Json,
-    Request,
-    Writer,
+    Request, Writer,
+    oapi::{endpoint, extract::QueryParam},
+    prelude::Json,
 };
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-    field::Selector, statements::SelectStatement, Expr, Field, Fields, Idiom, Limit, Start,
+    Expr, Field, Fields, Idiom, Limit, Start, field::Selector, statements::SelectStatement,
 };
 use surrealdb_types::{SurrealValue, Table, ToSql};
-use tracing::{debug, info_span, instrument, Instrument};
+use tracing::{Instrument, debug, info_span, instrument};
 
 use crate::{
     db::model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy},
@@ -102,10 +102,9 @@ pub async fn list(
             //         });
             //     }
         }
-        //
         // stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
-        // stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
-        // stmt.what.push(Expr::from_public_value(
+        // stmt.start = Some(Start(Expr::from_public_value((page *
+        // limit).into_value()))); stmt.what.push(Expr::from_public_value(
         //     Table::new("workshop_items").into_value(),
         // ));
 

@@ -27,12 +27,11 @@ use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-        AssignOperator,
-        Idiom, Part,
-        data::{Assignment, Data},
-        expression::Expr,
-        statements::InsertStatement,
-    };
+    AssignOperator, Idiom, Part,
+    data::{Assignment, Data},
+    expression::Expr,
+    statements::InsertStatement,
+};
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
@@ -518,7 +517,7 @@ impl AuthActor {
                 banned: false,
                 last_logged_in: Utc::now(),
             };
-            let stmt = InsertStatement{
+            let stmt = InsertStatement {
                 into: Some(Expr::Table("users".into())),
                 data: Data::SingleExpression(Expr::from_public_value(user.clone().into_value())),
                 update: Some(Data::UpdateExpression(vec![Assignment {

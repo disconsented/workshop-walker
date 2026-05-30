@@ -6,12 +6,12 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::properties_service::PropertiesService,
     db::{
+        IUserID,
         model::{InternalSource, Status},
         properties_repository::PropertiesSilo,
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError},
 };
-use crate::db::IUserID;
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
 

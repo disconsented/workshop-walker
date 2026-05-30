@@ -1,18 +1,18 @@
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
+    Expr,
     data::Data,
     statements::{InsertStatement, UpsertStatement},
-    Expr,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        model::{Dependencies, InternalWorkshopItem},
         IItemID,
+        model::{Dependencies, InternalWorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,
@@ -185,7 +185,11 @@ async fn insert_data(
     let id = item.id.clone();
 
     let insert_item_deps = {
-        let mut stmt = InsertStatement{ relation: true, into: Some(Expr::Table("item_dependencies".into())), ..Default::default() };
+        let mut stmt = InsertStatement {
+            relation: true,
+            into: Some(Expr::Table("item_dependencies".into())),
+            ..Default::default()
+        };
 
         stmt.into = Some(Expr::Table("item_dependencies".into()));
         let data = children

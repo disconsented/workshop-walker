@@ -1,8 +1,10 @@
 use crate::{
-    db::model::{InternalSource, Status},
+    db::{
+        IUserID,
+        model::{InternalSource, Status},
+    },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
-use crate::db::IUserID;
 
 pub struct PropertiesService<R: PropertiesPort> {
     repo: R,

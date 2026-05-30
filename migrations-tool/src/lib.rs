@@ -1,6 +1,7 @@
 //! # migrations-tool
 //!
-//! > **AI-generated code.** This crate was built with Claude (Anthropic). Review
+//! > **AI-generated code.** This crate was built with Claude (Anthropic).
+//! > Review
 //! > all logic before deploying to production.
 //!
 //! A type-driven, async, up-only migration runner for [SurrealDB](https://surrealdb.com).
@@ -50,16 +51,17 @@
 //!     .execute(&db)  →  impl Stream<Item = Result<Outcome, Error>>
 //! ```
 //!
-//! - `validate()` is connection-free and checks for duplicate IDs and empty content.
+//! - `validate()` is connection-free and checks for duplicate IDs and empty
+//!   content.
 //! - `plan()` queries the state table and classifies each migration.
 //! - `execute()` drives the stream; each item is one migration outcome.
 //!
 //! ## Checksums
 //!
 //! Every migration's `content` is hashed with **BLAKE2b-256** (32-byte output,
-//! hex-encoded) before it is stored in the state table. On the next run the stored
-//! hash is compared against the hash of the file as it exists on disk. A mismatch
-//! means the migration was edited after it was applied.
+//! hex-encoded) before it is stored in the state table. On the next run the
+//! stored hash is compared against the hash of the file as it exists on disk. A
+//! mismatch means the migration was edited after it was applied.
 //!
 //! Call `.ignore_checksum_changes(true)` to skip mismatched migrations with a
 //! warning instead of returning [`Error::ChecksumMismatch`].

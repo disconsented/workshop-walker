@@ -3,8 +3,10 @@ use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 
-use crate::db::{IItemID, ItemID, model::{Class, InternalSource, Status}, IUserID};
-use crate::db::model::InternalUser;
+use crate::db::{
+    IItemID, IUserID, ItemID,
+    model::{Class, InternalSource, InternalUser, Status},
+};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]

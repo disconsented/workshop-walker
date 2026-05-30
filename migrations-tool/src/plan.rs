@@ -4,12 +4,13 @@ use async_stream::try_stream;
 use futures::Stream;
 use snafu::ResultExt as _;
 use surrealdb::{Connection, Surreal};
-use tracing::{info, info_span, trace, Instrument as _};
+use tracing::{Instrument as _, info, info_span, trace};
 
-use crate::checksum;
-use crate::error::{MigrationFailedSnafu, SurrealSnafu};
-use crate::types::{Migration, Outcome, SkipReason};
-use crate::Error;
+use crate::{
+    Error, checksum,
+    error::{MigrationFailedSnafu, SurrealSnafu},
+    types::{Migration, Outcome, SkipReason},
+};
 
 /// A classified set of migrations ready to execute.
 ///
@@ -33,13 +34,19 @@ impl Plan {
         &self.skipped
     }
 
-    /// Execute pending migrations in order, yielding one [`Outcome`] per migration.
+    /// Execute pending migrations in order, yielding one [`Outcome`] per
+    /// migration.
     ///
-    /// Each migration runs inside a `BEGIN / COMMIT TRANSACTION` block that also
-    /// inserts the state row, so a failed migration leaves no state behind.
+    /// Each migration runs inside a `BEGIN / COMMIT TRANSACTION` block that
+    /// also inserts the state row, so a failed migration leaves no state
+    /// behind.
     ///
-    /// The stream halts on the first error — subsequent migrations are not attempted.
-    pub fn execute<'db, C>(self, db: &'db Surreal<C>) -> impl Stream<Item = Result<Outcome, Error>> + 'db
+    /// The stream halts on the first error — subsequent migrations are not
+    /// attempted.
+    pub fn execute<'db, C>(
+        self,
+        db: &'db Surreal<C>,
+    ) -> impl Stream<Item = Result<Outcome, Error>> + 'db
     where
         C: Connection,
     {
@@ -68,17 +75,15 @@ async fn run_migration<C: Connection>(
         let checksum = checksum::compute(&migration.content);
         let t0 = Instant::now();
 
-        let tx = db
-            .clone()
-            .begin()
-            .await
-            .context(SurrealSnafu)?;
+        let tx = db.clone().begin().await.context(SurrealSnafu)?;
 
         let migration_result = tx
             .query(&migration.content)
             .await
             .and_then(|r| r.check())
-            .context(MigrationFailedSnafu { id: migration.id.clone() });
+            .context(MigrationFailedSnafu {
+                id: migration.id.clone(),
+            });
 
         let duration = t0.elapsed();
 
@@ -89,11 +94,8 @@ async fn run_migration<C: Connection>(
 
         let insert_result = tx
             .query(
-                "CREATE type::record($t, $id) SET \
-                 name = $name, \
-                 checksum = $checksum, \
-                 applied_at = time::now(), \
-                 duration_ms = $duration_ms",
+                "CREATE type::record($t, $id) SET name = $name, checksum = $checksum, applied_at \
+                 = time::now(), duration_ms = $duration_ms",
             )
             .bind(("t", table.to_string()))
             .bind(("id", migration.id.clone()))
@@ -102,16 +104,18 @@ async fn run_migration<C: Connection>(
             .bind(("duration_ms", duration.as_millis() as i64))
             .await
             .and_then(|r| r.check())
-            .context(MigrationFailedSnafu { id: migration.id.clone() });
+            .context(MigrationFailedSnafu {
+                id: migration.id.clone(),
+            });
 
         if let Err(e) = insert_result {
             let _ = tx.cancel().await;
             return Err(e);
         }
 
-        tx.commit()
-            .await
-            .context(MigrationFailedSnafu { id: migration.id.clone() })?;
+        tx.commit().await.context(MigrationFailedSnafu {
+            id: migration.id.clone(),
+        })?;
 
         info!(
             id = %migration.id,

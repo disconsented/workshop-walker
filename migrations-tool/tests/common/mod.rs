@@ -2,8 +2,7 @@
 
 use futures::StreamExt as _;
 use migrations_tool::{Error, Migration, Migrator, Outcome, SkipReason};
-use surrealdb::engine::any::Any;
-use surrealdb::Surreal;
+use surrealdb::{Surreal, engine::any::Any};
 
 fn m(id: &str, content: &str) -> Migration {
     Migration {
@@ -95,7 +94,8 @@ pub async fn rerun_all_skipped(db: &Surreal<Any>) {
     assert!(results.is_empty());
 }
 
-/// Scenario 4 — modified content with default config → ChecksumMismatch from plan().
+/// Scenario 4 — modified content with default config → ChecksumMismatch from
+/// plan().
 pub async fn checksum_mismatch_error(db: &Surreal<Any>) {
     // Apply original.
     let original = vec![m("001_a.surql", "DEFINE TABLE a SCHEMALESS;")];
@@ -109,7 +109,11 @@ pub async fn checksum_mismatch_error(db: &Surreal<Any>) {
 
     // Try to plan with modified content.
     let modified = vec![m("001_a.surql", "DEFINE TABLE a_modified SCHEMALESS;")];
-    let result = Migrator::from_strings(modified).validate().unwrap().plan(db).await;
+    let result = Migrator::from_strings(modified)
+        .validate()
+        .unwrap()
+        .plan(db)
+        .await;
 
     assert!(
         matches!(result, Err(Error::ChecksumMismatch { .. })),
@@ -117,7 +121,8 @@ pub async fn checksum_mismatch_error(db: &Surreal<Any>) {
     );
 }
 
-/// Scenario 5 — modified content with ignore → skip with ChecksumChangedButIgnored.
+/// Scenario 5 — modified content with ignore → skip with
+/// ChecksumChangedButIgnored.
 pub async fn checksum_mismatch_ignored(db: &Surreal<Any>) {
     // Apply original.
     let original = vec![m("001_a.surql", "DEFINE TABLE a SCHEMALESS;")];
@@ -144,7 +149,8 @@ pub async fn checksum_mismatch_ignored(db: &Surreal<Any>) {
     assert_eq!(plan2.skipped()[0].1, SkipReason::ChecksumChangedButIgnored);
 }
 
-/// Scenario 6 — bad SurrealQL → error, transaction rolled back, no state row written.
+/// Scenario 6 — bad SurrealQL → error, transaction rolled back, no state row
+/// written.
 pub async fn bad_sql_no_state_row(db: &Surreal<Any>) {
     let migrations = vec![m("001_bad.surql", "THIS IS NOT VALID SURQL !!!!!")];
 
@@ -162,7 +168,10 @@ pub async fn bad_sql_no_state_row(db: &Surreal<Any>) {
     // State table must be empty — transaction rolled back.
     let mut resp = db.query("SELECT * FROM _migrations").await.unwrap();
     let rows: Vec<serde_json::Value> = resp.take(0).unwrap();
-    assert!(rows.is_empty(), "state row was written despite transaction failure");
+    assert!(
+        rows.is_empty(),
+        "state row was written despite transaction failure"
+    );
 }
 
 /// Scenario 7 — duplicate IDs → validation error before any DB call.
@@ -182,7 +191,8 @@ pub async fn duplicate_ids(db: &Surreal<Any>) {
     let _ = db; // consumed to suppress lint
 }
 
-/// Scenario 8 — file source: lexical sort is correct across different magnitudes.
+/// Scenario 8 — file source: lexical sort is correct across different
+/// magnitudes.
 pub async fn lexical_sort(db: &Surreal<Any>, dir: &std::path::Path) {
     // Five filenames that span orders of magnitude but sort correctly lexically
     // because the prefix is fixed-width.
@@ -215,7 +225,8 @@ pub async fn lexical_sort(db: &Surreal<Any>, dir: &std::path::Path) {
     assert_eq!(pending[4].id, "9999999999_fifth.surql");
 }
 
-/// Scenario 9 — stream halts on first error; subsequent migrations not attempted.
+/// Scenario 9 — stream halts on first error; subsequent migrations not
+/// attempted.
 pub async fn stream_halts_on_error(db: &Surreal<Any>) {
     let migrations = vec![
         m("001_ok.surql", "DEFINE TABLE ok1 SCHEMALESS;"),
@@ -233,7 +244,12 @@ pub async fn stream_halts_on_error(db: &Surreal<Any>) {
     let results: Vec<_> = plan.execute(db).collect().await;
 
     // Should be: Ok(001 applied), Err(002 failed). 003 must NOT appear.
-    assert_eq!(results.len(), 2, "expected 2 results, got {}", results.len());
+    assert_eq!(
+        results.len(),
+        2,
+        "expected 2 results, got {}",
+        results.len()
+    );
     assert!(results[0].is_ok(), "first migration should succeed");
     assert!(results[1].is_err(), "second migration should fail");
 
@@ -243,7 +259,10 @@ pub async fn stream_halts_on_error(db: &Surreal<Any>) {
         .await
         .unwrap();
     let rows: Vec<serde_json::Value> = resp.take(0).unwrap();
-    assert!(rows.is_empty(), "migration 003 should not have been applied");
+    assert!(
+        rows.is_empty(),
+        "migration 003 should not have been applied"
+    );
 }
 
 /// Helper used in outcome assertions.

@@ -1,17 +1,17 @@
 use std::{env, path::Path, sync::Arc};
 
 use migrations_tool::{Migrator, Outcome};
-use snafu::{prelude::*, Whatever};
+use snafu::{Whatever, prelude::*};
 use surrealdb::{
+    Connection, Surreal,
     engine::{
-        any::{connect, Any},
+        any::{Any, connect},
         local::{Db, RocksDb},
-    }, opt::{auth::Root, IntoEndpoint},
-    Connection,
-    Surreal,
+    },
+    opt::{IntoEndpoint, auth::Root},
 };
-use tokio_stream::{wrappers::ReadDirStream, StreamExt};
-use tracing::{debug, error, info_span, Instrument};
+use tokio_stream::{StreamExt, wrappers::ReadDirStream};
+use tracing::{Instrument, debug, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use crate::{application::admin_service::AdminService, db::admin_repository::AdminSilo};
