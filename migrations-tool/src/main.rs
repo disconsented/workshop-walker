@@ -1,5 +1,4 @@
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use chrono::Utc;
 use clap::Parser;
@@ -23,7 +22,10 @@ fn main() {
     let path = args.dir.join(&filename);
 
     if let Err(e) = fs::create_dir_all(&args.dir) {
-        eprintln!("error: could not create directory '{}': {e}", args.dir.display());
+        eprintln!(
+            "error: could not create directory '{}': {e}",
+            args.dir.display()
+        );
         std::process::exit(1);
     }
 

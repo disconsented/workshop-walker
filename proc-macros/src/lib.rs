@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse::Parser, parse_macro_input, DeriveInput, Expr, Type};
+use syn::{DeriveInput, Expr, Type, parse::Parser, parse_macro_input};
 
 struct DualTypeAttr {
     internal_ty: Type,

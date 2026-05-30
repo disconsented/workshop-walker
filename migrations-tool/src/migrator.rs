@@ -1,16 +1,15 @@
-use std::collections::HashSet;
-use std::marker::PhantomData;
-use std::path::Path;
+use std::{collections::HashSet, marker::PhantomData, path::Path};
 
 use snafu::ResultExt as _;
 use surrealdb::{Connection, Surreal};
-use tracing::{debug, error, info, info_span, warn, Instrument as _};
+use tracing::{Instrument as _, debug, error, info, info_span, warn};
 
-use crate::checksum;
-use crate::error::{IoSnafu, InvalidUtf8Snafu, StateQuerySnafu};
-use crate::plan::Plan;
-use crate::types::{Migration, SkipReason};
-use crate::Error;
+use crate::{
+    Error, checksum,
+    error::{InvalidUtf8Snafu, IoSnafu, StateQuerySnafu},
+    plan::Plan,
+    types::{Migration, SkipReason},
+};
 
 /// Typestate marker — builder methods are available, `plan()` is not.
 #[derive(Debug)]
@@ -23,8 +22,8 @@ pub struct Validated;
 /// Async migration runner, parameterised by a typestate `S`.
 ///
 /// Start with [`Migrator::from_files`] or [`Migrator::from_strings`], configure
-/// via builder methods, advance to [`Validated`] via [`Migrator::validate`], then
-/// call [`Migrator::plan`].
+/// via builder methods, advance to [`Validated`] via [`Migrator::validate`],
+/// then call [`Migrator::plan`].
 #[derive(Debug)]
 pub struct Migrator<S = Unvalidated> {
     pub(crate) migrations: Vec<Migration>,
@@ -34,17 +33,22 @@ pub struct Migrator<S = Unvalidated> {
 }
 
 impl Migrator<Unvalidated> {
-    /// Load every `*.surql` file from `dir`, sorted lexicographically by filename.
+    /// Load every `*.surql` file from `dir`, sorted lexicographically by
+    /// filename.
     ///
     /// `Migration::id` and `Migration::name` are both set to the full filename.
     pub fn from_files(dir: impl AsRef<Path>) -> Result<Self, Error> {
         let dir = dir.as_ref();
         let mut paths = Vec::new();
 
-        let entries = std::fs::read_dir(dir).context(IoSnafu { path: dir.to_path_buf() })?;
+        let entries = std::fs::read_dir(dir).context(IoSnafu {
+            path: dir.to_path_buf(),
+        })?;
 
         for entry in entries {
-            let entry = entry.context(IoSnafu { path: dir.to_path_buf() })?;
+            let entry = entry.context(IoSnafu {
+                path: dir.to_path_buf(),
+            })?;
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("surql") {
                 paths.push(path);
@@ -146,10 +150,9 @@ impl Migrator<Unvalidated> {
     }
 }
 
-
 impl Migrator<Validated> {
-    /// Query the database to determine which migrations have already been applied,
-    /// then classify the remaining ones as pending or skipped.
+    /// Query the database to determine which migrations have already been
+    /// applied, then classify the remaining ones as pending or skipped.
     ///
     /// Returns [`Error::ChecksumMismatch`] if a migration's content has changed
     /// and `ignore_checksum_changes` is `false`.
@@ -185,8 +188,7 @@ impl Migrator<Validated> {
             .await
             .context(StateQuerySnafu)?;
 
-        let records: Vec<surrealdb::types::Object> =
-            response.take(0).context(StateQuerySnafu)?;
+        let records: Vec<surrealdb::types::Object> = response.take(0).context(StateQuerySnafu)?;
 
         debug!(count = records.len(), "fetched applied migrations");
 
@@ -202,10 +204,7 @@ impl Migrator<Validated> {
         Ok(applied)
     }
 
-    fn classify(
-        &self,
-        applied: std::collections::HashMap<String, String>,
-    ) -> Result<Plan, Error> {
+    fn classify(&self, applied: std::collections::HashMap<String, String>) -> Result<Plan, Error> {
         let mut pending = Vec::new();
         let mut skipped = Vec::new();
 
@@ -227,16 +226,15 @@ impl Migrator<Validated> {
                             current = %current,
                             "checksum changed but ignore_checksum_changes is set — skipping"
                         );
-                        skipped.push((
-                            migration.clone(),
-                            SkipReason::ChecksumChangedButIgnored,
-                        ));
+                        skipped.push((migration.clone(), SkipReason::ChecksumChangedButIgnored));
                     } else {
                         error!(
                             id = %migration.id,
                             "checksum mismatch; set ignore_checksum_changes(true) to bypass"
                         );
-                        return Err(Error::ChecksumMismatch { id: migration.id.clone() });
+                        return Err(Error::ChecksumMismatch {
+                            id: migration.id.clone(),
+                        });
                     }
                 }
             }

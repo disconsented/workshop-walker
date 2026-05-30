@@ -8,7 +8,10 @@ async fn db() -> (surrealdb::Surreal<surrealdb::engine::any::Any>, TempDir) {
     let db = surrealdb::engine::any::connect(path)
         .await
         .expect("connect rocksdb");
-    db.use_ns("test").use_db("test").await.expect("use_ns/use_db");
+    db.use_ns("test")
+        .use_db("test")
+        .await
+        .expect("use_ns/use_db");
     (db, dir)
 }
 

@@ -6,11 +6,10 @@ use tracing::{debug, error};
 use crate::{
     db::{
         IItemID, IUserID, UserID,
-        model::{InternalSource, InternalWorkshopItemProperties, Property, Status},
+        model::{InternalSource, InternalUser, InternalWorkshopItemProperties, Property, Status},
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
-use crate::db::model::InternalUser;
 
 pub struct PropertiesSilo {
     pub db: Surreal<Db>,

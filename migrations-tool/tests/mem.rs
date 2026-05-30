@@ -4,7 +4,10 @@ use surrealdb::engine::any::connect;
 
 async fn db() -> surrealdb::Surreal<surrealdb::engine::any::Any> {
     let db = connect("mem://").await.expect("connect mem://");
-    db.use_ns("test").use_db("test").await.expect("use_ns/use_db");
+    db.use_ns("test")
+        .use_db("test")
+        .await
+        .expect("use_ns/use_db");
     db
 }
 

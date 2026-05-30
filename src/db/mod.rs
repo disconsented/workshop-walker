@@ -12,7 +12,6 @@ pub mod user_names_repository;
 use macros::define_id;
 use surrealdb_types::SurrealValue;
 
-
 define_id!("users", IUserID, UserID, i64);
 define_id!("workshop_items", IItemID, ItemID, i64);
 define_id!("apps", IAppID, AppID, i64);
@@ -20,7 +19,6 @@ define_id!("tags", ITagID, TagID, String);
 define_id!("usernames", IUsernameID, UsernameID, i64);
 define_id!("properties", IPropertyID, PropertyID, String);
 define_id!("votes", IVoteID, VoteID, String);
-
 
 #[cfg(test)]
 mod test {
@@ -59,7 +57,8 @@ mod test {
         test_id::<IUsernameID, UsernameID, i64>("usernames", 456);
         test_id::<IPropertyID, PropertyID, String>("properties", "prop1".to_string());
         test_id::<IVoteID, VoteID, String>("votes", "vote1".to_string());
-        // test_id::<ICompanionID, CompanionID, String>("companions", "comp1".to_string());
+        // test_id::<ICompanionID, CompanionID, String>("companions",
+        // "comp1".to_string());
 
         // For complex IDs, manual check
         let key = vec![

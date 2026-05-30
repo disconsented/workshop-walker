@@ -1,5 +1,7 @@
-use std::collections::{BTreeSet, HashSet};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::{BTreeSet, HashSet},
+    fmt::{Display, Formatter},
+};
 
 use chrono::{DateTime, Utc};
 use macros::dual_struct;
@@ -10,6 +12,7 @@ use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::SurrealValue;
 use tracing::error;
+
 use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
     processing::language_actor::DetectedLanguage,
@@ -62,7 +65,8 @@ fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surre
     internal
         .into_iter()
         .map(ExternalTag::try_from)
-        .collect::<Result<_, _>>().inspect_err(|error| error!(?error, "to_external_tag"))
+        .collect::<Result<_, _>>()
+        .inspect_err(|error| error!(?error, "to_external_tag"))
 }
 
 fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
@@ -145,7 +149,8 @@ fn to_external_full_item(
     internal
         .into_iter()
         .map(TryFrom::try_from)
-        .collect::<Result<_, _>>().inspect_err(|error| error!(?error, "to_external_full_item"))
+        .collect::<Result<_, _>>()
+        .inspect_err(|error| error!(?error, "to_external_full_item"))
 }
 
 fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<InternalFullWorkshopItem> {

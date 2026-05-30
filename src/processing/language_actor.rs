@@ -1,5 +1,9 @@
-use std::{collections::HashMap, convert::Into, fmt};
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Into,
+    fmt,
+};
+
 use lingua::{
     Language,
     Language::{Chinese, English, French, Japanese, Korean, Portuguese, Russian, Spanish},
@@ -9,7 +13,6 @@ use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{Error, Kind, SurrealValue, Value};
-
 
 // The threshold of total words a language must be, to be considered valid for
 // detection.
@@ -27,7 +30,7 @@ const WORD_PERCENTAGE: f32 = 0.2;
     PartialEq,
     Ord,
     PartialOrd,
-    Hash
+    Hash,
 )]
 #[repr(u8)]
 pub enum DetectedLanguage {
@@ -75,7 +78,7 @@ impl SurrealValue for DetectedLanguage {
 
     fn from_value(value: Value) -> Result<Self, Error>
     where
-        Self: Sized
+        Self: Sized,
     {
         match value.into_u8()? {
             1 => Ok(DetectedLanguage::English),

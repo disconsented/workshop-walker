@@ -38,9 +38,11 @@ pub enum Outcome {
 /// Why a migration was not executed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SkipReason {
-    /// The migration is already recorded in the state table with a matching checksum.
+    /// The migration is already recorded in the state table with a matching
+    /// checksum.
     AlreadyApplied,
-    /// The migration is recorded in the state table but its content has changed.
+    /// The migration is recorded in the state table but its content has
+    /// changed.
     ///
     /// This only occurs when `ignore_checksum_changes(true)` is set.
     ChecksumChangedButIgnored,

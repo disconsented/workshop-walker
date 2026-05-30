@@ -31,8 +31,7 @@ pub enum Error {
     /// Call `.ignore_checksum_changes(true)` on the migrator to treat this as
     /// a skip instead of an error.
     #[snafu(display(
-        "Checksum mismatch for migration '{}'. \
-         Set ignore_checksum_changes(true) to bypass.",
+        "Checksum mismatch for migration '{}'. Set ignore_checksum_changes(true) to bypass.",
         id
     ))]
     ChecksumMismatch { id: String },
