@@ -1,5 +1,6 @@
 use std::{env, path::Path, sync::Arc};
 
+use migrations_tool::{Migrator, Outcome};
 use snafu::{prelude::*, Whatever};
 use surrealdb::{
     engine::{
@@ -9,9 +10,7 @@ use surrealdb::{
     Connection,
     Surreal,
 };
-use tokio_stream::StreamExt;
-use surrealkit::EmbeddedSchemaFile;
-use tokio_stream::wrappers::ReadDirStream;
+use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use tracing::{debug, error, info_span, Instrument};
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -43,11 +42,9 @@ async fn main() -> Result<()> {
         .whatever_context("deserializing config")?;
     let span = info_span!("spawn");
 
-    // debug!("checking migrations");
-    //
-    // debug!("migrations finished");
-
-    let db = setup_database(&settings).await?;
+    let db = setup_database(&settings)
+        .await
+        .inspect_err(|error| error!(?error, "Failed to setup db"))?;
     {
         let admin_service = AdminService::new(AdminSilo::new(db.clone()));
         for user in &settings.admin_users {
@@ -71,38 +68,6 @@ async fn main() -> Result<()> {
 }
 
 async fn setup_database(settings: &app_config::Config) -> Result<Surreal<Db>, Error> {
-    // Another frustrating limitation with this ecosystem, surrealkit SPECIFICALLY
-    // needs Surreal<Any> which cannot be casted or converted into, which wouldn't
-    // be a massive issue if connect also didnt return a concerte type :|
-    // So, now, we double open or I throw together my own migration code
-    {
-        debug!("running migrations");
-        let db = surrealdb::engine::any::connect("./workshopdb")
-            .await
-            .whatever_context("connecting to 'any' db")?;
-        db.use_ns("workshop")
-            .use_db("workshop")
-            .await
-            .whatever_context("using ns/db")?;
-
-        let files = tokio::fs::read_dir("./migrations")
-            .await
-            .whatever_context("reading migrations directory")?;
-        let files = ReadDirStream::new(files)
-            .filter_map(|dir| dir.ok().map(|dir| EmbeddedSchemaFile {
-                path: dir.path(),
-                sql: "",
-            })
-            .collect::<Vec<_>>();
-
-        surrealkit::run_sync();
-
-        surrealkit::run_sync_embedded(&db, &files)
-            .await
-            .whatever_context("syncing surreal")?;
-        debug!("migrations finished");
-    }
-
     let db = Surreal::new::<RocksDb>("./workshopdb".to_string())
         .await
         .whatever_context("connecting to db")?;
@@ -127,6 +92,33 @@ async fn setup_database(settings: &app_config::Config) -> Result<Surreal<Db>, Er
     })
     .await
     .whatever_context("signing in to db")?;
+
+    let plan = Migrator::from_files("./migrations")
+        .whatever_context("loading migrations")?
+        .with_table("_migrations")
+        .ignore_checksum_changes(false)
+        .validate()
+        .whatever_context("validating migrations")?
+        .plan(&db)
+        .await
+        .whatever_context("planning migrations")?;
+
+    debug!("will apply {} migrations", plan.pending().len());
+
+    {
+        // The stream is not Unpin; pin it before polling.
+        let mut stream = std::pin::pin!(plan.execute(&db));
+        while let Some(outcome) = stream.next().await {
+            match outcome.whatever_context("applying migration")? {
+                Outcome::Applied { id, duration } => {
+                    debug!("applied {id} in {:?}", duration);
+                }
+                Outcome::Skipped { id, .. } => {
+                    debug!("skipped {id}");
+                }
+            }
+        }
+    }
 
     Ok(db)
 }
