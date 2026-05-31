@@ -27,6 +27,8 @@ use crate::{
     web::DB_POOL,
 };
 
+// ToDo: Seperate out filtering to its own struct
+// And, handle pagination based on the last element for performance
 #[instrument(skip_all)]
 #[endpoint]
 pub async fn list(
