@@ -23,8 +23,6 @@ pub enum OrderBy {
     Alphabetical,
     #[default]
     LastUpdated,
-    Score,
-    Dependents,
 }
 
 impl OrderBy {
@@ -32,8 +30,6 @@ impl OrderBy {
         match self {
             OrderBy::Alphabetical => "title",
             OrderBy::LastUpdated => "last_updated",
-            OrderBy::Score => "score",
-            OrderBy::Dependents => "dependencies_length",
         }
     }
 }

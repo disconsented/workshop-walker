@@ -1,18 +1,29 @@
 use salvo::{
-    Request, Writer,
-    oapi::{endpoint, extract::QueryParam},
-    prelude::Json,
+    oapi::{endpoint, extract::QueryParam}, prelude::Json,
+    Request,
+    Writer,
 };
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    Expr, Field, Fields, Idiom, Limit, Start, field::Selector, statements::SelectStatement,
+    field::Selector, lookup::{LookupKind, LookupSubject}, order::{OrderList, Ordering}, part::DestructurePart, statements::SelectStatement,
+    BinaryOperator,
+    Closure, Cond, Dir, Expr, Expr::Binary, Field, Fields, Idiom, Kind, Limit,
+    Literal,
+    Lookup, Order,
+    Param,
+    Part,
+    RecordIdLit,
+    Start,
 };
-use surrealdb_types::{SurrealValue, Table, ToSql};
-use tracing::{Instrument, debug, info_span, instrument};
+use surrealdb_types::{RecordId, SurrealValue, Table, ToSql, Value};
+use tracing::{debug, info_span, instrument, Instrument};
 
 use crate::{
-    db::model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy},
+    db::{
+        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status}, IAppID,
+        ITagID,
+    },
     processing::language_actor::DetectedLanguage,
     web,
     web::DB_POOL,
@@ -25,10 +36,10 @@ pub async fn list(
     app: QueryParam<i64, true>,
     page: QueryParam<u64, false>,
     limit: QueryParam<u64, false>,
-    languages: QueryParam<DetectedLanguage, false>,
+    language: QueryParam<DetectedLanguage, false>,
     mut tags: QueryParam<Vec<String>, false>,
     mut title: QueryParam<String, false>,
-    last_updated: QueryParam<u64, false>,
+    last_updated: QueryParam<i64, false>,
     mut order_by: QueryParam<OrderBy, false>,
 ) -> web::Result<Json<Vec<ExternalWorkshopItem>>> {
     let page = page.unwrap_or(0);
@@ -36,228 +47,122 @@ pub async fn list(
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     #[instrument(skip_all)]
     async fn query(
-        _app: i64,
+        app: i64,
         page: u64,
         limit: u64,
-        _languages: Option<DetectedLanguage>,
-        _tags: Vec<String>,
-        _title: Option<String>,
-        _last_updated: Option<u64>,
-        _order_by: Option<OrderBy>,
+        language: Option<DetectedLanguage>,
+        tags: Vec<String>,
+        title: Option<String>,
+        last_updated: Option<i64>,
+        order_by: Option<OrderBy>,
         db: &Surreal<Db>,
     ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
+        let app = IAppID::from(app);
         let mut stmt = SelectStatement::default();
+        stmt.what = vec![Expr::Table("workshop_items".into())];
         {
-            // stmt.fields = Fields::Select(vec![
-            //     Field::All,
-            //     Field::Single(Selector {
-            //         expr: Expr::Idiom(Idiom::field("appid".into())),
-            //         alias: Some(Idiom::field("app".into())),
-            //     }),
-            // ]);
-
-            //     {
-            //         stmt.expr.0.push(Field::Single {
-            //             expr: idiom(
-            //                 "tags.{id: id.to_string(), app,
-            // display_name}",
-            //             )
-            //             .expect(
-            //                 "expanding tags
-            // idiom",
-            //             )
-            //             .into(),
-            //             alias: Some("tags".into()),
-            //         });
-            //     }
-            //     {
-            //         stmt.expr.0.push(Field::Single {
-            //             // Select _approved_ props only
-            //             expr: idiom(
-            //
-            // r"->workshop_item_properties.filter(|$prop|$prop.status ==
-            // 1)[*].{                                 id:
-            // id.to_string(),                                 in:
-            // in.to_string(),                                 out:
-            // out.id.{                                     class,
-            //                                     `value`
-            //                                 },
-            //                                 source: 'system',
-            //                                 status,
-            //                                 upvote_count,
-            //                                 vote_count
-            //                             }",
-            //             )
-            //             .expect("expanding properties idiom")
-            //             .into(),
-            //             alias: Some("properties".into()),
-            //         });
-            //     }
-            //     if let Some(OrderBy::Dependents) = order_by {
-            //         stmt.expr.0.push(Field::Single {
-            //             expr: idiom(" <-item_dependencies.len()")
-            //                 .expect("expanding item_tags idiom")
-            //                 .into(),
-            //             alias: Some("dependencies_length".into()),
-            //         });
-            //     }
+            stmt.fields = Fields::Select(vec![
+                Field::All,
+                Field::Single(Selector {
+                    expr: Expr::Idiom(Idiom(vec![Part::Graph(Lookup {
+                        kind: LookupKind::Graph(Dir::Out),
+                        what: vec![LookupSubject::Table {
+                            table: "workshop_item_properties".to_string(),
+                            referencing_field: None,
+                        }],
+                        ..Default::default()
+                    })])),
+                    alias: Some(Idiom(vec![
+                        Part::Field("properties".to_string()),
+                        Part::Method(
+                            "filter".to_string(),
+                            vec![Expr::Closure(Box::new(Closure {
+                                args: vec![(Param::new("prop".to_string()), Kind::Any)],
+                                returns: None,
+                                body: Binary {
+                                    left: Box::new(Expr::Idiom(Idiom(vec![
+                                        Part::Start(Expr::Param(Param::new("prop".to_string()))),
+                                        Part::Field("status".to_string()),
+                                    ]))),
+                                    op: BinaryOperator::ExactEqual,
+                                    right: Box::new(Expr::Literal(Literal::Integer(
+                                        Status::Accepted as i64,
+                                    ))),
+                                },
+                            }))],
+                        ),
+                    ])),
+                }),
+                Field::Single(Selector {
+                    expr: Expr::Idiom(Idiom(vec![Part::Field("tags".to_string()), Part::All])),
+                    alias: None,
+                }),
+            ]);
         }
-        // stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
-        // stmt.start = Some(Start(Expr::from_public_value((page *
-        // limit).into_value()))); stmt.what.push(Expr::from_public_value(
-        //     Table::new("workshop_items").into_value(),
-        // ));
+        stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
+        stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
+        stmt.cond = {
+            let mut conditions = vec![];
+            conditions.push(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom::field("app".to_string()))),
+                op: BinaryOperator::Equal,
+                right: Box::new(Expr::from_public_value(RecordId::from(app).into_value())),
+            });
 
-        // stmt.cond = {
-        //     let conditions = vec![
-        //         languages.map(|lang| {
-        //             Expression::new(
-        //                 Value::Array(vec![(lang as u8).into(),
-        // Value::Number(0.into())].into()),
-        // Operator::ContainAny,
-        // Value::Idiom("languages".into()),             )
-        //         }),
-        //         last_updated.map(|updated| {
-        //             Expression::new(
-        //                 Value::Idiom("last_updated".into()),
-        //                 Operator::MoreThanOrEqual,
-        //                 Value::Number(updated.into()),
-        //             )
-        //         }),
-        //         (!tags.is_empty()).then(|| {
-        //             if true {
-        //                 // All
-        //                 Expression::new(
-        //                     Value::Idiom("tags".into()),
-        //                     Operator::ContainAll,
-        //                     Value::Array(
-        //                         tags.iter()
-        //                             .map(|tag| {
-        //                                 to_value(
-        //                                     RecordId::from_str(tag)
-        //                                         .map(ITagID::from)
-        //
-        // .unwrap_or(ITagID::from(tag.to_string())),
-        // )                                 .unwrap()
-        //                             })
-        //                             .collect::<Vec<_>>()
-        //                             .into(),
-        //                     ),
-        //                 )
-        //             } else {
-        //                 // Either (unsupported for now)
-        //                 Expression::new(
-        //                     Value::Idiom(
-        //                         idiom(&format!(
-        //                             "tags.any(|$var| {} )",
-        //                             tags.into_iter()
-        //                                 .map(|tag| format!(
-        //                                     "$var.id == {}",
-        //                                     RecordId::from_str(&tag)
-        //                                         .unwrap_or(RecordId::new("tags",
-        // tag))                                 ))
-        //                                 .join(" OR ")
-        //                         ))
-        //                         .unwrap(),
-        //                     ),
-        //                     Operator::Equal,
-        //                     Value::Bool(true),
-        //                 )
-        //             }
-        //         }),
-        //         title.map(|title_query| {
-        //             Expression::new(
-        //                 Value::Idiom("title".into()),
-        //                 Operator::Like,
-        //                 Value::Strand(title_query.into()),
-        //             )
-        //         }),
-        //         Some(Expression::new(
-        //             Value::Idiom("appid".into()),
-        //             Operator::Equal,
-        //             Value::Number(app.into()),
-        //         )),
-        //     ]
-        //     .into_iter()
-        //     .flatten()
-        //     .collect::<Vec<Expr>>();
-        //
-        //     if conditions.is_empty() {
-        //         None
-        //     } else {
-        //         let mut values = Value::None;
-        //         for mut condition in &conditions.into_iter().chunks(2) {
-        //             let c1 = condition.next();
-        //             let c2 = condition.next();
-        //             match (values, c1, c2) {
-        //                 (Value::None, Some(expr1), Some(expr2)) => {
-        //                     values = Value::Expression(Box::from(Expression::new(
-        //                         expr1.into(),
-        //                         Operator::And,
-        //                         expr2.into(),
-        //                     )));
-        //                 }
-        //                 (Value::None, Some(expr1), None) => {
-        //                     values = Value::Expression(Box::from(expr1));
-        //                 }
-        //                 (Value::Expression(old), Some(expr1), Some(expr2)) => {
-        //                     values = Value::Expression(Box::from(Expression::new(
-        //                         Value::Expression(old),
-        //                         Operator::And,
-        //                         Value::Expression(Box::from(Expression::new(
-        //                             expr1.into(),
-        //                             Operator::And,
-        //                             expr2.into(),
-        //                         ))),
-        //                     )));
-        //                 }
-        //                 (Value::Expression(old), Some(expr1), None) => {
-        //                     values = Value::Expression(Box::from(Expression::new(
-        //                         Value::Expression(old),
-        //                         Operator::And,
-        //                         expr1.into(),
-        //                     )));
-        //                 }
-        //                 (other, ..) => {
-        //                     values = other;
-        //                 }
-        //             }
-        //         }
-        //         let mut cond = Cond::default();
-        //         cond.0 = to_value(values).unwrap();
-        //         Some(cond)
-        //     }
-        // };
+            if let Some(language) = language {
+                conditions.push(Expr::Binary {
+                    left: Box::new(Expr::Idiom(Idiom::field("language".to_string()))),
+                    op: BinaryOperator::ContainAny,
+                    right: Box::new(Expr::Literal(Literal::Integer(language as i64))),
+                });
+            }
 
-        // // A horrendous hack for ordering, because, the types are not xposed.
-        // stmt.order = order_by.map(|order_term| {
-        //     use serde_json::{Map, Value};
-        //     use str_macro::str;
-        //     let terms = Map::from_iter([
-        //         (
-        //             str!("value"),
-        //
-        // serde_json::to_value(idiom(order_term.column_name()).unwrap()).unwrap(),
-        //         ),
-        //         (str!("collate"), Value::Bool(false)),
-        //         (str!("numeric"), Value::Bool(false)),
-        //         (str!("direction"), Value::Bool(false)),
-        //     ]);
-        //     serde_json::from_value(Value::Object(Map::from_iter([(
-        //         str!("Order"),
-        //         Value::Array(vec![Value::Object(terms)]),
-        //     )])))
-        //     .unwrap()
-        // });
+            if !tags.is_empty() {
+                conditions.push(Expr::Binary {
+                    left: Box::new(Expr::Idiom(Idiom::field("tags".to_string()))),
+                    op: BinaryOperator::ContainAll,
+                    right: Box::new(Expr::Literal(Literal::Array(
+                        tags.into_iter()
+                            .map(|tag| Expr::from_public_value(ITagID::from(tag).into_value()))
+                            .collect::<Vec<_>>(),
+                    ))),
+                });
+            }
 
-        let stmt = r#"SELECT
-    *,
-    ->workshop_item_properties AS properties,
-    tags.{id, app, display_name}
-FROM workshop_items
-LIMIT 50
-START 0;
-"#;
+            if let Some(title) = title {
+                conditions.push(Expr::Binary {
+                    left: Box::new(Expr::Idiom(Idiom::field("title".to_string()))),
+                    op: BinaryOperator::Contain,
+                    right: Box::new(Expr::Literal(Literal::String(title))),
+                });
+            }
+
+            if let Some(last_updated) = last_updated {
+                conditions.push(Expr::Binary {
+                    left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
+                    op: BinaryOperator::MoreThan,
+                    right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
+                });
+            }
+
+            Some(Cond(Expr::Literal(Literal::Array(conditions))))
+        };
+
+        stmt.order = order_by.map(|order_by| {
+            Ordering::Order(OrderList(vec![Order {
+                value: Idiom::field(order_by.column_name().to_string()),
+                collate: false,
+                numeric: false,
+                direction: false,
+            }]))
+        });
+
+        db.query(
+            "SELECT *, ->workshop_item_properties AS properties.filter(|$prop|$prop.status == \
+             1).*, tags.* FROM workshop_items WHERE [app = (apps:294100)] ORDER BY last_updated \
+             DESC LIMIT 50 START 0",
+        )
+        .await;
         debug!(sql = stmt.to_sql(), "running big query");
         let mut results = db.query(stmt).await.whatever_context("querying")?;
 
@@ -274,7 +179,7 @@ START 0;
         app.into_inner(),
         page,
         limit,
-        *languages,
+        *language,
         tags.take().unwrap_or_default(),
         title.take(),
         *last_updated,
