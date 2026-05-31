@@ -13,14 +13,11 @@
 		faThumbsUp,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { Switch } from '@skeletonlabs/skeleton-svelte';
-	import { Accordion } from '@skeletonlabs/skeleton-svelte';
-	import { Pagination } from '@skeletonlabs/skeleton-svelte';
+	import { Accordion, Dialog, Pagination, Switch } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import PropertyPrompt from './PropertyPrompt.svelte';
 	import Property from './Property.svelte';
-	import { Dialog } from '@skeletonlabs/skeleton-svelte';
 	import { onNavigate } from '$app/navigation';
 	import type { PageData } from '*.svelte';
 
@@ -277,17 +274,19 @@
 		<h1 class="mb-4 text-4xl font-bold"><a href="#title">{item.title}</a></h1>
 		<!--Details-->
 		<div class="text-surface-600 dark:text-surface-400 flex flex-wrap items-center gap-4 text-sm">
-			<span
-				>Author: <a
-					href="https://steamcommunity.com/profiles/{item.author.id}"
-					target="_self"
-					rel=""
-					class="btn preset-tonal-primary"
+			{#if item.author}
+				<span
+					>Author: <a
+						href="https://steamcommunity.com/profiles/{item.author.id}"
+						target="_self"
+						rel=""
+						class="btn preset-tonal-primary"
+					>
+						{item.author.name}
+						<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+					</a></span
 				>
-					{item.author.name}
-					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-				</a></span
-			>
+			{/if}
 			<span>Last Updated: <TimeAgo date={item.last_updated}></TimeAgo></span>
 			<span>Upvote Percentage: {(Math.round(item.score * 100) / 100) * 100}%</span>
 			<span

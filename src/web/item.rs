@@ -1,18 +1,26 @@
 use std::sync::OnceLock;
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
+use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
 use salvo::{
-    Depot, Writer,
-    oapi::{endpoint, extract::PathParam},
-    prelude::{Json, StatusCode, StatusError},
+    oapi::{endpoint, extract::PathParam}, prelude::{Json, StatusCode, StatusError},
+    Depot,
+    Writer,
 };
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
+use surrealdb_core::sql::{
+    field::Selector, lookup::{LookupKind, LookupSubject}, part::DestructurePart, statements::SelectStatement, BinaryOperator, Closure, Dir, Expr, Field, Fields, Idiom, Kind,
+    Literal,
+    Lookup,
+    Param,
+    Part,
+};
+use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{debug, error, instrument};
 
 use crate::{
     db::{
-        IItemID, IUserID,
-        model::{ExternalFullWorkshopItem, InternalFullWorkshopItem},
+        model::{ExternalFullWorkshopItem, InternalFullWorkshopItem, Status}, IItemID,
+        IUserID,
     },
     web::auth,
 };
@@ -108,102 +116,116 @@ async fn get_item(
     id: IItemID,
     user: Option<IUserID>,
 ) -> Result<InternalFullWorkshopItem> {
-    let properties = match user {
-        Some(user) => {
-            let user: i64 = user
-                .try_into_external()
-                .map_err(|_| InnerError::InternalError)?
-                .into();
-            format!(
-                "filter(|$prop: any| $prop.status == 1 OR $prop.source == {user})[*].{{
-                        id: id,
-                        in: in.to_string(),
-                        out: out.id.{{
-                            class,
-                            `value`
-                        }},
-                        source: 'system',
-                        status,
-                        upvote_count,
-                        vote_count,
-                        vote_state: votes:{{
-                            item: $id,
-                            link: out,
-                            user: {{ 0 }}
-                        }}.score
-                    }}",
-            )
-        }
-        None => "filter(|$prop: any| $prop.status == 1)[*].{
-                        id: id.id(),
-                        in: in.to_string(),
-                        out: out.id.{
-                            class,
-                            `value`
+    let dep_fields = [
+        DestructurePart::Field("app".to_string()),
+        DestructurePart::Field("author".to_string()),
+        DestructurePart::Field("description".to_string()),
+        DestructurePart::Field("id".to_string()),
+        DestructurePart::Field("languages".to_string()),
+        DestructurePart::Field("last_updated".to_string()),
+        DestructurePart::Field("preview_url".to_string()),
+        DestructurePart::Field("score".to_string()),
+        DestructurePart::Field("title".to_string()),
+        DestructurePart::All("tags".to_string()),
+        DestructurePart::Aliased(
+            "dependencies".to_string(),
+            Idiom(vec![Part::Value(Expr::Literal(Literal::Array(vec![])))]),
+        ),
+        DestructurePart::Aliased(
+            "dependants".to_string(),
+            Idiom(vec![]),
+        ),
+    ];
+    let mut stmt = SelectStatement::default();
+    stmt.what = vec![Expr::from_public_value(
+        RecordId::from(id.clone()).into_value(),
+    )];
+
+    stmt.fields = Fields::Select(vec![
+        Field::All,
+        Field::Single(Selector {
+            expr: Expr::Idiom(Idiom(vec![Part::Field("tags".to_string()), Part::All])),
+            alias: None,
+        }),
+        Field::Single(Selector {
+            expr: Expr::Idiom(Idiom(vec![Part::Field("author".to_string()), Part::All])),
+            alias: None,
+        }),
+        Field::Single(Selector {
+            expr: Expr::Idiom(Idiom(vec![
+                Part::Graph(Lookup {
+                    kind: LookupKind::Graph(Dir::Out),
+                    what: vec![LookupSubject::Table {
+                        table: "workshop_item_properties".to_string(),
+                        referencing_field: None,
+                    }],
+                    ..Default::default()
+                }),
+                Part::All,
+            ])),
+            // ToDo: Filter for user submitted props
+            alias: Some(Idiom(vec![
+                Part::Field("properties".to_string()),
+                Part::Method(
+                    "filter".to_string(),
+                    vec![Expr::Closure(Box::new(Closure {
+                        args: vec![(Param::new("prop".to_string()), Kind::Any)],
+                        returns: None,
+                        body: Expr::Binary {
+                            left: Box::new(Expr::Idiom(Idiom(vec![
+                                Part::Start(Expr::Param(Param::new("prop".to_string()))),
+                                Part::Field("status".to_string()),
+                            ]))),
+                            op: BinaryOperator::ExactEqual,
+                            right: Box::new(Expr::Literal(Literal::Integer(
+                                Status::Accepted as i64,
+                            ))),
                         },
-                        source: 'system',
-                        status,
-                        upvote_count,
-                        vote_count
-                    }"
-        .to_string(),
-    };
-    let query = "SELECT *, type::number(id.id()) as id, type::record('usernames', \
-                 type::number(author)).{
-                id: id,
-                name
-            } AS author, tags.{
-                id: id.id(),
-                app,
-                display_name
-            } AS tags ->workshop_item_properties."
-        .to_string()
-        + &properties
-        + " AS properties, $id->item_dependencies[*].{
-                id: id,
-                title: out.title,
-                app: out.app,
-                author: out.author.{
-                    id: type::number(id.id()),
-                    name
-                },
-                languages: out.languages,
-                last_updated: out.last_updated,
-                tags: out.tags.{
-                    id: id.to_string(),
-                    app,
-                    display_name
-                },
-                preview_url: out.preview_url,
-                score: out.score,
-                description: out.description,
-                properties: []
-            } AS dependencies, id<-item_dependencies[*].{
-                id: type::number(in.id.id()),
-                title: in.title,
-                app: in.appid,
-                author: type::record('usernames:⟨' + in.author + '⟩').{
-                    id: type::number(id.id()),
-                    name
-                },
-                languages: in.languages,
-                last_updated: in.last_updated,
-                tags: in.tags.{
-                    id: id.to_string(),
-                    app_id,
-                    display_name
-                },
-                preview_url: in.preview_url,
-                score: in.score,
-                description: in.description,
-                properties: []
-            } AS dependants FROM $id;";
+                    }))],
+                ),
+            ])),
+        }),
+        Field::Single(Selector {
+            expr: Expr::Idiom(Idiom(vec![
+                Part::Graph(Lookup {
+                    kind: LookupKind::Graph(Dir::Out),
+                    what: vec![LookupSubject::Table {
+                        table: "item_dependencies".to_string(),
+                        referencing_field: None,
+                    }],
+                    ..Default::default()
+                }),
+                Part::All,
+                Part::Field("in".to_string()),
+                Part::All,
+                Part::Destructure(dep_fields.to_vec()),
+            ])),
+            alias: Some(Idiom::field("dependencies".to_string())),
+        }),
+        Field::Single(Selector {
+            expr: Expr::Idiom(Idiom(vec![
+                Part::Graph(Lookup {
+                    kind: LookupKind::Graph(Dir::In),
+                    what: vec![LookupSubject::Table {
+                        table: "item_dependencies".to_string(),
+                        referencing_field: None,
+                    }],
+                    ..Default::default()
+                }),
+                Part::All,
+                Part::Field("in".to_string()),
+                Part::All,
+                Part::Destructure(dep_fields.to_vec()),
+            ])),
+            alias: Some(Idiom::field("dependants".to_string())),
+        }),
+    ]);
 
-    debug!(%query, "item query");
+    debug!(sql = stmt.to_sql(), "item query");
 
-    let result: Option<_> = db
-        .query(query)
-        .bind(("id", id))
+    let result: Option<InternalFullWorkshopItem> = db
+        .query(stmt)
+        .bind(("id", RecordId::from(id)))
         .await
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to query database"))
         .map_err(|_| InnerError::InternalError)?
