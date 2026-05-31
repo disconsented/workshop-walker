@@ -73,7 +73,7 @@ impl PropertiesPort for PropertiesSilo {
                 res.take(1).unwrap_or_default();
             existing_properties
                 .iter()
-                .any(|prop| prop.property == test_prop)
+                .any(|prop| prop.out == test_prop)
         };
 
         debug!(%test_prop, exists = prop_exists, "property already exists?");

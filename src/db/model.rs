@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use surrealdb_types::SurrealValue;
+use surrealdb_types::{Object, RecordIdKey, SurrealValue};
 use tracing::error;
 
 use crate::{
@@ -125,9 +125,11 @@ pub struct FullWorkshopItem {
     // Dependencies
     #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item)]
     #[serde(default)]
+    #[surreal(wrap)]
     pub dependencies: Vec<ExternalFullWorkshopItem>, // A list of dependencies found
     #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item)]
     #[serde(default)]
+    #[surreal(wrap)]
     pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
 }
 
@@ -210,7 +212,19 @@ where
 }
 
 /// Crowdsourced metadata for an item, private version
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Eq, PartialEq, Hash, SurrealValue)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    ToSchema,
+    Eq,
+    PartialEq,
+    Hash,
+    SurrealValue,
+    Ord,
+    PartialOrd
+)]
 pub struct Property {
     pub class: Class,
     pub value: String,
@@ -223,6 +237,16 @@ impl Display for Property {
         f.write_str(&self.value)
     }
 }
+
+impl Into<RecordIdKey> for Property {
+    fn into(self) -> RecordIdKey {
+        let mut obj = Object::new();
+        obj.insert("class", self.class);
+        obj.insert("value", self.value);
+        RecordIdKey::Object(obj)
+    }
+}
+
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct PropertyExt {
     /// Reasoning or justification for an inclusion
@@ -239,9 +263,9 @@ pub struct PropertyExt {
 pub struct WorkshopItemProperties {
     #[dual_type(IItemID)]
     #[serde(rename = "in")]
-    pub workshop_item: ItemID,
+    pub r#in: ItemID,
     #[serde(rename = "out")]
-    pub property: Property,
+    pub out: Property,
     #[dual_type(InternalPropertyExt)]
     #[serde(flatten)]
     pub property_ext: ExternalPropertyExt,

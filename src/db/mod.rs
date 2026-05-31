@@ -11,13 +11,14 @@ pub mod user_names_repository;
 
 use macros::define_id;
 use surrealdb_types::SurrealValue;
+use crate::db::model::Property;
 
 define_id!("users", IUserID, UserID, i64);
 define_id!("workshop_items", IItemID, ItemID, i64);
 define_id!("apps", IAppID, AppID, i64);
 define_id!("tags", ITagID, TagID, String);
 define_id!("usernames", IUsernameID, UsernameID, i64);
-define_id!("properties", IPropertyID, PropertyID, String);
+define_id!("properties", IPropertyID, PropertyID, Property);
 define_id!("votes", IVoteID, VoteID, String);
 
 #[cfg(test)]

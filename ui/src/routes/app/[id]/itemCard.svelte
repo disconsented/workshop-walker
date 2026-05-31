@@ -84,24 +84,24 @@
 		<div>
 			<img
 				src={item.preview_url ||
-				'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
+					'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
 				class="absolute h-48 w-full object-cover"
 				alt="banner"
 				class:hue-rotate-90={!item.preview_url}
 				class:grayscale={!item.preview_url}
 				onerror={(e) =>
-				(e.target.src =
-					'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
+					(e.target.src =
+						'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
 				loading="lazy"
 			/>
-			<div class="bg-linear-to-t from-black to-[transparent] absolute w-full h-48">&nbsp</div>
+			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]">&nbsp</div>
 		</div>
 
 		<!--Details overlayed-->
 		<div class="t-0 absolute left-0 flex h-full w-full flex-col justify-between">
 			<!--Top-->
 			<div class="flex w-full justify-end">
-				<button class="btn preset-filled-surface-50-950 opacity-80 mt-1 text-xs text-gray-500">
+				<button class="btn preset-filled-surface-50-950 mt-1 text-xs text-gray-500 opacity-80">
 					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 					<a
 						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
@@ -185,7 +185,8 @@
 				{/if}
 			</div>
 		{/if}
-		<button class="pt-1 mt-1 btn btn-sm preset-outlined-primary-500 opacity-50 w-full justify-between text-primary-500"
+		<button
+			class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
 			><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
 			<span class="btn btn-sm preset-filled-primary-500"
 				><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span

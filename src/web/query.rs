@@ -75,6 +75,7 @@ pub async fn list(
                     alias: Some(Idiom(vec![
                         Part::Field("properties".to_string()),
                         Part::Method(
+                            // ToDo: Filter for user submitted props
                             "filter".to_string(),
                             vec![Expr::Closure(Box::new(Closure {
                                 args: vec![(Param::new("prop".to_string()), Kind::Any)],
@@ -96,7 +97,7 @@ pub async fn list(
                 Field::Single(Selector {
                     expr: Expr::Idiom(Idiom(vec![Part::Field("tags".to_string()), Part::All])),
                     alias: None,
-                }),
+                })
             ]);
         }
         stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
@@ -145,10 +146,10 @@ pub async fn list(
                 });
             }
 
+            let first = conditions.pop().expect("Expected at least one condition to be present");
             if conditions.len() == 1 {
-                Some(Cond(conditions.pop().unwrap()))
+                Some(Cond(first))
             } else {
-                let first = conditions.pop().unwrap();
                 Some(Cond(conditions.into_iter().fold(first, |old, next| {
                     Expr::Binary {
                         left: Box::new(old),
@@ -168,13 +169,6 @@ pub async fn list(
             }]))
         });
 
-        // db.query(
-        //     "SELECT *, ->workshop_item_properties AS
-        // properties.filter(|$prop|$prop.status == \      1).*, tags.* FROM
-        // workshop_items WHERE [app = (apps:294100)] ORDER BY last_updated \
-        //      DESC LIMIT 50 START 0",
-        // )
-        // .await;
         debug!(sql = stmt.to_sql(), "running big query");
         let mut results = db.query(stmt).await.whatever_context("querying")?;
 

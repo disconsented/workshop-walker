@@ -72,9 +72,9 @@ surrealdb = { features = [
   "protocol-http",
   "protocol-ws",
   "rustls",
-], version = "3.0" }
-surrealdb-core = "3.0"
-surrealdb-types = "3.0"
+], version = "3.1" }
+surrealdb-core = "3.1"
+surrealdb-types = "3.1"
 syn = "2.0"
 tempfile = "3.27.0"
 tokenizers = "0.22"
