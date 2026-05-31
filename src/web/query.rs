@@ -6,11 +6,9 @@ use salvo::{
 use snafu::{ResultExt, Whatever};
 use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    field::Selector, lookup::{LookupKind, LookupSubject}, order::{OrderList, Ordering}, part::DestructurePart, statements::SelectStatement,
-    BinaryOperator,
-    Closure, Cond, Dir, Expr, Expr::Binary, Field, Fields, Idiom, Kind, Limit,
-    Literal,
-    Lookup, Order,
+    field::Selector, lookup::{LookupKind, LookupSubject}, order::{OrderList, Ordering}, part::DestructurePart, statements::SelectStatement, BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields,
+    Idiom, Kind, Limit, Literal, Lookup,
+    Order,
     Param,
     Part,
     RecordIdLit,
@@ -79,7 +77,7 @@ pub async fn list(
                             vec![Expr::Closure(Box::new(Closure {
                                 args: vec![(Param::new("prop".to_string()), Kind::Any)],
                                 returns: None,
-                                body: Binary {
+                                body: Expr::Binary {
                                     left: Box::new(Expr::Idiom(Idiom(vec![
                                         Part::Start(Expr::Param(Param::new("prop".to_string()))),
                                         Part::Field("status".to_string()),
@@ -145,7 +143,18 @@ pub async fn list(
                 });
             }
 
-            Some(Cond(Expr::Literal(Literal::Array(conditions))))
+            if conditions.len() == 1 {
+                Some(Cond(conditions.pop().unwrap()))
+            } else {
+                let first = conditions.pop().unwrap();
+                Some(Cond(conditions.into_iter().fold(first, |old, next| {
+                    Expr::Binary {
+                        left: Box::new(old),
+                        op: BinaryOperator::And,
+                        right: Box::new(next),
+                    }
+                })))
+            }
         };
 
         stmt.order = order_by.map(|order_by| {
@@ -157,12 +166,13 @@ pub async fn list(
             }]))
         });
 
-        db.query(
-            "SELECT *, ->workshop_item_properties AS properties.filter(|$prop|$prop.status == \
-             1).*, tags.* FROM workshop_items WHERE [app = (apps:294100)] ORDER BY last_updated \
-             DESC LIMIT 50 START 0",
-        )
-        .await;
+        // db.query(
+        //     "SELECT *, ->workshop_item_properties AS
+        // properties.filter(|$prop|$prop.status == \      1).*, tags.* FROM
+        // workshop_items WHERE [app = (apps:294100)] ORDER BY last_updated \
+        //      DESC LIMIT 50 START 0",
+        // )
+        // .await;
         debug!(sql = stmt.to_sql(), "running big query");
         let mut results = db.query(stmt).await.whatever_context("querying")?;
 
