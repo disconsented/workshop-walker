@@ -369,7 +369,7 @@
 
 {#snippet navigation()}
 	<div class="mb-8 flex gap-4">
-		<a href="/app/{item.appid}" class="btn preset-tonal-primary flex items-center gap-2">
+		<a href="/app/{item.app}" class="btn preset-tonal-primary flex items-center gap-2">
 			<Icon data={faArrowLeft} class="fa-fw"></Icon>
 			Back to Search
 		</a>
