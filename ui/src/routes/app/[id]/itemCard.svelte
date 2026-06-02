@@ -11,68 +11,9 @@
 	}
 
 	let { loggedIn = $bindable(), item }: Props = $props();
-	let item2 = $state(item);
-	item2.properties = [
-		{
-			class: 'feature',
-			value: 'Weapons',
-			upvote_count: 44,
-			vote_count: 44,
-			status: 1,
-			vote_state: 1
-		},
-		{
-			class: 'theme',
-			value: 'Mechanoids',
-			upvote_count: 24,
-			vote_count: 24,
-			status: 0,
-			vote_state: 1
-		},
-		{
-			class: 'setting',
-			value: 'Combat',
-			upvote_count: 21,
-			vote_count: 21,
-			status: -1,
-			vote_state: 1
-		},
-		{
-			class: 'theme',
-			value: 'Sci-Fi',
-			upvote_count: 16,
-			vote_count: 16,
-			status: 1,
-			vote_state: 1
-		},
-		{
-			class: 'type',
-			value: 'Something',
-			upvote_count: 11,
-			vote_count: 11,
-			status: 1,
-			vote_state: 1
-		},
-		{
-			class: 'feature',
-			value: 'Turrets',
-			upvote_count: 44,
-			vote_count: 11,
-			status: 1,
-			vote_state: -1
-		},
-		{
-			class: 'setting',
-			value: 'Vanilla-Adjacent',
-			upvote_count: 4,
-			vote_count: -1,
-			status: 1,
-			vote_state: 0
-		}
-	];
 
-	let first_props = $derived(item2.properties.slice(0, 6));
-	let remaining_props = $derived(item2.properties.slice(6));
+	let first_props = $derived(item.properties.slice(0, 6));
+	let remaining_props = $derived(item.properties.slice(6));
 	$inspect(first_props, remaining_props);
 	let open = $state(false);
 </script>

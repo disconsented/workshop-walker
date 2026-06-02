@@ -53,18 +53,6 @@
 		voteRequest();
 	};
 
-	const colour = (() => {
-		switch (property.status) {
-			case 1:
-				return 'preset-tonal-primary';
-			case -1:
-				return 'preset-error-500';
-			case 0:
-			default:
-				return 'preset-tonal-surface';
-		}
-	})();
-
 	const voteRequest = () => {
 		request = fetch('/api/vote/property', {
 			method: voteState === 0 ? 'delete' : 'post',
@@ -78,23 +66,26 @@
 		});
 	};
 
-	const accentColour = () => {
+	const accentColour = (() => {
 		console.log(property.class);
 		switch (property.class) {
 			case 'genre':
-				return 'green-500';
+				return '--color-green-500';
 			case 'theme':
-				return 'blue-500';
+				return '--color-blue-500';
 			case 'type':
-				return 'purple-500';
+				return '--color-purple-500';
 			case 'feature':
-				return 'orange-500';
+				return '--color-orange-500';
 		}
-	};
+	})();
 </script>
 
+<!-- Silly little hack to keep these classes from being removed by the compiler -->
+<!--<div class="bg-(--color-green-500) bg-(--color-blue-500) bg-(--color-purple-500) bg-(--color-orange-500)"></div>-->
+
 <div class={['badge preset-outlined-surface-200-800 flex grow overflow-hidden p-0']}>
-	<div class="w-4px inline-block h-full shrink-0 bg-{accentColour}">&nbsp</div>
+	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})">&nbsp</div>
 	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
 		<div class="flex h-full">
 			<div class="h-auto">
