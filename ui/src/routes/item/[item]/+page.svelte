@@ -154,21 +154,23 @@
 							multiple
 							padding=""
 						>
-							<Accordion.Item value="relations" panelPadding="">
-								<!-- Control -->
-								{#snippet lead()}
-									<Icon data={faLink} class="fa-fw"></Icon>
+							<Accordion.Item value="relations">
+								{#snippet trigger()}
+									<div class="flex items-center gap-4">
+										<Icon data={faLink} class="fa-fw"></Icon>
+										<span>Relations</span>
+									</div>
 								{/snippet}
-								{#snippet control()}Relations{/snippet}
-								<!-- Panel -->
-								{#snippet panel()}{@render relations()}{/snippet}
+								{@render relations()}
 							</Accordion.Item>
-							<Accordion.Item value="description" panelPadding="">
-								{#snippet lead()}
-									<Icon data={faLink} class="fa-fw"></Icon>
+							<Accordion.Item value="description">
+								{#snippet trigger()}
+									<div class="flex items-center gap-4">
+										<Icon data={faLink} class="fa-fw"></Icon>
+										<span>Description</span>
+									</div>
 								{/snippet}
-								{#snippet control()}Description{/snippet}
-								{#snippet panel()}{@render description()}{/snippet}
+								{@render description()}
 							</Accordion.Item>
 						</Accordion>
 					</div>
@@ -409,60 +411,58 @@
 			classes="col-span-4"
 		>
 			<Accordion.Item value="open">
-				<!-- Control -->
-				{#snippet lead()}Filter{/snippet}
-				{#snippet control()}
-					<Icon data={faFilter} class="fa-fw"></Icon>
-				{/snippet}
-				<!-- Panel -->
-				{#snippet panel()}
-					<div class="col-span-4 grid w-full min-w-full grid-cols-2">
-						<div class="label shrink-0">
-							<span class="label-text">Tags</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each tags as tag}
-									<label class="flex items-center space-x-2">
-										<input
-											name="tags"
-											class="checkbox"
-											type="checkbox"
-											value={tag}
-											bind:group={selectedTags}
-										/>
-										<p>{tag}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="label shrink-0">
-							<span class="label-text">Languages</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each languages as lang}
-									<label class="flex items-center space-x-2">
-										<input
-											name="langs "
-											class="checkbox"
-											type="checkbox"
-											value={lang}
-											bind:group={selectedLangs}
-										/>
-										<p>{lang}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="">
-							<label class="label">
-								<span class="label-text">Compact</span>
-								<Switch
-									name="compact"
-									checked={compact}
-									onCheckedChange={(e) => (compact = e.checked)}
-								/>
-							</label>
-						</div>
+				{#snippet trigger()}
+					<div class="flex items-center gap-4">
+						<span>Filter</span>
+						<Icon data={faFilter} class="fa-fw"></Icon>
 					</div>
 				{/snippet}
+				<div class="col-span-4 grid w-full min-w-full grid-cols-2">
+					<div class="label shrink-0">
+						<span class="label-text">Tags</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each tags as tag}
+								<label class="flex items-center space-x-2">
+									<input
+										name="tags"
+										class="checkbox"
+										type="checkbox"
+										value={tag}
+										bind:group={selectedTags}
+									/>
+									<p>{tag}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="label shrink-0">
+						<span class="label-text">Languages</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each languages as lang}
+								<label class="flex items-center space-x-2">
+									<input
+										name="langs "
+										class="checkbox"
+										type="checkbox"
+										value={lang}
+										bind:group={selectedLangs}
+									/>
+									<p>{lang}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="">
+						<label class="label">
+							<span class="label-text">Compact</span>
+							<Switch
+								name="compact"
+								checked={compact}
+								onCheckedChange={(e) => (compact = e.checked)}
+							/>
+						</label>
+					</div>
+				</div>
 			</Accordion.Item>
 			<hr class="hr" />
 		</Accordion>
@@ -591,60 +591,58 @@
 			classes="col-span-4"
 		>
 			<Accordion.Item value="open">
-				<!-- Control -->
-				{#snippet lead()}Filter{/snippet}
-				{#snippet control()}
-					<Icon data={faFilter} class="fa-fw"></Icon>
-				{/snippet}
-				<!-- Panel -->
-				{#snippet panel()}
-					<div class="col-span-4 grid w-full min-w-full grid-cols-2">
-						<div class="label shrink-0">
-							<span class="label-text">Tags</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each tags as tag}
-									<label class="flex items-center space-x-2">
-										<input
-											name="tags"
-											class="checkbox"
-											type="checkbox"
-											value={tag}
-											bind:group={selectedTags}
-										/>
-										<p>{tag}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="label shrink-0">
-							<span class="label-text">Languages</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each languages as lang}
-									<label class="flex items-center space-x-2">
-										<input
-											name="langs "
-											class="checkbox"
-											type="checkbox"
-											value={lang}
-											bind:group={selectedLangs}
-										/>
-										<p>{lang}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="">
-							<label class="label">
-								<span class="label-text">Compact</span>
-								<Switch
-									name="compact"
-									checked={compact}
-									onCheckedChange={(e) => (compact = e.checked)}
-								/>
-							</label>
-						</div>
+				{#snippet trigger()}
+					<div class="flex items-center gap-4">
+						<span>Filter</span>
+						<Icon data={faFilter} class="fa-fw"></Icon>
 					</div>
 				{/snippet}
+				<div class="col-span-4 grid w-full min-w-full grid-cols-2">
+					<div class="label shrink-0">
+						<span class="label-text">Tags</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each tags as tag}
+								<label class="flex items-center space-x-2">
+									<input
+										name="tags"
+										class="checkbox"
+										type="checkbox"
+										value={tag}
+										bind:group={selectedTags}
+									/>
+									<p>{tag}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="label shrink-0">
+						<span class="label-text">Languages</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each languages as lang}
+								<label class="flex items-center space-x-2">
+									<input
+										name="langs "
+										class="checkbox"
+										type="checkbox"
+										value={lang}
+										bind:group={selectedLangs}
+									/>
+									<p>{lang}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="">
+						<label class="label">
+							<span class="label-text">Compact</span>
+							<Switch
+								name="compact"
+								checked={compact}
+								onCheckedChange={(e) => (compact = e.checked)}
+							/>
+						</label>
+					</div>
+				</div>
 			</Accordion.Item>
 			<hr class="hr" />
 		</Accordion>
