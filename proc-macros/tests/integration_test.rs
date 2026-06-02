@@ -74,6 +74,25 @@ struct ExampleItem {
     pub description: String, // HTML encoded description from steam
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
+
+    #[dual_type(Vec<IItemID>, to_external = to_external_ids, to_internal = to_internal_ids, surreal(wrap))]
+    #[serde(default)]
+    pub wrapped_items: Vec<ItemID>,
+}
+
+#[test]
+fn test_surreal_attr() {
+    // This test primarily checks that it compiles with the surreal(wrap) attribute
+    // We can also check if the attribute is present via some reflection or just trust compilation for now
+    let _item = InternalExampleItem {
+        id: IItemID(surrealdb_types::RecordId::new("workshop_items", 1)),
+        appid: IAppID(surrealdb_types::RecordId::new("apps", 1)),
+        related_items: vec![],
+        title: "title".to_string(),
+        description: "desc".to_string(),
+        preview_url: None,
+        wrapped_items: vec![],
+    };
 }
 
 #[test]
@@ -85,6 +104,7 @@ fn test_dual_struct_generation() {
         title: "Test Title".to_string(),
         description: "Test Description".to_string(),
         preview_url: None,
+        wrapped_items: vec![],
     };
 
     let internal: InternalExampleItem = external.clone().try_into().unwrap();
@@ -113,6 +133,7 @@ fn test_serde_rename() {
         title: "Test Title".to_string(),
         description: "Test Description".to_string(),
         preview_url: None,
+        wrapped_items: vec![],
     };
 
     let json = serde_json::to_string(&external).unwrap();

@@ -127,14 +127,6 @@ async fn get_item(
         DestructurePart::Field("score".to_string()),
         DestructurePart::Field("title".to_string()),
         DestructurePart::All("tags".to_string()),
-        DestructurePart::Aliased(
-            "dependencies".to_string(),
-            Idiom(vec![Part::Value(Expr::Literal(Literal::Array(vec![])))]),
-        ),
-        DestructurePart::Aliased(
-            "dependants".to_string(),
-            Idiom(vec![]),
-        ),
     ];
     let mut stmt = SelectStatement::default();
     stmt.what = vec![Expr::from_public_value(
