@@ -7,6 +7,7 @@ struct DualTypeAttr {
     external_ty: Option<Type>,
     to_external: Option<Expr>,
     to_internal: Option<Expr>,
+    surreal: Vec<syn::Meta>,
 }
 
 impl syn::parse::Parse for DualTypeAttr {
@@ -15,32 +16,49 @@ impl syn::parse::Parse for DualTypeAttr {
         let mut external_ty = None;
         let mut to_external = None;
         let mut to_internal = None;
+        let mut surreal = Vec::new();
 
         if input.peek(syn::Token![,]) {
             input.parse::<syn::Token![,]>()?;
             // If the next token is an identifier followed by '=', it's a keyword argument
             if !(input.peek(syn::Ident) && input.peek2(syn::Token![=])) {
-                external_ty = Some(input.parse()?);
-                if input.peek(syn::Token![,]) {
-                    input.parse::<syn::Token![,]>()?;
+                // Also check if it's `surreal(...)`
+                if !input.peek2(syn::token::Paren) {
+                    external_ty = Some(input.parse()?);
+                    if input.peek(syn::Token![,]) {
+                        input.parse::<syn::Token![,]>()?;
+                    }
                 }
             }
         }
 
         while !input.is_empty() {
-            let ident: syn::Ident = input.parse()?;
-            input.parse::<syn::Token![=]>()?;
-            let expr: Expr = input.parse()?;
-            if ident == "to_external" {
-                to_external = Some(expr);
-            } else if ident == "to_internal" {
-                to_internal = Some(expr);
+            if input.peek(syn::Ident) && input.peek2(syn::Token![=]) {
+                let ident: syn::Ident = input.parse()?;
+                input.parse::<syn::Token![=]>()?;
+                let expr: Expr = input.parse()?;
+                if ident == "to_external" {
+                    to_external = Some(expr);
+                } else if ident == "to_internal" {
+                    to_internal = Some(expr);
+                } else {
+                    return Err(syn::Error::new(
+                        ident.span(),
+                        "expected `to_external` or `to_internal`",
+                    ));
+                }
             } else {
-                return Err(syn::Error::new(
-                    ident.span(),
-                    "expected `to_external` or `to_internal`",
-                ));
+                let meta: syn::Meta = input.parse()?;
+                if meta.path().is_ident("surreal") {
+                    surreal.push(meta);
+                } else {
+                    return Err(syn::Error::new(
+                        meta.path().get_ident().map(|i| i.span()).unwrap_or_else(|| meta.path().segments[0].ident.span()),
+                        "expected `to_external = ...`, `to_internal = ...` or `surreal(...)`",
+                    ));
+                }
             }
+
             if input.peek(syn::Token![,]) {
                 input.parse::<syn::Token![,]>()?;
             }
@@ -51,6 +69,7 @@ impl syn::parse::Parse for DualTypeAttr {
             external_ty,
             to_external,
             to_internal,
+            surreal,
         })
     }
 }
@@ -132,6 +151,7 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
                             external_ty,
                             dual_attr.to_external,
                             dual_attr.to_internal,
+                            dual_attr.surreal,
                         ));
                     }
                     Err(e) => {
@@ -148,11 +168,21 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
         let mut internal_field = field.clone();
         let mut external_field = field.clone();
 
-        if let Some((ref internal_ty, ref external_ty, ref to_external, ref to_internal)) =
-            dual_type
+        if let Some((
+            ref internal_ty,
+            ref external_ty,
+            ref to_external,
+            ref to_internal,
+            ref surreal_attrs,
+        )) = dual_type
         {
             internal_field.ty = internal_ty.clone();
             external_field.ty = external_ty.clone();
+
+            for attr in surreal_attrs {
+                internal_field.attrs.push(syn::parse_quote!(#[#attr]));
+            }
+
             internal_fields.push(quote! { #internal_field });
             external_fields.push(quote! { #external_field });
 

@@ -20,31 +20,35 @@
 	<!-- Header -->
 	<header class="p-4">
 		<AppBar>
-			{#snippet lead()}
-				<a href="/">
-					<Icon data={faHome} class="fa-fw"></Icon>
-				</a>
-			{/snippet}
-			<span>Workshop Walker</span>
-			{#snippet trail()}
-				{#if logged_in}
-					<a href="/api/logout?location={location}" class="btn preset-outlined-warning-500">
-						Sign Out
+			<AppBar.Toolbar class="grid-cols-[1fr_2fr_1fr]">
+				<AppBar.Lead>
+					<a href="/">
+						<Icon data={faHome} class="fa-fw"></Icon>
 					</a>
-				{:else}
-					<a href="/api/login?location={location}" aria-label="Sign In Through Steam">
-						<img
-							alt="Sign In Through Steam"
-							src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
-							loading="lazy"
-						/>
-					</a>
-				{/if}
+				</AppBar.Lead>
+				<AppBar.Headline class="flex justify-center">
+					<p>Workshop Walker</p>
+				</AppBar.Headline>
+				<AppBar.Trail class="justify-end">
+					{#if logged_in}
+						<a href="/api/logout?location={location}" class="btn preset-outlined-warning-500">
+							Sign Out
+						</a>
+					{:else}
+						<a href="/api/login?location={location}" aria-label="Sign In Through Steam">
+							<img
+								alt="Sign In Through Steam"
+								src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png"
+								loading="lazy"
+							/>
+						</a>
+					{/if}
 
-				<a href="https://github.com/disconsented/workshop-walker">
-					<Icon data={faGithub} class="fa-fw"></Icon>
-				</a>
-			{/snippet}
+					<a href="https://github.com/disconsented/workshop-walker">
+						<Icon data={faGithub} class="fa-fw"></Icon>
+					</a>
+				</AppBar.Trail>
+			</AppBar.Toolbar>
 		</AppBar>
 	</header>
 	<!-- Grid Columns -->

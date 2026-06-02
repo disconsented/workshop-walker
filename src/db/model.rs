@@ -1,12 +1,11 @@
 use std::{
-    collections::{BTreeSet, HashSet},
     fmt::{Display, Formatter},
 };
 
 use chrono::{DateTime, Utc};
 use macros::dual_struct;
 use salvo::prelude::ToSchema;
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -123,13 +122,11 @@ pub struct FullWorkshopItem {
     pub languages: Vec<DetectedLanguage>, // All languages found in the items description
 
     // Dependencies
-    #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item)]
+    #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item, surreal(wrap))]
     #[serde(default)]
-    #[surreal(wrap)]
     pub dependencies: Vec<ExternalFullWorkshopItem>, // A list of dependencies found
-    #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item)]
+    #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item, surreal(wrap))]
     #[serde(default)]
-    #[surreal(wrap)]
     pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
 }
 
@@ -223,7 +220,7 @@ where
     Hash,
     SurrealValue,
     Ord,
-    PartialOrd
+    PartialOrd,
 )]
 pub struct Property {
     pub class: Class,
@@ -452,8 +449,8 @@ mod test {
     use surrealdb_types::RecordId;
 
     use crate::db::{
-        IItemID, IUserID,
-        model::{Class, Id, InternalSource, Source},
+        model::{Class, Id, InternalSource, Source}, IItemID,
+        IUserID,
     };
 
     #[test]
@@ -513,7 +510,7 @@ mod test {
     }
     #[tokio::test]
     async fn test_source_surreal() {
-        use surrealdb::{Surreal, engine::local::Mem};
+        use surrealdb::{engine::local::Mem, Surreal};
 
         #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
         struct Foo {
