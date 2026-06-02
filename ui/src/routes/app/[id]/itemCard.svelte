@@ -38,18 +38,19 @@
 			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]">&nbsp</div>
 		</div>
 
-		<!--Details overlayed-->
+		<!--Details overlaid-->
 		<div class="t-0 absolute left-0 flex h-full w-full flex-col justify-between">
 			<!--Top-->
 			<div class="flex w-full justify-end">
-				<button class="btn preset-filled-surface-50-950 mt-1 text-xs text-gray-500 opacity-80">
+				<button
+					class="btn preset-filled-surface-50-950 mt-1 text-xs text-gray-500 opacity-80  border-1 border-gray-500  border-dashed">
 					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 					<a
 						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="hover:text-gray-700"
-						>Steam
+					>Steam
 					</a>
 				</button>
 			</div>
@@ -128,18 +129,18 @@
 		{/if}
 		<button
 			class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
-			><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
+		><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
 			<span class="btn btn-sm preset-filled-primary-500"
-				><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
+			><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
 			></button
 		>
 	</footer>
 </div>
 
 <style>
-	.preset-glass-surface {
-		background: color-mix(in oklab, var(--color-surface-900) 40%, transparent);
-		box-shadow: 0 0px 30px color-mix(in oklab, var(--color-surface-900) 50%, transparent) inset;
-		backdrop-filter: blur(16px);
-	}
+    .preset-glass-surface {
+        background: color-mix(in oklab, var(--color-surface-900) 40%, transparent);
+        box-shadow: 0 0px 30px color-mix(in oklab, var(--color-surface-900) 50%, transparent) inset;
+        backdrop-filter: blur(16px);
+    }
 </style>
