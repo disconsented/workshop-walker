@@ -84,7 +84,7 @@
 <!-- Silly little hack to keep these classes from being removed by the compiler -->
 <!--<div class="bg-(--color-green-500) bg-(--color-blue-500) bg-(--color-purple-500) bg-(--color-orange-500)"></div>-->
 
-<div class={['badge preset-outlined-surface-200-800 flex grow overflow-hidden p-0']}>
+<div class={['badge preset-outlined-surface-200-800 flex grow-1 shrink overflow-hidden p-0']}>
 	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})">&nbsp</div>
 	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
 		<div class="flex h-full">
