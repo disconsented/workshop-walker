@@ -1,14 +1,14 @@
-use ractor::{ActorProcessingErr, RactorErr, call};
+use ractor::{call, ActorProcessingErr, RactorErr};
 use salvo::{
-    Writer,
     oapi::extract::JsonBody,
-    prelude::{Json, StatusCode, StatusError, endpoint},
+    prelude::{endpoint, Json, StatusCode, StatusError},
+    Writer,
 };
-use snafu::{ErrorCompat, prelude::*};
+use snafu::{prelude::*, ErrorCompat};
 
 use crate::{
     db::{
-        admin_actor::{ADMIN_ACTOR, AdminMsg},
+        admin_actor::{AdminMsg, ADMIN_ACTOR},
         model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},
@@ -105,15 +105,18 @@ pub async fn patch_user(data: JsonBody<PatchUserData>) -> Result<()> {
 
 #[endpoint]
 pub async fn get_workshop_item_properties() -> Result<Json<Vec<ExternalWorkshopItemProperties>>> {
-    todo!()
-    // let actor = ADMIN_ACTOR
-    //     .get()
-    //     .cloned()
-    //     .ok_or(InnerError::InternalError)?;
-    // let list = call!(actor, AdminMsg::ListWorkshopItemProperties)
-    //     .map_err(InnerError::from)?
-    //     .map_err(InnerError::from)?;
-    // Ok(Json(list))
+    let actor = ADMIN_ACTOR
+        .get()
+        .cloned()
+        .ok_or(InnerError::InternalError)?;
+    let list = call!(actor, AdminMsg::ListWorkshopItemProperties)
+        .map_err(InnerError::from)?
+        .map_err(InnerError::from)?
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, _>>()
+        .map_err(|_| InnerError::InternalError)?;
+    Ok(Json(list))
 }
 
 #[endpoint]

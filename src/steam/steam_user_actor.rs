@@ -1,15 +1,16 @@
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use itertools::Itertools;
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use reqwest::{Client, Response, StatusCode};
-use surrealdb::{Surreal, engine::local::Db};
+use snafu::ResultExt;
+use surrealdb::{engine::local::Db, Surreal};
 use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
 use tracing::{debug, error};
 
 use crate::{
     application::user_names_service::UserNamesService,
-    db::{IUsernameID, user_names_repository::UserNamesSilo},
+    db::{user_names_repository::UserNamesSilo, IUsernameID},
     steam::model::{SteamRoot, SteamUserResponse},
 };
 
@@ -103,15 +104,17 @@ impl Actor for SteamUserActor {
                         Ok(resp) => match resp.json::<SteamRoot<SteamUserResponse>>().await {
                             Ok(root) => {
                                 for users in root.response.players {
-                                    if let Err(error) = user_names_service
-                                        .update_user_name(
-                                            IUsernameID::from(users.steamid),
-                                            users.personaname,
-                                        )
-                                        .await
-                                    {
-                                        error!(?error, "Failed to update user name");
-                                        break;
+                                    if let Ok(id) = users.steamid.parse::<i64>() {
+                                        if let Err(error) = user_names_service
+                                            .update_user_name(
+                                                IUsernameID::from(id),
+                                                users.personaname,
+                                            )
+                                            .await
+                                        {
+                                            error!(?error, "Failed to update user name");
+                                            break;
+                                        }
                                     }
                                 }
                             }

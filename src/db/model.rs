@@ -1,6 +1,4 @@
-use std::{
-    fmt::{Display, Formatter},
-};
+use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Utc};
 use macros::dual_struct;
@@ -13,7 +11,7 @@ use surrealdb_types::{Object, RecordIdKey, SurrealValue};
 use tracing::error;
 
 use crate::{
-    db::{AppID, IAppID, IItemID, ITagID, IUserID, ItemID, TagID, UserID},
+    db::{AppID, IAppID, IItemID, ITagID, IUserID, IUsernameID, ItemID, TagID, UserID, UsernameID},
     processing::language_actor::DetectedLanguage,
 };
 
@@ -72,8 +70,8 @@ fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
 pub struct WorkshopItem {
     #[dual_type(IAppID)]
     pub app: AppID,
-    #[dual_type(IUserID)]
-    pub author: UserID,
+    #[dual_type(IUsernameID)]
+    pub author: UsernameID,
     pub description: String,
     #[dual_type(IItemID)]
     pub id: ItemID,
@@ -83,10 +81,27 @@ pub struct WorkshopItem {
     pub preview_url: Option<String>,
     pub title: String,
     #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<ExternalTag>,
     pub score: f32,
-    #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props)]
+    #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props, surreal(wrap))]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub properties: Vec<ExternalWorkshopItemProperties>,
+}
+
+// Gave up trying to work around errors with missing fields (tags & properties) on insert
+#[derive(Serialize, Deserialize, Clone, Debug, SurrealValue)]
+pub struct InsertableWorkshopItem {
+    pub app: IAppID,
+    pub author: IUsernameID,
+    pub description: String,
+    pub id: IItemID,
+    pub languages: Vec<DetectedLanguage>,
+    pub last_updated: u64,
+    pub preview_url: Option<String>,
+    pub title: String,
+    pub score: f32,
+    pub tags: Vec<ITagID>,
 }
 // Read-only, dual still needed for ID conversion
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -113,8 +128,8 @@ pub struct FullWorkshopItem {
     pub score: f32, // The "quality" score assigned by steam
 
     // Author and timing
-    #[dual_type(Option<IUserID>, to_external = to_external_user, to_internal = to_internal_user)]
-    pub author: Option<UserID>, // Authors steam ID
+    #[dual_type(Option<InternalUsername>, to_external = to_external_username, to_internal = to_internal_username)]
+    pub author: Option<ExternalUsername>, // Authors steam ID
     pub last_updated: u64, // Timestamp in milliseconds
 
     // Localization
@@ -130,11 +145,13 @@ pub struct FullWorkshopItem {
     pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
 }
 
-fn to_external_user(internal: Option<IUserID>) -> Result<Option<UserID>, surrealdb_types::Error> {
+fn to_external_username(
+    internal: Option<InternalUsername>,
+) -> Result<Option<ExternalUsername>, surrealdb_types::Error> {
     internal.map(TryInto::try_into).transpose()
 }
 
-fn to_internal_user(external: Option<UserID>) -> Option<IUserID> {
+fn to_internal_username(external: Option<ExternalUsername>) -> Option<InternalUsername> {
     external.map(Into::into)
 }
 
@@ -437,8 +454,9 @@ pub enum Status {
     Accepted = 1,
 }
 
-#[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct DisplayUser {
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct Username {
+    #[dual_type(IUserID)]
     id: UserID,
     name: String,
 }

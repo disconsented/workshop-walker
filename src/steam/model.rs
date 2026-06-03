@@ -147,7 +147,7 @@ impl TryFrom<&SteamRoot<IPublishedResponse>> for GetPage {
 #[expect(clippy::missing_docs_in_private_items)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Child {
-    pub publishedfileid: i64,
+    pub publishedfileid: String,
     pub sortorder: i64,
     pub file_type: i64,
 }
@@ -208,7 +208,7 @@ pub struct IPublishedStruct {
     pub previews: Vec<Preview>,
     pub preview_file_size: Option<String>,
     pub preview_url: Option<String>,
-    pub publishedfileid: i64,
+    pub publishedfileid: String,
     pub result: i64,
     pub revision: Option<i64>,
     pub revision_change_number: Option<String>,
@@ -259,7 +259,7 @@ pub struct VoteData {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SteamUser {
-    pub steamid: i64,
+    pub steamid: String,
     pub communityvisibilitystate: i64,
     pub profilestate: Option<i64>,
     pub personaname: String,

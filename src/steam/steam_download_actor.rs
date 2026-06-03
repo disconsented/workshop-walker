@@ -54,8 +54,7 @@ impl Actor for SteamDownloadActor {
     ) -> Result<Self::State, ActorProcessingErr> {
         let apps: Vec<IAppID> = args
             .database
-            .query("SELECT id.id() AS id FROM apps WHERE enabled = true")
-            // .instrument(info_span!("select enabled apps"))
+            .query("SELECT id AS id FROM apps WHERE enabled = true")
             .await?
             .take((0, "id"))?;
 

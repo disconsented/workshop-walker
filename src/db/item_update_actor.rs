@@ -1,18 +1,20 @@
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use std::num::ParseIntError;
+
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    Expr,
-    data::Data,
-    statements::{InsertStatement, UpsertStatement},
+    data::Data, statements::{InsertStatement, UpsertStatement}, Expr,
+    Literal,
+    RelateStatement,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
+        model::{Dependencies, InsertableWorkshopItem, InternalWorkshopItem},
         IItemID,
-        model::{Dependencies, InternalWorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,
@@ -83,7 +85,7 @@ impl Actor for ItemUpdateActor {
                             myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
                         }
                         Err(error) => {
-                            error!(?error, "deserializing raw files");
+                            error!(?error, "deserializing raw file");
                         }
                     }
                 }
@@ -119,10 +121,9 @@ impl Actor for ItemUpdateActor {
                 let title = item.title.clone();
                 let item_id = item.id.clone();
 
-                // ToDo: Update this, considerations around the ID kind needed
-                // let _ = state
-                //     .steam_user_actor
-                //     .send_message(SteamUserMsg::Fetch(item.author.into()));
+                let _ = state
+                    .steam_user_actor
+                    .send_message(SteamUserMsg::Fetch(item.author.clone().into()));
 
                 if let Err(error) = insert_data(&state.database, item, children).await {
                     error!(?error, title, ?item_id, "upserting item");
@@ -185,54 +186,55 @@ async fn insert_data(
     let id = item.id.clone();
 
     let insert_item_deps = {
-        let mut stmt = InsertStatement {
-            relation: true,
-            into: Some(Expr::Table("item_dependencies".into())),
-            ..Default::default()
-        };
-
-        stmt.into = Some(Expr::Table("item_dependencies".into()));
-        let data = children
+        children
             .into_iter()
             .map(|child| {
-                let dep_id = IItemID::from(child.publishedfileid);
-                Dependencies {
-                    id: vec![item.id.clone(), dep_id.clone()],
-                    this: item.id.clone(),
-                    dependency: dep_id,
-                }
+                let dep_id = IItemID::from(child.publishedfileid.parse::<i64>()?);
+                Ok(RelateStatement {
+                    only: false,
+                    through: Expr::Table("item_dependencies".into()),
+                    from: Expr::from_public_value(item.id.clone().into_value()),
+                    to: Expr::from_public_value(dep_id.into_value()),
+                    data: None,
+                    output: None,
+                    timeout: Default::default(),
+                })
             })
-            .collect::<Vec<_>>();
-        stmt.data = Data::SingleExpression(Expr::from_public_value(Value::Array(data.into())));
-        stmt.ignore = true;
-        stmt
+            .collect::<Result<Vec<_>, ParseIntError>>()
+            .whatever_context("parsing publishedfileids")?
     };
 
     let upsert_item = UpsertStatement {
         data: Some(Data::ReplaceExpression(Expr::from_public_value(
-            item.clone().into_value(),
+            InsertableWorkshopItem {
+                app: item.app,
+                author: item.author,
+                description: item.description,
+                id: item.id,
+                languages: item.languages,
+                last_updated: item.last_updated,
+                preview_url: item.preview_url,
+                title: item.title,
+                score: item.score,
+                tags: tags.into_iter().map(|tag| tag.id).collect::<Vec<_>>(),
+            }
+            .into_value(),
         ))),
         what: vec![Expr::Table("workshop_items".into())],
         ..Default::default()
     };
 
-    let query = db
-        .query("BEGIN TRANSACTION")
-        .query(upsert_item) // Missing impl for into query
-        .query(insert_item_deps)
-        .query("UPDATE $id SET tags=$tags")
-        .bind(("id", id))
-        .bind((
-            "tags",
-            tags.into_iter().map(|tag| tag.id).collect::<Vec<_>>(),
-        ))
-        .query("COMMIT");
+    let mut query = db.query("BEGIN").query(upsert_item);
+    for insert_dep in insert_item_deps {
+        query = query.query(insert_dep);
+    }
+    let query = query.bind(("id", id)).query("COMMIT");
     let sql = format!("{query:#?}");
     let mut response = query.await.whatever_context("big insert query")?;
 
     let errors = response.take_errors();
     if !errors.is_empty() {
-        error!(query = sql, ?errors, "inserting data");
+        error!(?errors, sql, "inserting data");
     }
 
     Ok(())
