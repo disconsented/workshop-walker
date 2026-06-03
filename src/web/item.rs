@@ -133,6 +133,37 @@ async fn get_item(
         RecordId::from(id.clone()).into_value(),
     )];
 
+    let properties_expression = if let Some(user) = user {
+        Expr::Binary {
+            left: Box::new(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom(vec![
+                    Part::Start(Expr::Param(Param::new("prop".to_string()))),
+                    Part::Field("status".to_string()),
+                ]))),
+                op: BinaryOperator::ExactEqual,
+                right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
+            }),
+            op: BinaryOperator::Or,
+            right: Box::new(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom(vec![
+                    Part::Start(Expr::Param(Param::new("prop".to_string()))),
+                    Part::Field("soure".to_string()),
+                ]))),
+                op: BinaryOperator::ExactEqual,
+                right: Box::new(Expr::from_public_value(user.into_value())),
+            }),
+        }
+    } else {
+        Expr::Binary {
+            left: Box::new(Expr::Idiom(Idiom(vec![
+                Part::Start(Expr::Param(Param::new("prop".to_string()))),
+                Part::Field("status".to_string()),
+            ]))),
+            op: BinaryOperator::ExactEqual,
+            right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
+        }
+    };
+
     stmt.fields = Fields::Select(vec![
         Field::All,
         Field::Single(Selector {
@@ -155,7 +186,6 @@ async fn get_item(
                 }),
                 Part::All,
             ])),
-            // ToDo: Filter for user submitted props
             alias: Some(Idiom(vec![
                 Part::Field("properties".to_string()),
                 Part::Method(
@@ -163,16 +193,7 @@ async fn get_item(
                     vec![Expr::Closure(Box::new(Closure {
                         args: vec![(Param::new("prop".to_string()), Kind::Any)],
                         returns: None,
-                        body: Expr::Binary {
-                            left: Box::new(Expr::Idiom(Idiom(vec![
-                                Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                                Part::Field("status".to_string()),
-                            ]))),
-                            op: BinaryOperator::ExactEqual,
-                            right: Box::new(Expr::Literal(Literal::Integer(
-                                Status::Accepted as i64,
-                            ))),
-                        },
+                        body: properties_expression,
                     }))],
                 ),
             ])),

@@ -16,6 +16,7 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
+use crate::db::IUsernameID;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`
@@ -94,7 +95,7 @@ impl InternalWorkshopItem {
             .inspect_err(|_| error!(?data, "creating new item"))?
             .into();
 
-        let author = IUserID::from(
+        let author = IUsernameID::from(
             data.creator
                 .whatever_context("Missing author")?
                 .parse::<i64>()
@@ -105,7 +106,7 @@ impl InternalWorkshopItem {
             author,
             languages,
             description,
-            id: data.publishedfileid.into(),
+            id: data.publishedfileid.parse::<i64>().whatever_context("parsing item id")?.into(),
             title: data.title.whatever_context("Missing title")?,
             preview_url: data
                 .preview_url
@@ -115,7 +116,6 @@ impl InternalWorkshopItem {
                 .tags
                 .iter()
                 .map(|tag| InternalTag {
-                    // app: app.clone(),
                     id: ITagID::from(tag.tag.clone()),
                     display_name: tag.display_name.clone(),
                 })
