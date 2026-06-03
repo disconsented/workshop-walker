@@ -66,8 +66,7 @@ impl Actor for SteamDownloadActor {
             database: args.database,
         };
         for app in apps {
-            let app = app.try_into_external()?.into();
-            start_downloader(&myself, &mut state, app, args.force)
+            start_downloader(&myself, &mut state, app.clone(), args.force)
                 .instrument(info_span!("start downloader", ?app))
                 .await;
         }
@@ -97,7 +96,6 @@ impl Actor for SteamDownloadActor {
             }
             SteamDownloadMsg::AddApp(app) => {
                 if !state.apps.contains_key(&app) {
-                    let app = app.try_into_external()?.into();
                     start_downloader(&myself, state, app, false).await;
                 }
             }
@@ -166,16 +164,16 @@ async fn download(
 async fn start_downloader(
     myself: &ActorRef<SteamDownloadMsg>,
     state: &mut SteamDownloadState,
-    app: i64, // Function needs to be infalliable, so, we handle the converion outside here
+    app: IAppID, // Function needs to be infalliable, so, we handle the converion outside here
     force: bool,
 ) {
     let timestamp: Option<u64> = state
         .database
         .query(
-            "SELECT last_updated FROM workshop_items WHERE appid = $appid ORDER BY last_updated \
+            "SELECT last_updated FROM workshop_items WHERE app = $app ORDER BY last_updated \
              DESC LIMIT 1",
         )
-        .bind(("appid", app))
+        .bind(("app", app.clone()))
         .await
         .unwrap()
         .take((0, "last_updated"))
@@ -185,12 +183,19 @@ async fn start_downloader(
         .duration_since(UNIX_EPOCH.add(Duration::from_secs(timestamp)))
         .unwrap();
     let h12 = Duration::from_hours(12);
-    let message_builder = move || SteamDownloadMsg::Download {
-        app: IAppID::from(app),
-        first_page: GetPage {
-            query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
-            ..Default::default()
-        },
+
+    let message_builder = {
+        let app = app.clone();
+        move || {
+            let app = app.clone();
+            SteamDownloadMsg::Download {
+                app,
+                first_page: GetPage {
+                    query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
+                    ..Default::default()
+                },
+            }
+        }
     };
     if time_since > h12 || force {
         let _ = myself.send_message(message_builder());
@@ -198,7 +203,7 @@ async fn start_downloader(
     }
 
     if let Some(old) = state.apps.insert(
-        IAppID::from(app),
+        app.clone(),
         myself.send_interval(h12, message_builder),
     ) {
         // Remember to abort the old timer
