@@ -12,8 +12,8 @@
 
 	let { loggedIn = $bindable(), item }: Props = $props();
 
-	let first_props = $derived(item.properties.slice(0, 6));
-	let remaining_props = $derived(item.properties.slice(6));
+	let first_props = $derived(item.properties?.slice(0, 6));
+	let remaining_props = $derived(item.properties?.slice(6));
 	$inspect(first_props, remaining_props);
 	let open = $state(false);
 </script>
