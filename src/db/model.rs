@@ -456,9 +456,9 @@ pub enum Status {
 
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct Username {
-    #[dual_type(IUserID)]
-    id: UserID,
-    name: String,
+    #[dual_type(IUsernameID)]
+    pub id: UsernameID,
+    pub name: String,
 }
 
 #[cfg(test)]

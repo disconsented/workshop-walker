@@ -97,6 +97,10 @@ pub async fn list(
                 Field::Single(Selector {
                     expr: Expr::Idiom(Idiom(vec![Part::Field("tags".to_string()), Part::All])),
                     alias: None,
+                }),
+                Field::Single(Selector {
+                    expr: Expr::Idiom(Idiom(vec![Part::Field("author".to_string()), Part::All])),
+                    alias: None,
                 })
             ]);
         }
