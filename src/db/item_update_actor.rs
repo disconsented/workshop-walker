@@ -123,7 +123,7 @@ impl Actor for ItemUpdateActor {
 
                 let _ = state
                     .steam_user_actor
-                    .send_message(SteamUserMsg::Fetch(item.author.clone().into()));
+                    .send_message(SteamUserMsg::Fetch(item.author.clone()));
 
                 if let Err(error) = insert_data(&state.database, item, children).await {
                     error!(?error, title, ?item_id, "upserting item");

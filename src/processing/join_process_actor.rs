@@ -1,14 +1,14 @@
 use std::{collections::HashSet, mem::take};
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
+use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef};
 use snafu::{OptionExt, ResultExt, Whatever};
 use tracing::error;
 
 use crate::{
     db::{
-        IAppID, ITagID, IUserID,
-        item_update_actor::ItemUpdateMsg,
-        model::{InternalTag, InternalWorkshopItem},
+        item_update_actor::ItemUpdateMsg, model::{InternalTag, InternalWorkshopItem}, IAppID, ITagID,
+        IUserID,
+        IUsernameID,
     },
     processing::{
         bb_actor::BBMsg,
@@ -16,7 +16,6 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
-use crate::db::IUsernameID;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`
@@ -62,10 +61,16 @@ impl Actor for JoinProcessActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             JoinProcessMsg::Process(mut data) => {
+                // Sometimes we'll find items that are missing this and they're effectively
+                // empty, so, just skip them and carry on
+                if data.consumer_appid.is_none() {
+                    return Ok(());
+                }
                 let description = take(&mut data.file_description).unwrap_or_default();
                 let languages = call!(state.language, LanguageMsg::Detect, description.clone())?;
                 let description = call!(state.bb, BBMsg::Process, description)?;
                 let children = take(&mut data.children);
+
                 match InternalWorkshopItem::try_new(data, languages, description) {
                     Ok(item) => {
                         state
@@ -106,7 +111,11 @@ impl InternalWorkshopItem {
             author,
             languages,
             description,
-            id: data.publishedfileid.parse::<i64>().whatever_context("parsing item id")?.into(),
+            id: data
+                .publishedfileid
+                .parse::<i64>()
+                .whatever_context("parsing item id")?
+                .into(),
             title: data.title.whatever_context("Missing title")?,
             preview_url: data
                 .preview_url
