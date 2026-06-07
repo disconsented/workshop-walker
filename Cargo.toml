@@ -162,7 +162,7 @@ surrealdb-types = { path = "../surrealdb/surrealdb/types" }
 [profile.release]
 lto = true
 opt-level = 3
-panic = 'abort'
+panic = 'unwind'
 #codegen-units = 1
 
 [profile.dev.package."*"]

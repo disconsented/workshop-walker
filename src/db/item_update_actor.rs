@@ -4,16 +4,14 @@ use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use snafu::{ResultExt, Whatever};
 use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    data::Data, statements::{InsertStatement, UpsertStatement}, Expr,
-    Literal,
-    RelateStatement,
+    data::Data, statements::InsertStatement, statements::UpsertStatement, Expr,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        model::{Dependencies, InsertableWorkshopItem, InternalWorkshopItem},
+        model::{InsertableWorkshopItem, InternalWorkshopItem},
         IItemID,
     },
     processing::{
@@ -190,14 +188,21 @@ async fn insert_data(
             .into_iter()
             .map(|child| {
                 let dep_id = IItemID::from(child.publishedfileid.parse::<i64>()?);
-                Ok(RelateStatement {
-                    only: false,
-                    through: Expr::Table("item_dependencies".into()),
-                    from: Expr::from_public_value(item.id.clone().into_value()),
-                    to: Expr::from_public_value(dep_id.into_value()),
-                    data: None,
-                    output: None,
-                    timeout: Default::default(),
+                Ok(InsertStatement {
+                    into: Some(Expr::Table("item_dependencies".into())),
+                    data: Data::SingleExpression(Expr::from_public_value(
+                        Value::Object(
+                            vec![
+                                ("in".into(), item.id.clone().into_value()),
+                                ("out".into(), dep_id.into_value()),
+                            ]
+                            .into_iter()
+                            .collect(),
+                        ),
+                    )),
+                    ignore: true,
+                    relation: true,
+                    ..Default::default()
                 })
             })
             .collect::<Result<Vec<_>, ParseIntError>>()
@@ -229,7 +234,7 @@ async fn insert_data(
         query = query.query(insert_dep);
     }
     let query = query.bind(("id", id)).query("COMMIT");
-    let sql = format!("{query:#?}");
+    let sql = format!("{query:?}");
     let mut response = query.await.whatever_context("big insert query")?;
 
     let errors = response.take_errors();

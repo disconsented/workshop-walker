@@ -5,8 +5,8 @@ use tracing::{debug, error};
 
 use crate::{
     db::{
-        IItemID, IUserID, UserID,
-        model::{InternalSource, InternalUser, InternalWorkshopItemProperties, Property, Status},
+        IUserID,
+        model::{InternalSource, InternalWorkshopItemProperties, Property, Status},
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };

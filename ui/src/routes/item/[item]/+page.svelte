@@ -470,7 +470,7 @@
 		<div class="col-span-4">
 			<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
 			{#if item.dependencies.length > 0}
-				<div class="flex flex-row flex-wrap items-center items-center justify-between gap-2">
+				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
 					{#each item.dependencies as dependency (dependency.id)}
 						{@render linkSet(dependency)}
 					{/each}

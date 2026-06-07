@@ -97,7 +97,7 @@ impl Actor for SteamTagActor {
     }
 }
 
-fn extract_tags(app: &IAppID, html: &str) -> Vec<InternalTag> {
+fn extract_tags(_app: &IAppID, html: &str) -> Vec<InternalTag> {
     Html::parse_document(html)
         .select(&Selector::parse(".tag_label").unwrap())
         .filter_map(|node| {
