@@ -5,6 +5,7 @@ use salvo::{
     Writer,
 };
 use snafu::{prelude::*, ErrorCompat};
+use tracing::error;
 
 use crate::{
     db::{
