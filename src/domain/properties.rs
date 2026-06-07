@@ -5,7 +5,7 @@ use surrealdb_types::SurrealValue;
 
 use crate::db::{
     IItemID, IUserID, ItemID,
-    model::{Class, InternalSource, InternalUser, Status},
+    model::{Class, InternalSource, Status},
 };
 
 #[derive(Debug, Snafu, Clone)]

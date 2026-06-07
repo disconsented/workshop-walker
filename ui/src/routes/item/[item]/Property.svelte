@@ -68,7 +68,7 @@
 
 	const accentColour = (() => {
 		console.log(property.class);
-		switch (property.class) {
+		switch (property.class.toLowerCase()) {
 			case 'genre':
 				return '--color-green-500';
 			case 'theme':
@@ -83,8 +83,9 @@
 
 <!-- Silly little hack to keep these classes from being removed by the compiler -->
 <!--<div class="bg-(--color-green-500) bg-(--color-blue-500) bg-(--color-purple-500) bg-(--color-orange-500)"></div>-->
+<!--<div class="text-(--color-green-500) text-(--color-blue-500) text-(--color-purple-500) text-(--color-orange-500)"></div>-->
 
-<div class={['badge preset-outlined-surface-200-800 flex grow-1 shrink overflow-hidden p-0']}>
+<div class={['badge preset-outlined-surface-200-800 flex grow basis-0 overflow-clip p-0']}>
 	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})">&nbsp</div>
 	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
 		<div class="flex h-full">
@@ -96,7 +97,7 @@
 					<Icon data={faClock} class="text-warning-500 flex-shrink-0" />
 					Pending
 				{/if}
-				<span class="text-xs uppercase text-{accentColour}">{property.class}:</span>
+				<span class="text-xs uppercase text-({accentColour})">{property.class}:</span>
 				<span class="capitalize">{property.value}</span>
 			</div>
 		</div>

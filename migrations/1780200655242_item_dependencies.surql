@@ -16,6 +16,7 @@ REMOVE TABLE item_dependencies;
 DEFINE TABLE item_dependencies TYPE RELATION IN workshop_items OUT workshop_items SCHEMAFULL PERMISSIONS NONE;
 
 DEFINE INDEX dep_out ON item_dependencies FIELDS out;
+DEFINE INDEX unique_item_dependencies ON item_dependencies FIELDS in, out UNIQUE;
 
 -- Copy back and mutate
 

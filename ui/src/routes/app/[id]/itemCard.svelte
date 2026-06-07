@@ -103,12 +103,12 @@
 			{@debug first_props}
 			<div class="flex flex-wrap gap-1">
 				{#each first_props as prop}
-					<Property {loggedIn} property={{ ...prop }} hideVote={false} itemID={item.id}></Property>
+					<Property {loggedIn} property={{ class: prop.out.class, value: prop.out.value, ...prop }} hideVote={false} itemID={item.id}></Property>
 				{/each}
 				{#if remaining_props.length > 0}
 					{#if open}
 						{#each remaining_props as prop}
-							<Property {loggedIn} property={{ ...prop }} hideVote={false} itemID={item.id}
+							<Property {loggedIn} property={{ class: prop.out.class, value: prop.out.value, ...prop }} hideVote={false} itemID={item.id}
 							></Property>
 						{/each}
 					{/if}

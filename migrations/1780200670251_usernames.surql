@@ -1,5 +1,7 @@
 -- Migrate the IDs in usernames from string to int
 
+-- This takes way too long, over an hour, cheaper to just download again
+DELETE FROM usernames;
 -- Copy to new table
 DEFINE TABLE usernames_temp TYPE NORMAL SCHEMALESS PERMISSIONS NONE;
 INSERT INTO usernames_temp (SELECT *, id.id() AS id FROM usernames);

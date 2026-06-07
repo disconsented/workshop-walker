@@ -3,7 +3,6 @@ use std::{collections::HashSet, sync::Arc, time::Duration};
 use itertools::Itertools;
 use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use reqwest::{Client, Response, StatusCode};
-use snafu::ResultExt;
 use surrealdb::{engine::local::Db, Surreal};
 use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
 use tracing::{debug, error};

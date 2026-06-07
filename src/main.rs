@@ -1,16 +1,16 @@
-use std::{env, path::Path, sync::Arc};
+extern crate core;
+extern crate alloc;
+
+use std::{env, sync::Arc};
 
 use migrations_tool::{Migrator, Outcome};
 use snafu::{Whatever, prelude::*};
 use surrealdb::{
-    Connection, Surreal,
-    engine::{
-        any::{Any, connect},
-        local::{Db, RocksDb},
-    },
-    opt::{IntoEndpoint, auth::Root},
+    Surreal,
+    engine::local::{Db, RocksDb},
+    opt::auth::Root,
 };
-use tokio_stream::{StreamExt, wrappers::ReadDirStream};
+use tokio_stream::StreamExt;
 use tracing::{Instrument, debug, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
 

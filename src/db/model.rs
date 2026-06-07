@@ -1,3 +1,4 @@
+use alloc::alloc;
 use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Utc};
@@ -7,8 +8,8 @@ use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use surrealdb_types::{Object, RecordIdKey, SurrealValue};
-use tracing::error;
+use surrealdb_types::{Number, Object, RecordIdKey, SurrealValue};
+use tracing::{error, warn};
 
 use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, IUsernameID, ItemID, TagID, UserID, UsernameID},
@@ -89,7 +90,8 @@ pub struct WorkshopItem {
     pub properties: Vec<ExternalWorkshopItemProperties>,
 }
 
-// Gave up trying to work around errors with missing fields (tags & properties) on insert
+// Gave up trying to work around errors with missing fields (tags & properties)
+// on insert
 #[derive(Serialize, Deserialize, Clone, Debug, SurrealValue)]
 pub struct InsertableWorkshopItem {
     pub app: IAppID,
@@ -118,7 +120,7 @@ pub struct FullWorkshopItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>, // The URL to the banner image
 
-    // Metadata and categorisation
+    // Metadata and categorization
     #[serde(default)]
     #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
     pub tags: Vec<ExternalTag>, // The list of tags found
@@ -167,15 +169,6 @@ fn to_external_full_item(
 
 fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<InternalFullWorkshopItem> {
     external.into_iter().map(Into::into).collect()
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, SurrealValue)]
-pub struct Dependencies {
-    pub id: Vec<IItemID>,
-    #[serde(rename = "in")]
-    pub this: IItemID,
-    #[serde(rename = "out")]
-    pub dependency: IItemID,
 }
 /// A steam workshop app
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -262,7 +255,12 @@ impl Into<RecordIdKey> for Property {
 }
 
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
-pub struct PropertyExt {
+pub struct WorkshopItemProperties {
+    #[dual_type(IItemID, surreal(wrap))]
+    #[serde(rename = "in")]
+    pub r#in: ItemID,
+    #[serde(rename = "out")]
+    pub out: Property,
     /// Reasoning or justification for an inclusion
     pub note: Option<String>,
     pub status: Status,
@@ -272,17 +270,6 @@ pub struct PropertyExt {
     pub vote_count: u64,
     #[dual_type(InternalSource)]
     pub source: ExternalSource,
-}
-#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
-pub struct WorkshopItemProperties {
-    #[dual_type(IItemID)]
-    #[serde(rename = "in")]
-    pub r#in: ItemID,
-    #[serde(rename = "out")]
-    pub out: Property,
-    #[dual_type(InternalPropertyExt)]
-    #[serde(flatten)]
-    pub property_ext: ExternalPropertyExt,
     pub vote_state: Option<i32>,
 }
 
@@ -328,7 +315,7 @@ pub struct Vote {
     pub when: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, SurrealValue)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InternalSource {
     /// Auto-generated
     System,
@@ -377,6 +364,103 @@ impl From<ExternalSource> for InternalSource {
     }
 }
 
+impl SurrealValue for InternalSource {
+    fn into_value(self) -> ::surrealdb::types::Value {
+        match self {
+            Self::System => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "System".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+            Self::User(field_0) => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "User".to_string(),
+                    ::surrealdb::types::Value::from_t(field_0),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+        }
+    }
+
+    fn from_value(
+        value: ::surrealdb::types::Value,
+    ) -> std::result::Result<Self, ::surrealdb::types::Error> {
+        match value {
+            ::surrealdb::types::Value::Object(mut map) => {
+                {
+                    if map.get("System").is_some() {
+                        return Ok(Self::System);
+                    }
+                }
+                {
+                    if let Some(value) = map.remove("User") {
+                        {
+                            let field_0 = <IUserID as SurrealValue>::from_value(value)?;
+                            return Ok(Self::User(field_0));
+                        }
+                    }
+                }
+            },
+            ::surrealdb::types::Value::String(string) => {
+                if string == "system" {
+                    return Ok(Self::System);
+                }
+            }
+            _ => {}
+        };
+        Err(::surrealdb::types::Error::internal(format!(
+            "Failed to decode {}, no variants matched",
+            "InternalSource"
+        )))
+    }
+
+    fn is_value(value: &::surrealdb::types::Value) -> bool {
+        match value {
+            ::surrealdb::types::Value::Object(map) => {
+                {
+                    if map
+                        .get("System")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+                {
+                    if let Some(value) = map.get("User") {
+                        return <IUserID as SurrealValue>::is_value(value);
+                    }
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+
+    fn kind_of() -> ::surrealdb::types::Kind {
+        ::surrealdb::types::Kind::Either(vec![
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "System".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert("User".to_string(), <IUserID as SurrealValue>::kind_of());
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+        ])
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, ToSchema, Serialize, Deserialize)]
 pub enum ExternalSource {
     /// Auto-generated
@@ -407,7 +491,7 @@ impl TryFrom<InternalSource> for ExternalSource {
     Ord,
     PartialOrd,
     Hash,
-    SurrealValue,
+    /* SurrealValue, */
 )]
 pub enum Class {
     /// Anything like addon, overhaul, bugfix, patch
@@ -418,6 +502,176 @@ pub enum Class {
     Genre,
     /// Mod features, like "new scenario" or "new clothes"
     Feature,
+}
+
+impl SurrealValue for Class {
+    fn into_value(self) -> ::surrealdb::types::Value {
+        match self {
+            Self::Type => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Type".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+            Self::Theme => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Theme".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+            Self::Genre => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Genre".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+            Self::Feature => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Feature".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+        }
+    }
+
+    fn from_value(
+        value: ::surrealdb::types::Value,
+    ) -> std::result::Result<Self, ::surrealdb::types::Error> {
+        match value {
+            ::surrealdb::types::Value::Object(mut map) => {
+                {
+                    if map.get("Type").is_some() {
+                        return Ok(Self::Type);
+                    }
+                }
+                {
+                    if map.get("Theme").is_some() {
+                        return Ok(Self::Theme);
+                    }
+                }
+                {
+                    if map.get("Genre").is_some() {
+                        return Ok(Self::Genre);
+                    }
+                }
+                {
+                    if map.get("Feature").is_some() {
+                        return Ok(Self::Feature);
+                    }
+                }
+            }
+            ::surrealdb::types::Value::String(value) => match value.as_str() {
+                "Type" => return Ok(Self::Type),
+                "Theme" => return Ok(Self::Theme),
+                "Genre" => return Ok(Self::Genre),
+                "Feature" => return Ok(Self::Feature),
+                _ => {}
+            },
+            _ => {}
+        };
+        Err(::surrealdb::types::Error::internal(format!(
+            "Failed to decode {}, no variants matched",
+            "Class"
+        )))
+    }
+
+    fn is_value(value: &::surrealdb::types::Value) -> bool {
+        match value {
+            ::surrealdb::types::Value::Object(map) => {
+                {
+                    if map
+                        .get("Type")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+                {
+                    if map
+                        .get("Theme")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+                {
+                    if map
+                        .get("Genre")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+                {
+                    if map
+                        .get("Feature")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+
+    fn kind_of() -> ::surrealdb::types::Kind {
+        ::surrealdb::types::Kind::Either(vec![
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Type".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Theme".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Genre".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Feature".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+        ])
+    }
 }
 
 impl Display for Class {
@@ -444,7 +698,6 @@ impl Display for Class {
     PartialEq,
     Ord,
     PartialOrd,
-    SurrealValue,
 )]
 #[repr(i8)]
 pub enum Status {
@@ -452,6 +705,147 @@ pub enum Status {
     #[default]
     Pending = 0,
     Accepted = 1,
+}
+// Horrendous manual hack thanks to _another_ surreal bug
+impl SurrealValue for Status {
+    fn into_value(self) -> ::surrealdb::types::Value {
+        match self {
+            Self::Rejected => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Rejected".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+            Self::Pending => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Pending".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+            Self::Accepted => {
+                let mut map = ::surrealdb::types::Object::new();
+                map.insert(
+                    "Accepted".to_string(),
+                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
+                );
+                ::surrealdb::types::Value::Object(map)
+            }
+        }
+    }
+
+    fn from_value(
+        value: ::surrealdb::types::Value,
+    ) -> std::result::Result<Self, ::surrealdb::types::Error> {
+        match value {
+            ::surrealdb::types::Value::Object(mut map) => {
+                {
+                    if map.get("Rejected").is_some() {
+                        return Ok(Self::Rejected);
+                    }
+                }
+                {
+                    if map.get("Pending").is_some() {
+                        return Ok(Self::Pending);
+                    }
+                }
+                {
+                    if map.get("Accepted").is_some() {
+                        return Ok(Self::Accepted);
+                    }
+                }
+            }
+            ::surrealdb::types::Value::Number(number) => match number {
+                Number::Int(-1) => {
+                    return Ok(Self::Rejected);
+                }
+                Number::Int(0) => {
+                    return Ok(Self::Pending);
+                }
+                Number::Int(1) => {
+                    return Ok(Self::Accepted);
+                }
+                _ => {}
+            },
+            _ => {}
+        };
+        Err(::surrealdb::types::Error::internal(format!(
+            "Failed to decode {}, no variants matched",
+            "Status"
+        )))
+    }
+
+    fn is_value(value: &::surrealdb::types::Value) -> bool {
+        warn!("{:?}", value);
+        match dbg!(value) {
+            ::surrealdb::types::Value::Object(map) => {
+                {
+                    if map
+                        .get("Rejected")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+                {
+                    if map
+                        .get("Pending")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+                {
+                    if map
+                        .get("Accepted")
+                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                    {
+                        return true;
+                    }
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+
+    fn kind_of() -> ::surrealdb::types::Kind {
+        ::surrealdb::types::Kind::Either(vec![
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Rejected".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Pending".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Accepted".to_string(),
+                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+            },
+        ])
+    }
 }
 
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -463,94 +857,92 @@ pub struct Username {
 
 #[cfg(test)]
 mod test {
-    use serde::{Deserialize, Serialize};
-    use surrealdb_types::RecordId;
 
-    use crate::db::{
-        model::{Class, Id, InternalSource, Source}, IItemID,
-        IUserID,
-    };
-
-    #[test]
-    fn test_id_newtype() {
-        let id: Id = IItemID::from("1".to_string()).into();
-        let id_txt = serde_json::to_string(&id).unwrap();
-        let id2: Id = serde_json::from_str(&id_txt).unwrap();
-        assert_eq!(id, id2);
-
-        println!("{id_txt}");
-    }
-
-    #[test]
-    fn test_source_de_ser() {
-        let system: InternalSource = Source::System;
-        let system_text = serde_json::to_string(&system).unwrap();
-        let system2 = serde_json::from_str(&system_text).unwrap();
-        assert_eq!(system, system2);
-
-        let user = Source::User("a".to_string());
-        let user_text = serde_json::to_string(&user).unwrap();
-        let user2 = serde_json::from_str(&user_text).unwrap();
-        assert_eq!(user, user2);
-        println!("{user_text} {system_text}");
-
-        {
-            let user = Source::User(IUserID::from("b".to_string()));
-            let user_text = serde_json::to_string(&user).unwrap();
-            let user2 = serde_json::from_str(&user_text).unwrap();
-            assert_eq!(user, user2);
-            println!("{user_text} {system_text}");
-        }
-
-        #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
-        struct Test {
-            source: InternalSource,
-        }
-
-        let t_user = Test { source: user };
-        let txt_user = serde_json::to_string(&t_user).unwrap();
-        assert_eq!(t_user, serde_json::from_str(&txt_user).unwrap());
-        let t_sys = Test { source: system };
-        let txt_sys = serde_json::to_string(&t_sys).unwrap();
-        assert_eq!(t_sys, serde_json::from_str(&txt_sys).unwrap());
-        println!("{txt_user} {txt_sys}");
-        #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
-        struct Foo {
-            thing: Class,
-        }
-        println!(
-            "{}",
-            serde_json::to_string(&Foo {
-                thing: Class::Genre
-            })
-            .unwrap()
-        );
-    }
-    #[tokio::test]
-    async fn test_source_surreal() {
-        use surrealdb::{engine::local::Mem, Surreal};
-
-        #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
-        struct Foo {
-            source: Source<RecordId>,
-        }
-        let db = Surreal::new::<Mem>(()).await.unwrap();
-        db.use_ns("test").use_db("test").await.unwrap();
-        db.query("DEFINE TABLE OVERWRITE properties TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;")
-            .query(
-                "DEFINE FIELD OVERWRITE source ON properties TYPE 'system' | record<users> \
-                 PERMISSIONS FULL;",
-            )
-            .await
-            .unwrap();
-        let foo_struct = Foo {
-            source: Source::System,
-        };
-        let mut r: Vec<Foo> = db
-            .insert("properties")
-            .content(foo_struct.clone())
-            .await
-            .unwrap();
-        assert_eq!(foo_struct, r.pop().unwrap());
-    }
+    // use crate::db::{
+    //     model::{Class, Id, InternalSource, Source}, IItemID,
+    //     IUserID,
+    // };
+    //
+    // #[test]
+    // fn test_id_newtype() {
+    //     let id: Id = IItemID::from("1".to_string()).into();
+    //     let id_txt = serde_json::to_string(&id).unwrap();
+    //     let id2: Id = serde_json::from_str(&id_txt).unwrap();
+    //     assert_eq!(id, id2);
+    //
+    //     println!("{id_txt}");
+    // }
+    //
+    // #[test]
+    // fn test_source_de_ser() {
+    //     let system: InternalSource = Source::System;
+    //     let system_text = serde_json::to_string(&system).unwrap();
+    //     let system2 = serde_json::from_str(&system_text).unwrap();
+    //     assert_eq!(system, system2);
+    //
+    //     let user = Source::User("a".to_string());
+    //     let user_text = serde_json::to_string(&user).unwrap();
+    //     let user2 = serde_json::from_str(&user_text).unwrap();
+    //     assert_eq!(user, user2);
+    //     println!("{user_text} {system_text}");
+    //
+    //     {
+    //         let user = Source::User(IUserID::from("b".to_string()));
+    //         let user_text = serde_json::to_string(&user).unwrap();
+    //         let user2 = serde_json::from_str(&user_text).unwrap();
+    //         assert_eq!(user, user2);
+    //         println!("{user_text} {system_text}");
+    //     }
+    //
+    //     #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+    //     struct Test {
+    //         source: InternalSource,
+    //     }
+    //
+    //     let t_user = Test { source: user };
+    //     let txt_user = serde_json::to_string(&t_user).unwrap();
+    //     assert_eq!(t_user, serde_json::from_str(&txt_user).unwrap());
+    //     let t_sys = Test { source: system };
+    //     let txt_sys = serde_json::to_string(&t_sys).unwrap();
+    //     assert_eq!(t_sys, serde_json::from_str(&txt_sys).unwrap());
+    //     println!("{txt_user} {txt_sys}");
+    //     #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+    //     struct Foo {
+    //         thing: Class,
+    //     }
+    //     println!(
+    //         "{}",
+    //         serde_json::to_string(&Foo {
+    //             thing: Class::Genre
+    //         })
+    //         .unwrap()
+    //     );
+    // }
+    // #[tokio::test]
+    // async fn test_source_surreal() {
+    //     use surrealdb::{engine::local::Mem, Surreal};
+    //
+    //     #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+    //     struct Foo {
+    //         source: Source<RecordId>,
+    //     }
+    //     let db = Surreal::new::<Mem>(()).await.unwrap();
+    //     db.use_ns("test").use_db("test").await.unwrap();
+    //     db.query("DEFINE TABLE OVERWRITE properties TYPE NORMAL SCHEMAFULL
+    // PERMISSIONS NONE;")         .query(
+    //             "DEFINE FIELD OVERWRITE source ON properties TYPE 'system' |
+    // record<users> \              PERMISSIONS FULL;",
+    //         )
+    //         .await
+    //         .unwrap();
+    //     let foo_struct = Foo {
+    //         source: Source::System,
+    //     };
+    //     let mut r: Vec<Foo> = db
+    //         .insert("properties")
+    //         .content(foo_struct.clone())
+    //         .await
+    //         .unwrap();
+    //     assert_eq!(foo_struct, r.pop().unwrap());
+    // }
 }

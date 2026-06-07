@@ -1,4 +1,4 @@
-use std::{collections::HashSet, mem::take};
+use std::mem::take;
 
 use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef};
 use snafu::{OptionExt, ResultExt, Whatever};
@@ -7,7 +7,6 @@ use tracing::error;
 use crate::{
     db::{
         item_update_actor::ItemUpdateMsg, model::{InternalTag, InternalWorkshopItem}, IAppID, ITagID,
-        IUserID,
         IUsernameID,
     },
     processing::{

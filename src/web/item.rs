@@ -14,7 +14,7 @@ use surrealdb_core::sql::{
     Param,
     Part,
 };
-use surrealdb_types::{RecordId, SurrealValue, ToSql};
+use surrealdb_types::{RecordId, SurrealValue, ToSql, Value};
 use tracing::{debug, error, instrument};
 
 use crate::{
@@ -116,17 +116,32 @@ async fn get_item(
     id: IItemID,
     user: Option<IUserID>,
 ) -> Result<InternalFullWorkshopItem> {
+    let prop_fields = [
+        DestructurePart::Field("in".into()),
+        DestructurePart::Field("id".into()),
+        DestructurePart::Field("source".into()),
+        DestructurePart::Field("status".into()),
+        DestructurePart::Field("upvote_count".into()),
+        DestructurePart::Field("vote_count".into()),
+        DestructurePart::Aliased(
+            "out".into(),
+            Idiom(vec![
+                Part::Field("out".into()),
+                Part::Method("id".into(), vec![]),
+            ]),
+        ),
+    ];
     let dep_fields = [
-        DestructurePart::Field("app".to_string()),
-        DestructurePart::Field("author".to_string()),
-        DestructurePart::Field("description".to_string()),
-        DestructurePart::Field("id".to_string()),
-        DestructurePart::Field("languages".to_string()),
-        DestructurePart::Field("last_updated".to_string()),
-        DestructurePart::Field("preview_url".to_string()),
-        DestructurePart::Field("score".to_string()),
-        DestructurePart::Field("title".to_string()),
-        DestructurePart::All("tags".to_string()),
+        DestructurePart::Field("app".into()),
+        DestructurePart::All("author".into()),
+        DestructurePart::Field("description".into()),
+        DestructurePart::Field("id".into()),
+        DestructurePart::Field("languages".into()),
+        DestructurePart::Field("last_updated".into()),
+        DestructurePart::Field("preview_url".into()),
+        DestructurePart::Field("score".into()),
+        DestructurePart::Field("title".into()),
+        DestructurePart::All("tags".into()),
     ];
     let mut stmt = SelectStatement::default();
     stmt.what = vec![Expr::from_public_value(
@@ -137,8 +152,8 @@ async fn get_item(
         Expr::Binary {
             left: Box::new(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom(vec![
-                    Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                    Part::Field("status".to_string()),
+                    Part::Start(Expr::Param(Param::new("prop"))),
+                    Part::Field("status".into()),
                 ]))),
                 op: BinaryOperator::ExactEqual,
                 right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
@@ -147,7 +162,7 @@ async fn get_item(
             right: Box::new(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom(vec![
                     Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                    Part::Field("soure".to_string()),
+                    Part::Field("soure".into()),
                 ]))),
                 op: BinaryOperator::ExactEqual,
                 right: Box::new(Expr::from_public_value(user.into_value())),
@@ -157,7 +172,7 @@ async fn get_item(
         Expr::Binary {
             left: Box::new(Expr::Idiom(Idiom(vec![
                 Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                Part::Field("status".to_string()),
+                Part::Field("status".into()),
             ]))),
             op: BinaryOperator::ExactEqual,
             right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
@@ -167,29 +182,29 @@ async fn get_item(
     stmt.fields = Fields::Select(vec![
         Field::All,
         Field::Single(Selector {
-            expr: Expr::Idiom(Idiom(vec![Part::Field("tags".to_string()), Part::All])),
+            expr: Expr::Idiom(Idiom(vec![Part::Field("tags".into()), Part::All])),
             alias: None,
         }),
         Field::Single(Selector {
-            expr: Expr::Idiom(Idiom(vec![Part::Field("author".to_string()), Part::All])),
+            expr: Expr::Idiom(Idiom(vec![Part::Field("author".into()), Part::All])),
             alias: None,
         }),
         Field::Single(Selector {
             expr: Expr::Idiom(Idiom(vec![
-                Part::Graph(Lookup {
+                Part::Graph(Box::new(Lookup {
                     kind: LookupKind::Graph(Dir::Out),
                     what: vec![LookupSubject::Table {
-                        table: "workshop_item_properties".to_string(),
+                        table: "workshop_item_properties".into(),
                         referencing_field: None,
                     }],
                     ..Default::default()
-                }),
-                Part::All,
+                })),
+                Part::Destructure(prop_fields.to_vec()),
             ])),
             alias: Some(Idiom(vec![
-                Part::Field("properties".to_string()),
+                Part::Field("properties".into()),
                 Part::Method(
-                    "filter".to_string(),
+                    "filter".into(),
                     vec![Expr::Closure(Box::new(Closure {
                         args: vec![(Param::new("prop".to_string()), Kind::Any)],
                         returns: None,
@@ -200,16 +215,16 @@ async fn get_item(
         }),
         Field::Single(Selector {
             expr: Expr::Idiom(Idiom(vec![
-                Part::Graph(Lookup {
+                Part::Graph(Box::new(Lookup {
                     kind: LookupKind::Graph(Dir::Out),
                     what: vec![LookupSubject::Table {
-                        table: "item_dependencies".to_string(),
+                        table: "item_dependencies".into(),
                         referencing_field: None,
                     }],
                     ..Default::default()
-                }),
+                })),
                 Part::All,
-                Part::Field("in".to_string()),
+                Part::Field("in".into()),
                 Part::All,
                 Part::Destructure(dep_fields.to_vec()),
             ])),
@@ -217,16 +232,16 @@ async fn get_item(
         }),
         Field::Single(Selector {
             expr: Expr::Idiom(Idiom(vec![
-                Part::Graph(Lookup {
+                Part::Graph(Box::new(Lookup {
                     kind: LookupKind::Graph(Dir::In),
                     what: vec![LookupSubject::Table {
-                        table: "item_dependencies".to_string(),
+                        table: "item_dependencies".into(),
                         referencing_field: None,
                     }],
                     ..Default::default()
-                }),
+                })),
                 Part::All,
-                Part::Field("in".to_string()),
+                Part::Field("in".into()),
                 Part::All,
                 Part::Destructure(dep_fields.to_vec()),
             ])),
@@ -235,13 +250,78 @@ async fn get_item(
     ]);
 
     debug!(sql = stmt.to_sql(), "item query");
-
-    let result: Option<InternalFullWorkshopItem> = db
+    let mut thing = db
         .query(stmt)
         .bind(("id", RecordId::from(id)))
         .await
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to query database"))
-        .map_err(|_| InnerError::InternalError)?
+        .map_err(|_| InnerError::InternalError)?;
+
+    // match thing.results.get(&0).unwrap().1.clone().unwrap() {
+    //     Value::None => {}
+    //     Value::Null => {}
+    //     Value::Bool(_) => {}
+    //     Value::Number(_) => {}
+    //     Value::String(_) => {}
+    //     Value::Bytes(_) => {}
+    //     Value::Duration(_) => {}
+    //     Value::Datetime(_) => {}
+    //     Value::Uuid(_) => {}
+    //     Value::Geometry(_) => {}
+    //     Value::Table(_) => {}
+    //     Value::RecordId(_) => {}
+    //     Value::File(_) => {}
+    //     Value::Range(_) => {}
+    //     Value::Regex(_) => {}
+    //     Value::Array(arr) => match &arr.0[0] {
+    //         Value::None => {}
+    //         Value::Null => {}
+    //         Value::Bool(_) => {}
+    //         Value::Number(_) => {}
+    //         Value::String(_) => {}
+    //         Value::Bytes(_) => {}
+    //         Value::Duration(_) => {}
+    //         Value::Datetime(_) => {}
+    //         Value::Uuid(_) => {}
+    //         Value::Geometry(_) => {}
+    //         Value::Table(_) => {}
+    //         Value::RecordId(_) => {}
+    //         Value::File(_) => {}
+    //         Value::Range(_) => {}
+    //         Value::Regex(_) => {}
+    //         Value::Array(_) => {}
+    //         Value::Object(obj) => {
+    //             match obj.get("properties").unwrap() {
+    //                 Value::None => {}
+    //                 Value::Null => {}
+    //                 Value::Bool(_) => {}
+    //                 Value::Number(_) => {}
+    //                 Value::String(_) => {}
+    //                 Value::Bytes(_) => {}
+    //                 Value::Duration(_) => {}
+    //                 Value::Datetime(_) => {}
+    //                 Value::Uuid(_) => {}
+    //                 Value::Geometry(_) => {}
+    //                 Value::Table(_) => {}
+    //                 Value::RecordId(_) => {}
+    //                 Value::File(_) => {}
+    //                 Value::Range(_) => {}
+    //                 Value::Regex(_) => {}
+    //                 Value::Array(array) => {
+    //                     for prop in array{
+    //
+    //                     }
+    //                 }
+    //                 Value::Object(_) => {}
+    //                 Value::Set(_) => {}
+    //             }
+    //         }
+    //         Value::Set(_) => {}
+    //     },
+    //     Value::Object(_) => {}
+    //     Value::Set(_) => {}
+    // }
+    let result: Option<InternalFullWorkshopItem> = thing
         .take(0)
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to take result"))
         .map_err(|_| InnerError::InternalError)?;
