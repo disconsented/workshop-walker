@@ -4,7 +4,9 @@ use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 use snafu::{ResultExt, Whatever};
 use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    data::Data, statements::InsertStatement, statements::UpsertStatement, Expr,
+    data::Data,
+    statements::{InsertStatement, UpsertStatement},
+    Expr,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
@@ -190,16 +192,20 @@ async fn insert_data(
                 let dep_id = IItemID::from(child.publishedfileid.parse::<i64>()?);
                 Ok(InsertStatement {
                     into: Some(Expr::Table("item_dependencies".into())),
-                    data: Data::SingleExpression(Expr::from_public_value(
-                        Value::Object(
-                            vec![
-                                ("in".into(), item.id.clone().into_value()),
-                                ("out".into(), dep_id.into_value()),
-                            ]
-                            .into_iter()
-                            .collect(),
-                        ),
-                    )),
+                    data: Data::SingleExpression(Expr::from_public_value(Value::Object(
+                        vec![
+                            // Another "fun" surreal detail, insert does conflict on the ID... not
+                            // the actual relation despite their being a unique index
+                            (
+                                "id".into(),
+                                [id.clone().into_value(), dep_id.clone().into_value()].into_value(),
+                            ),
+                            ("in".into(), item.id.clone().into_value()),
+                            ("out".into(), dep_id.into_value()),
+                        ]
+                        .into_iter()
+                        .collect(),
+                    ))),
                     ignore: true,
                     relation: true,
                     ..Default::default()
