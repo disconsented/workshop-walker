@@ -6,38 +6,38 @@ use std::{
 };
 
 use biscuit_auth::{
-    Authorizer, Biscuit, KeyPair,
-    builder_ext::AuthorizerExt,
-    macros::{authorizer, biscuit},
+    builder_ext::AuthorizerExt, macros::{authorizer, biscuit}, Authorizer,
+    Biscuit,
+    KeyPair,
 };
 use chrono::{NaiveDateTime, TimeDelta, Utc};
 use multimap::MultiMap;
-use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
+use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
 use reqwest::{Client, Url};
 use salvo::{
-    Depot, Request, Response,
     http::{
+        cookie::{time::Duration, Cookie, SameSite},
         HeaderValue,
-        cookie::{Cookie, SameSite, time::Duration},
-    },
-    prelude::{Redirect, StatusCode, StatusError, endpoint},
+    }, prelude::{endpoint, Redirect, StatusCode, StatusError}, Depot,
+    Request,
+    Response,
 };
 use serde::{Deserialize, Serialize};
 use serde_xml_rs::from_str;
-use snafu::{ErrorCompat, prelude::*};
-use surrealdb::{Surreal, engine::local::Db};
+use snafu::{prelude::*, ErrorCompat};
+use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    AssignOperator, Idiom, Part,
-    data::{Assignment, Data},
-    expression::Expr,
-    statements::InsertStatement,
+    data::{Assignment, Data}, expression::Expr, statements::InsertStatement,
+    AssignOperator,
+    Idiom,
+    Part,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     app_config::BiscuitConfig,
-    db::{IUserID, UserID, model::InternalUser},
+    db::{model::InternalUser, IUserID, UserID},
     steam::steam_user_actor::SteamUserMsg,
 };
 
@@ -487,6 +487,9 @@ impl AuthActor {
             .ok_or(InnerError::PeerValidationFailed)?;
 
         let keypair = &KeyPair::from(&state.biscuit.private_key);
+        let Ok(user_id) = user_id.parse::<i64>() else {
+            return Err(InnerError::PeerValidationFailed)?;
+        };
 
         let biscuit: Biscuit = biscuit!(
             r#"
@@ -498,9 +501,7 @@ impl AuthActor {
         .build(keypair)
         .map_err(|_| InnerError::PeerValidationFailed)?;
 
-        let Ok(user_id) = user_id.parse::<i64>() else {
-            return Err(InnerError::PeerValidationFailed)?;
-        };
+
 
         let _ = state
             .steam_user_actor_ref

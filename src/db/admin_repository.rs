@@ -20,7 +20,7 @@ impl AdminPort for AdminSilo {
     async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError> {
         match self
             .db
-            .query("SELECT id.id().to_string() as id, * FROM users")
+            .query("SELECT * FROM users")
             .await
             .map(|mut q| q.take(0))
         {
@@ -64,8 +64,7 @@ impl AdminPort for AdminSilo {
         match self
             .db
             .query(
-                "SELECT record::id(in) as in, out.*.id.{class,value} as out, source.to_string(), \
-                 id.to_string(), * FROM workshop_item_properties",
+                "SELECT out.id().{class,value} as out, source.to_string(), * FROM workshop_item_properties",
             )
             .await
             .map(|mut q| q.take(0))
