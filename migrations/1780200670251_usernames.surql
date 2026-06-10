@@ -16,11 +16,13 @@ DEFINE FIELD name ON usernames TYPE string PERMISSIONS FULL;
 
 DEFINE INDEX unique_username ON usernames FIELDS id UNIQUE;
 -- Copy back and mutate
-LET $records = (SELECT * FROM usernames_temp);
-FOR $record IN $records {
-   LET $id = type::record("usernames", type::number($record.username.id()));
-   UPSERT $id SET name = $record.name, last_updated = $record.last_updated;
-};
+LET $records = (SELECT * FROM usernames_temp).
+map(|$record|{
+    id: type::record("usernames", type::number($record.username.id())),
+    name: $record.name,
+    last_updated: $record.last_updated
+});
+INSERT $records RETURN NONE;
 
 -- Drop old table
 REMOVE TABLE usernames_temp;
