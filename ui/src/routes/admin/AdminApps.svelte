@@ -144,11 +144,16 @@
 {/if}
 
 <div class="space-y-6">
-	<button class="btn btn-primary" onclick={() => (apps = [...apps, newApp()])}> Add App</button>
+	<button
+		class="btn preset-filled-primary-500"
+		onclick={() => (apps = [...apps, newApp()])}
+	>
+		Add App
+	</button>
 	{@debug apps}
 	{#each apps as state (state.localKey)}
 		{@debug state}
-		<div class="card border-surface-300 border" class:border-warning-400={isDirty(state)}>
+		<div class="card preset-tonal-surface-50-950 border-surface-300 border" class:border-warning-400={isDirty(state)}>
 			<!-- Header -->
 			<button
 				type="button"
@@ -253,7 +258,7 @@
 					<div class="flex justify-between pt-2">
 						<button
 							type="button"
-							class="btn btn-error"
+							class="btn preset-filled-error-500"
 							disabled={!state.app.id}
 							onclick={() => remove(state)}
 						>
@@ -262,7 +267,7 @@
 
 						<button
 							type="submit"
-							class="btn btn-primary"
+							class="btn preset-filled-primary-500"
 							disabled={!isDirty(state) || !state.app.id}
 						>
 							Save
