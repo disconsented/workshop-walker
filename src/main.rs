@@ -15,6 +15,7 @@ use tracing::{Instrument, debug, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use crate::{application::admin_service::AdminService, db::admin_repository::AdminSilo};
+use crate::db::UserID;
 
 mod actors;
 mod app_config;
@@ -51,7 +52,7 @@ async fn main() -> Result<()> {
             debug!(%user, "Setting admin flag for user");
             let _ = admin_service
                 .patch_user(domain::admin::PatchUserData {
-                    id: user.clone(),
+                    id: UserID::from(*user),
                     banned: None,
                     admin: Some(true),
                 })

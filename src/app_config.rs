@@ -13,7 +13,7 @@ pub struct Config {
     pub force_update: bool,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
-    pub admin_users: Vec<String>,
+    pub admin_users: Vec<i64>,
 }
 #[derive(Deserialize, Redact)]
 pub struct Steam {

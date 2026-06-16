@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 
 use crate::db::model::{InternalUser, InternalWorkshopItemProperties, Property, Status};
+use crate::db::{ItemID, UserID};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]
@@ -17,14 +18,14 @@ pub enum AdminError {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct PatchUserData {
-    pub id: String,
+    pub id: UserID,
     pub banned: Option<bool>,
     pub admin: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct PatchRelationshipData {
-    pub item: String,
+    pub item: ItemID,
     #[serde(flatten)]
     pub property: Property,
     pub status: Status,

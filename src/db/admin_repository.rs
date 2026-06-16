@@ -5,6 +5,7 @@ use crate::{
     db::model::{InternalUser, InternalWorkshopItemProperties},
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
+use crate::db::{IItemID, IUserID};
 
 pub struct AdminSilo {
     pub db: Surreal<Db>,
@@ -33,11 +34,12 @@ impl AdminPort for AdminSilo {
     }
 
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
+        let id: IUserID = patch.id.clone().into();
         if let Some(banned) = patch.banned
             && let Err(e) = self
                 .db
                 .query("UPDATE $user SET banned=$banned")
-                .bind(("user", patch.id.clone()))
+                .bind(("user", id.clone()))
                 .bind(("banned", banned))
                 .await
         {
@@ -48,7 +50,7 @@ impl AdminPort for AdminSilo {
             && let Err(e) = self
                 .db
                 .query("UPDATE $user SET admin=$admin")
-                .bind(("user", patch.id))
+                .bind(("user", id))
                 .bind(("admin", admin))
                 .await
         {
@@ -90,7 +92,7 @@ impl AdminPort for AdminSilo {
             )
             .bind(("class", patch.property.class))
             .bind(("value", patch.property.value))
-            .bind(("item", patch.item))
+            .bind(("item", IItemID::from(patch.item)))
             .bind(("status", patch.status))
             .await;
         if let Err(e) = res {

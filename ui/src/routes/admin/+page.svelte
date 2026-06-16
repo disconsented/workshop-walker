@@ -137,27 +137,26 @@
 	<h1 class="mb-6 text-2xl font-bold">Property Management System</h1>
 
 	<Tabs value={group} onValueChange={(e) => (group = e.value)}>
-		{#snippet list()}
-			<Tabs.Control value="properties">Properties</Tabs.Control>
-			<Tabs.Control value="users">Users</Tabs.Control>
-			<Tabs.Control value="apps">Apps</Tabs.Control>
-		{/snippet}
-		{#snippet content()}
+		<Tabs.List>
+			<Tabs.Trigger value="properties">Properties</Tabs.Trigger>
+			<Tabs.Trigger value="users">Users</Tabs.Trigger>
+			<Tabs.Trigger value="apps">Apps</Tabs.Trigger>
+			<Tabs.Indicator />
+		</Tabs.List>
 			<!-- Properties Tab -->
-			<Tabs.Panel value="properties">
+			<Tabs.Content value="properties">
 				{@render propertiesPanel()}
-			</Tabs.Panel>
+			</Tabs.Content>
 
 			<!-- Users Tab -->
-			<Tabs.Panel value="users">
+			<Tabs.Content value="users">
 				{@render usersPanel()}
-			</Tabs.Panel>
+			</Tabs.Content>
 
 			<!-- Apps Tab -->
-			<Tabs.Panel value="apps">
+			<Tabs.Content value="apps">
 				{@render appsPanel()}
-			</Tabs.Panel>
-		{/snippet}
+			</Tabs.Content>
 	</Tabs>
 </div>
 
@@ -171,114 +170,118 @@
 		</select>
 	</div>
 
-	<table class="table">
-		<thead>
-			<tr>
-				<th>Item ID</th>
-				<th>Class</th>
-				<th>Value</th>
-				<th>Submitted By</th>
-				<th>Status</th>
-				<th>Actions</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each properties as property}
-				<tr class="hover:preset-tonal-primary">
-					<td><a class="anchor" href="/item/{property.in}">{property.in}</a></td>
-					<td>{property.out.class}</td>
-					<td>{property.out.value}</td>
-					<td>{property.source}</td>
-					<td>
-						{#if property.status === -1}
-							<span class="text-red-500">Denied</span>
-						{:else if property.status === 0}
-							<span class="text-yellow-500">Pending</span>
-						{:else}
-							<span class="text-green-500">Approved</span>
-						{/if}
-					</td>
-					<td class="flex gap-2">
-						<nav class="btn-group btn-sm preset-outlined-surface-200-800 flex-col p-2 md:flex-row">
-							<button
-								type="button"
-								class={[
-									'btn btn-sm',
-									property.status === -1 ? 'preset-filled' : 'hover:preset-tonal'
-								]}
-								onclick={() => togglePropertyStatus(property, -1)}
-								disabled={property.status === -1}
-								>Deny
-							</button>
-							<button
-								type="button"
-								class={[
-									'btn btn-sm',
-									property.status === 0 ? 'preset-filled' : 'hover:preset-tonal'
-								]}
-								onclick={() => togglePropertyStatus(property, 0)}
-								disabled={property.status === 0}
-								>Pending
-							</button>
-							<button
-								type="button"
-								class={[
-									'btn btn-sm',
-									property.status === 1 ? 'preset-filled' : 'hover:preset-tonal'
-								]}
-								onclick={() => togglePropertyStatus(property, 1)}
-								disabled={property.status === 1}
-								>Approve
-							</button>
-						</nav>
-					</td>
+	<div class="table-wrap">
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Item ID</th>
+					<th>Class</th>
+					<th>Value</th>
+					<th>Submitted By</th>
+					<th>Status</th>
+					<th>Actions</th>
 				</tr>
-			{/each}
-		</tbody>
-	</table>
+			</thead>
+			<tbody>
+				{#each properties as property}
+					<tr class="hover:preset-tonal-primary">
+						<td><a class="anchor" href="/item/{property.in}">{property.in}</a></td>
+						<td>{property.out.class}</td>
+						<td>{property.out.value}</td>
+						<td>{property.source}</td>
+						<td>
+							{#if property.status === -1}
+								<span class="text-error-500">Denied</span>
+							{:else if property.status === 0}
+								<span class="text-warning-500">Pending</span>
+							{:else}
+								<span class="text-success-500">Approved</span>
+							{/if}
+						</td>
+						<td class="flex gap-2">
+							<nav class="flex-col gap-2 p-2 md:flex-row">
+								<button
+									type="button"
+									class="btn btn-sm {property.status === -1
+										? 'preset-filled-error-500'
+										: 'preset-tonal-error-500 hover:preset-filled-error-500'}"
+									onclick={() => togglePropertyStatus(property, -1)}
+									disabled={property.status === -1}
+								>
+									Deny
+								</button>
+								<button
+									type="button"
+									class="btn btn-sm {property.status === 0
+										? 'preset-filled-warning-500'
+										: 'preset-tonal-warning-500 hover:preset-filled-warning-500'}"
+									onclick={() => togglePropertyStatus(property, 0)}
+									disabled={property.status === 0}
+								>
+									Pending
+								</button>
+								<button
+									type="button"
+									class="btn btn-sm {property.status === 1
+										? 'preset-filled-success-500'
+										: 'preset-tonal-success-500 hover:preset-filled-success-500'}"
+									onclick={() => togglePropertyStatus(property, 1)}
+									disabled={property.status === 1}
+								>
+									Approve
+								</button>
+							</nav>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 {/snippet}
 
 {#snippet usersPanel()}
-	<table class="table">
-		<thead>
-			<tr>
-				<th>ID</th>
-				<th>Name</th>
-				<th>Admin</th>
-				<th>Banned</th>
-				<th>Last Logged In</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each users as user}
-				<tr class="hover:preset-tonal-primary">
-					<td>{user.id}</td>
-					<td>{user.name ?? 'unpopulated'} </td>
-					<td>
-						<input
-							type="checkbox"
-							class="checkbox"
-							checked={user.admin}
-							onchange={(e) => toggleUserAdmin(user.id, e.target.checked)}
-						/>
-					</td>
-					<td>
-						<input
-							type="checkbox"
-							class="checkbox"
-							checked={user.banned}
-							onchange={(e) => {
-								toggleUserBan(user.id, e.target.checked);
-							}}
-						/>
-					</td>
-					<td>
-						{user.last_logged_in}
-					</td>
+	<div class="table-wrap">
+		<table class="table">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Name</th>
+					<th>Admin</th>
+					<th>Banned</th>
+					<th>Last Logged In</th>
 				</tr>
-			{/each}
-		</tbody>
-	</table>
+			</thead>
+			<tbody>
+				{#each users as user}
+					<tr class="hover:preset-tonal-primary">
+						<td>{user.id}</td>
+						<td>{user.name ?? 'unpopulated'} </td>
+						<td>
+							<input
+								type="checkbox"
+								class="checkbox"
+								checked={user.admin}
+								onchange={(e) => toggleUserAdmin(user.id, e.target.checked)}
+							/>
+						</td>
+						<td>
+							<input
+								type="checkbox"
+								class="checkbox"
+								checked={user.banned}
+								onchange={(e) => {
+									toggleUserBan(user.id, e.target.checked);
+								}}
+							/>
+						</td>
+						<td>
+							{user.last_logged_in}
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 {/snippet}
 
 {#snippet appsPanel()}
