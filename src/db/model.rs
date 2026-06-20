@@ -1,4 +1,3 @@
-use alloc::alloc;
 use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Utc};
@@ -189,13 +188,26 @@ pub struct App {
     pub available: bool,
     /// List of tags to select by default
     #[serde(default)]
-    #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
-    pub default_tags: Vec<ExternalTag>,
+    #[dual_type(Vec<ITagID>, to_external = to_external_tag_id, to_internal = to_internal_tag_id)]
+    pub default_tags: Vec<TagID>,
     /// List of known tags
     #[serde(default)]
-    #[dual_type(Vec<InternalTag>, to_external = to_external_tag, to_internal = to_internal_tag)]
-    pub tags: Vec<ExternalTag>,
+    #[dual_type(Vec<ITagID>, to_external = to_external_tag_id, to_internal = to_internal_tag_id)]
+    pub tags: Vec<TagID>,
 }
+
+fn to_external_tag_id(internal: Vec<ITagID>) -> Result<Vec<TagID>, surrealdb_types::Error> {
+    internal
+        .into_iter()
+        .map(TagID::try_from)
+        .collect::<Result<_, _>>()
+        .inspect_err(|error| error!(?error, "to_external_tag"))
+}
+
+fn to_internal_tag_id(external: Vec<TagID>) -> Vec<ITagID> {
+    external.into_iter().map(ITagID::from).collect()
+}
+
 
 /// A workshop walker user
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -546,7 +558,7 @@ impl SurrealValue for Class {
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
         match value {
-            ::surrealdb::types::Value::Object(mut map) => {
+            ::surrealdb::types::Value::Object(map) => {
                 {
                     if map.get("Type").is_some() {
                         return Ok(Self::Type);
@@ -741,7 +753,7 @@ impl SurrealValue for Status {
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
         match value {
-            ::surrealdb::types::Value::Object(mut map) => {
+            ::surrealdb::types::Value::Object(map) => {
                 {
                     if map.get("Rejected").is_some() {
                         return Ok(Self::Rejected);

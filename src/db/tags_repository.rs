@@ -1,8 +1,8 @@
-use surrealdb::{Surreal, engine::local::Db};
-use tracing::error;
+use surrealdb::{engine::local::Db, IndexedResults, Surreal};
+use tracing::{debug, error};
 
 use crate::{
-    db::{IAppID, model::InternalTag},
+    db::{model::InternalTag, IAppID, ITagID},
     domain::tags::{TagError, TagsPort},
 };
 
@@ -18,32 +18,39 @@ impl TagsSilo {
 
 impl TagsPort for TagsSilo {
     async fn upsert_tags(&self, app: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError> {
-        for tag in tags {
-            let query = self
-                .db
-                .query("BEGIN TRANSACTION")
-                .query("UPSERT tags CONTENT $tag")
-                .query("UPDATE $id SET tags = tags.add($record)")
-                .query("COMMIT")
-                .bind(("record", tag.id.clone()))
-                .bind(("tag", tag))
-                .bind(("id", app.clone()));
-            if let Err(error) = query.await.map(surrealdb::IndexedResults::check) {
-                error!(?error, "failed to upsert tag");
-                return Err(TagError::Internal {
-                    msg: error.to_string(),
-                });
-            }
+        let tag_ids = tags
+            .iter()
+            .map(|tag| tag.id.clone())
+            .collect::<Vec<ITagID>>();
+        let query = self
+            .db
+            .query("BEGIN TRANSACTION;")
+            .query("INSERT IGNORE INTO tags $tags;")
+            .query("UPDATE $id SET tags = $tag_ids;")
+            .query("COMMIT;")
+            .bind(("id", app))
+            .bind(("tag_ids", tag_ids))
+            .bind(("tags", tags));
+
+
+        debug!(?query, "upsert tags");
+
+        if let Err(error) = query.await.map(IndexedResults::check) {
+            error!(?error, "failed to upsert tag");
+            return Err(TagError::Internal {
+                msg: error.to_string(),
+            });
         }
+
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{Surreal, engine::local::Mem};
+    use surrealdb::{engine::local::Mem, Surreal};
 
-    use crate::db::{AppID, IAppID, ITagID, TagID};
+    use crate::db::{IAppID, ITagID};
 
     #[tokio::test]
     async fn test_upsert_tags() {

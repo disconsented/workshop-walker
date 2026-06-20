@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-
-	type Record = {};
-
+	
 	type App = {
 		id: number;
 		name: string;
@@ -11,8 +9,8 @@
 		banner: string;
 		enabled: boolean;
 		available: boolean;
-		default_tags: Record[];
-		tags: Record[];
+		default_tags: string[];
+		tags: string[];
 	};
 
 	type AppState = {
@@ -51,6 +49,22 @@
 					collapsed: true
 				};
 			});
+
+			// Fetch all tags for each app to populate the checkbox list if it's empty
+			for (const state of apps) {
+				if (state.app.tags.length === 0) {
+					fetch(`/api/app/${state.app.id}`)
+						.then((res) => res.json())
+						.then((appData) => {
+							if (appData && appData.tags) {
+								state.app.tags = appData.tags;
+								state.original = snapshot(state.app); // Update original to avoid dirty state just from fetching tags
+								apps = apps;
+							}
+						})
+						.catch((err) => console.error(`Failed to fetch tags for app ${state.app.id}`, err));
+				}
+			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
@@ -118,22 +132,19 @@
 		apps = apps.filter((a) => a !== state);
 	}
 
-	function setTag(checked: boolean, tag: Record, state: AppState) {
-		if (checked) {
-			state.app.default_tags.push(tag);
-		} else {
-			state.app.default_tags.splice(
-				state.app.default_tags.findIndex((element) => element.id === tag.id),
-				1
-			);
-		}
-		apps = apps;
+	function getTag(tag: string, state: AppState) {
+		return state.app.default_tags.includes(tag);
 	}
 
-	function getTag(tag, state) {
-		const some = state.app.default_tags.some((element) => element.id.String === tag.id.String);
-		console.log(tag, some);
-		return some;
+	function setTag(checked: boolean, tag: string, state: AppState) {
+		if (checked) {
+			if (!state.app.default_tags.includes(tag)) {
+				state.app.default_tags.push(tag);
+			}
+		} else {
+			state.app.default_tags = state.app.default_tags.filter((id) => id !== tag);
+		}
+		apps = apps;
 	}
 </script>
 
@@ -234,25 +245,23 @@
 
 					<fieldset class="space-y-2">
 						<legend class="font-medium">Default Tags</legend>
-						{#each state.app.tags as tag}
-							<div class="flex gap-2">
+						<div class="flex flex-wrap gap-4">
+							{#each state.app.tags as tag}
 								<label class="flex items-center space-x-2">
 									<input
 										class="checkbox"
 										type="checkbox"
-										value={tag}
-										bind:checked={
-											() => getTag(tag, state),
-											(v) => {
-												setTag(v, tag, state);
-												state = state;
-											}
-										}
+										checked={getTag(tag, state)}
+										onchange={(e) => {
+											setTag(e.currentTarget.checked, tag, state);
+										}}
 									/>
-									<p>{tag.id.String}</p>
+									<span>{tag}</span>
 								</label>
-							</div>
-						{/each}
+							{:else}
+								<p class="text-surface-500 text-sm">No available tags for this app.</p>
+							{/each}
+						</div>
 					</fieldset>
 
 					<div class="flex justify-between pt-2">
