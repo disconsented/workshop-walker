@@ -143,20 +143,20 @@
 			<Tabs.Trigger value="apps">Apps</Tabs.Trigger>
 			<Tabs.Indicator />
 		</Tabs.List>
-			<!-- Properties Tab -->
-			<Tabs.Content value="properties">
-				{@render propertiesPanel()}
-			</Tabs.Content>
+		<!-- Properties Tab -->
+		<Tabs.Content value="properties">
+			{@render propertiesPanel()}
+		</Tabs.Content>
 
-			<!-- Users Tab -->
-			<Tabs.Content value="users">
-				{@render usersPanel()}
-			</Tabs.Content>
+		<!-- Users Tab -->
+		<Tabs.Content value="users">
+			{@render usersPanel()}
+		</Tabs.Content>
 
-			<!-- Apps Tab -->
-			<Tabs.Content value="apps">
-				{@render appsPanel()}
-			</Tabs.Content>
+		<!-- Apps Tab -->
+		<Tabs.Content value="apps">
+			{@render appsPanel()}
+		</Tabs.Content>
 	</Tabs>
 </div>
 
