@@ -14,7 +14,7 @@ use surrealdb_core::sql::{
     Param,
     Part,
 };
-use surrealdb_types::{RecordId, SurrealValue, ToSql, Value};
+use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{debug, error, instrument};
 
 use crate::{

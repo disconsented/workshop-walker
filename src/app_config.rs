@@ -19,6 +19,7 @@ pub struct Config {
 pub struct Steam {
     #[redact]
     pub api_token: Arc<String>,
+    pub tags_selector: String,
 }
 #[derive(Deserialize, Redact)]
 pub struct Database {

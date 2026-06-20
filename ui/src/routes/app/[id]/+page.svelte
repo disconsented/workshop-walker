@@ -27,7 +27,7 @@
 
 	$inspect(tags.v, app.v);
 	if (tags.v.length === 0 && app.v.tags) {
-		tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e.id === tag.id));
+		tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
 	}
 
 	let viewMode = $state('grid');
@@ -160,7 +160,7 @@
 				{#each app.v.tags as tag}
 					<span class="flex items-center space-x-2">
 						<input name="tag" class="checkbox" type="checkbox" value={tag} bind:group={tags.v} />
-						<p>{tag.display_name}</p>
+						<p>{tag}</p>
 					</span>
 				{/each}
 			</div>

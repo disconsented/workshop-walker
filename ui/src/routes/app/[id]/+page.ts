@@ -10,7 +10,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	}
 	if (tags.v) {
 		tags.v.forEach((tag) => {
-			paramList.push(['tags', tag.id]);
+			paramList.push(['tags', tag]);
 		});
 	}
 	if (orderBy.v) {
@@ -35,9 +35,9 @@ export const load: PageLoad = async ({ fetch, params }) => {
 		firstRun = !!app.v;
 		app.v = await res.json();
 		if (firstRun) {
-			tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e.id === tag.id));
+			tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
 			app.v.default_tags.forEach((tag) => {
-				paramList.push(['tags', tag.id]);
+				paramList.push(['tags', tag]);
 			});
 		}
 	});
