@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	
+
 	type App = {
 		id: number;
 		name: string;
@@ -155,16 +155,16 @@
 {/if}
 
 <div class="space-y-6">
-	<button
-		class="btn preset-filled-primary-500"
-		onclick={() => (apps = [...apps, newApp()])}
-	>
+	<button class="btn preset-filled-primary-500" onclick={() => (apps = [...apps, newApp()])}>
 		Add App
 	</button>
 	{@debug apps}
 	{#each apps as state (state.localKey)}
 		{@debug state}
-		<div class="card preset-tonal-surface-50-950 border-surface-300 border" class:border-warning-400={isDirty(state)}>
+		<div
+			class="card preset-tonal-surface-50-950 border-surface-300 border"
+			class:border-warning-400={isDirty(state)}
+		>
 			<!-- Header -->
 			<button
 				type="button"

@@ -4,6 +4,7 @@
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import Property from '../../item/[item]/Property.svelte';
 	import Icon from 'svelte-awesome';
+	import SuggestProperty from './suggestProperty.svelte';
 
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting
@@ -43,7 +44,8 @@
 			<!--Top-->
 			<div class="flex w-full justify-end">
 				<button
-					class="btn preset-filled-surface-50-950 mt-1 text-xs text-gray-500 opacity-80  border-1 border-gray-500  border-dashed">
+					class="btn preset-filled-surface-50-950 mt-1 border-1 border-dashed border-gray-500 text-xs text-gray-500 opacity-80 rounded-md"
+				>
 					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
 					<a
 						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
@@ -98,17 +100,26 @@
 			{/each}
 		</div>
 	</article>
-	<footer class="m-2">
+	<footer class="m-2 flex flex-row flex-wrap">
 		{#if first_props}
 			{@debug first_props}
-			<div class="flex flex-wrap gap-1">
+			<div class="flex flex-wrap gap-1 w-full shrink-0">
 				{#each first_props as prop}
-					<Property {loggedIn} property={{ class: prop.out.class, value: prop.out.value, ...prop }} hideVote={false} itemID={item.id}></Property>
+					<Property
+						{loggedIn}
+						property={{ class: prop.out.class, value: prop.out.value, ...prop }}
+						hideVote={false}
+						itemID={item.id}
+					></Property>
 				{/each}
 				{#if remaining_props.length > 0}
 					{#if open}
 						{#each remaining_props as prop}
-							<Property {loggedIn} property={{ class: prop.out.class, value: prop.out.value, ...prop }} hideVote={false} itemID={item.id}
+							<Property
+								{loggedIn}
+								property={{ class: prop.out.class, value: prop.out.value, ...prop }}
+								hideVote={false}
+								itemID={item.id}
 							></Property>
 						{/each}
 					{/if}
@@ -127,15 +138,25 @@
 				{/if}
 			</div>
 		{/if}
-		<button
-			class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
-		><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
-			<span class="btn btn-sm preset-filled-primary-500"
-			><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
-			></button
-		>
+		{#if !loggedIn}
+			<a href="/api/login?location={location}"
+			   class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
+			><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
+				<span class="btn btn-sm preset-filled-primary-500"
+				><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
+				></a
+			>
+		{:else}
+			<div class="flex w-100 grow justify-end">
+				{@render suggestProperty()}
+			</div>
+		{/if}
 	</footer>
 </div>
+
+{#snippet suggestProperty()}
+	<SuggestProperty/>
+{/snippet}
 
 <style>
     .preset-glass-surface {
