@@ -131,7 +131,21 @@ async fn query_inner(
                 ])),
             }),
             Field::Single(Selector {
-                expr: Expr::Idiom(Idiom(vec![Part::Field("tags".into()), Part::All])),
+                expr: Expr::Idiom(Idiom(vec![
+                    Part::Field("tags".into()),
+                    Part::Method(
+                        "filter".into(),
+                        vec![Expr::Closure(Box::new(Closure {
+                            args: vec![(Param::new("tag".to_string()), Kind::Any)],
+                            returns: None,
+                            body: Expr::Idiom(Idiom(vec![
+                                Part::Start(Expr::Param(Param::new("tag".to_string()))),
+                                Part::Method("exists".into(), vec![]),
+                            ])),
+                        }))],
+                    ),
+                    Part::All,
+                ])),
                 alias: None,
             }),
             Field::Single(Selector {
@@ -213,6 +227,8 @@ async fn query_inner(
 
     debug!(sql = stmt.to_sql(), "running big query");
     let mut results = db.query(stmt).await.whatever_context("querying")?;
+
+    debug!(?results, "results");
 
     let results: Vec<InternalWorkshopItem> = results.take(0).whatever_context("taking result")?;
 

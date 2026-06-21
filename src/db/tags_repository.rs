@@ -1,4 +1,9 @@
 use surrealdb::{engine::local::Db, IndexedResults, Surreal};
+use surrealdb_core::{
+    sql::{Data, Expr, InsertStatement},
+    val::TableName,
+};
+use surrealdb_types::SurrealValue;
 use tracing::{debug, error};
 
 use crate::{
@@ -22,16 +27,23 @@ impl TagsPort for TagsSilo {
             .iter()
             .map(|tag| tag.id.clone())
             .collect::<Vec<ITagID>>();
-        let query = self
+        let mut query = self
             .db
             .query("BEGIN TRANSACTION;")
-            .query("INSERT IGNORE INTO tags $tags;")
-            .query("UPDATE $id SET tags = $tag_ids;")
+            .query("UPDATE $id SET tags = $tag_ids;");
+
+        for tag in tags {
+            let mut stmt = InsertStatement::default();
+            stmt.ignore = true;
+            stmt.data = Data::SingleExpression(Expr::from_public_value(tag.into_value()));
+            stmt.into = Some(Expr::Table(TableName::from("tags".to_string())));
+            query = query.query(stmt);
+        }
+
+        let query = query
             .query("COMMIT;")
             .bind(("id", app))
-            .bind(("tag_ids", tag_ids))
-            .bind(("tags", tags));
-
+            .bind(("tag_ids", tag_ids));
 
         debug!(?query, "upsert tags");
 
