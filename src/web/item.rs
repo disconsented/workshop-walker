@@ -141,7 +141,24 @@ async fn get_item(
         DestructurePart::Field("preview_url".into()),
         DestructurePart::Field("score".into()),
         DestructurePart::Field("title".into()),
-        DestructurePart::All("tags".into()),
+        DestructurePart::Aliased(
+            "tags".into(),
+            Idiom(vec![
+                Part::Field("tags".into()),
+                Part::Method(
+                    "filter".into(),
+                    vec![Expr::Closure(Box::new(Closure {
+                        args: vec![(Param::new("tag".to_string()), Kind::Any)],
+                        returns: None,
+                        body: Expr::Idiom(Idiom(vec![
+                            Part::Start(Expr::Param(Param::new("tag".to_string()))),
+                            Part::Method("exists".into(), vec![]),
+                        ])),
+                    }))],
+                ),
+                Part::All,
+            ]),
+        ),
     ];
     let mut stmt = SelectStatement::default();
     stmt.what = vec![Expr::from_public_value(
@@ -182,7 +199,21 @@ async fn get_item(
     stmt.fields = Fields::Select(vec![
         Field::All,
         Field::Single(Selector {
-            expr: Expr::Idiom(Idiom(vec![Part::Field("tags".into()), Part::All])),
+            expr: Expr::Idiom(Idiom(vec![
+                Part::Field("tags".into()),
+                Part::Method(
+                    "filter".into(),
+                    vec![Expr::Closure(Box::new(Closure {
+                        args: vec![(Param::new("tag".to_string()), Kind::Any)],
+                        returns: None,
+                        body: Expr::Idiom(Idiom(vec![
+                            Part::Start(Expr::Param(Param::new("tag".to_string()))),
+                            Part::Method("exists".into(), vec![]),
+                        ])),
+                    }))],
+                ),
+                Part::All,
+            ])),
             alias: None,
         }),
         Field::Single(Selector {
