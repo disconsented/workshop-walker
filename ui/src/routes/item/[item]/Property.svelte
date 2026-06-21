@@ -89,7 +89,7 @@
 	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})">&nbsp</div>
 	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
 		<div class="flex h-full">
-			<div class="h-auto">
+			<div class="h-auto pr-2">
 				{#if property.status === -1}
 					<Icon data={faCircleXmark} class="text-error-500 flex-shrink-0" />
 					Rejected

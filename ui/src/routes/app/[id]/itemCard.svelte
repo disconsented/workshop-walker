@@ -20,7 +20,7 @@
 </script>
 
 <div
-	class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block w-md divide-y overflow-hidden border-[1px]"
+	class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 w-md divide-y overflow-hidden border-[1px] flex flex-col"
 >
 	<header class="relative h-48">
 		<div>
@@ -68,7 +68,7 @@
 				</div>
 				<div class="flex w-full items-center justify-between p-1">
 					<a
-						href="/user/{item.author.id}"
+						href="https://steamcommunity.com/id/{item.author}"
 						target="_self"
 						rel="noopener noreferrer"
 						class="anchor flex items-center gap-1"
@@ -100,7 +100,7 @@
 			{/each}
 		</div>
 	</article>
-	<footer class="m-2 flex flex-row flex-wrap">
+	<footer class="m-2 pl-4 flex flex-row flex-wrap grow self-end w-full">
 		{#if first_props}
 			{@debug first_props}
 			<div class="flex flex-wrap gap-1 w-full shrink-0">
@@ -147,7 +147,7 @@
 				></a
 			>
 		{:else}
-			<div class="flex w-100 grow justify-end">
+			<div class="flex w-full justify-end h-fit flex-col">
 				{@render suggestProperty()}
 			</div>
 		{/if}

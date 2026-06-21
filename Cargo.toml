@@ -148,6 +148,7 @@ tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
+log = "0.4.32"
 
 [features]
 default = ["ml-classification"]

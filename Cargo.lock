@@ -9806,6 +9806,7 @@ dependencies = [
  "humantime",
  "itertools 0.14.0",
  "lingua",
+ "log",
  "macros",
  "migrations-tool",
  "multimap",
