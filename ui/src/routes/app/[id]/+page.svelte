@@ -151,8 +151,6 @@
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={orderBy.v}>
 					<option value="LastUpdated">Last Updated</option>
 					<option value="Alphabetical">Alphabetical</option>
-					<option value="Score">Upvote Percentage</option>
-					<option value="Dependents">Dependents</option>
 				</select>
 			</div>
 
