@@ -48,59 +48,64 @@
 
 	function get_tags(data) {
 		let out = new Map();
-		data.dependants.forEach((e) =>
-			e.tags.forEach((e) => {
-				out.set(e.id, e);
+		(data.dependants || []).forEach((e) =>
+			(e.tags || []).forEach((t) => {
+				out.set(t.id, t.display_name);
 			})
 		);
-		data.dependencies.forEach((e) =>
-			e.tags.forEach((e) => {
-				out.set(e.id, e);
+		(data.dependencies || []).forEach((e) =>
+			(e.tags || []).forEach((t) => {
+				out.set(t.id, t.display_name);
 			})
 		);
-		return Array.from(out).map(([name]) => name);
+		return Array.from(out).map(([id, display_name]) => ({ id, display_name }));
 	}
 
-	// Merge deps, flatten, dedup via set, back to array, map to names
 	function get_languages(data) {
-		return Array.from(
-			new Set(
-				[data.dependants.map((e) => e.languages), data.dependencies.map((e) => e.languages)]
-					.flat()
-					.flat()
-			)
-		).map((e) => whichLang(e));
+		const langIds = new Set(
+			[(data.dependants || []).flatMap((e) => e.languages || []), (data.dependencies || []).flatMap((e) => e.languages || [])].flat()
+		);
+		return Array.from(langIds).map((id) => id !== undefined && id !== null ? whichLang(id) : null).filter(Boolean);
 	}
 
-	const tags = get_tags(data.data);
-	const languages = get_languages(data.data);
+	const tags = $derived(get_tags(data.data));
+	const languages = $derived(get_languages(data.data));
 
 	let selectedTags = $state([]);
 	let selectedLangs = $state(['English']);
 
-	// N.B. I wrote this a while ago, it's hideous. Need help rewriting it at some point.
+	$effect(() => {
+		selectedTags;
+		selectedLangs;
+		page = 1;
+	});
+
 	function filter(item) {
-		const itemTags = item.tags.map((e) => e.id);
-		const tags = selectedTags.every((e) => {
-			return itemTags.includes(e);
-		});
-		const langs = item.languages.every((e) => selectedLangs.includes(whichLang(e)));
-		return !(tags && langs);
+		const itemTags = (item.tags || []).map((e) => e.id);
+		const matchesTags =
+			selectedTags.length === 0 || selectedTags.every((tagId) => itemTags.includes(tagId));
+		const itemLangs = (item.languages || []).map((langId) => whichLang(langId));
+		const matchesLangs =
+			selectedLangs.length === 0 || itemLangs.some((langName) => selectedLangs.includes(langName));
+		return matchesTags && matchesLangs;
 	}
 
 	let compact = $state(false);
 	let filterPanel = $state(['open']);
+	let filteredDependencies = $derived(
+		(data.data.dependencies || [])
+			.filter((e) => filter(e))
+			.toSorted((b, a) => (a.last_updated || 0) - (b.last_updated || 0))
+	);
 	let filteredDependents = $derived(
-		data.data.dependants
-			.filter((e) => !filter(e))
-			.sort((b, a) => a.lastUpdated - b.lastUpdated)
-			.toReversed()
+		(data.data.dependants || [])
+			.filter((e) => filter(e))
+			.toSorted((b, a) => (a.last_updated || 0) - (b.last_updated || 0))
 	);
 	console.log(filteredDependents);
 	let page = $state(1);
 	let size = $state(20);
-	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
-	$inspect(slicedSource);
+	let paginatedDependents = $derived(filteredDependents.slice((page - 1) * size, page * size));
 	let openPanels = $state(['relations', 'companions', 'description']);
 
 	let loginModalState = $state(false);
@@ -405,7 +410,7 @@
 	>
 		<!-- Controls -->
 		<Accordion
-			{filterPanel}
+			value={filterPanel}
 			onValueChange={(e) => (filterPanel = e.value)}
 			collapsible
 			classes="col-span-4"
@@ -427,10 +432,10 @@
 										name="tags"
 										class="checkbox"
 										type="checkbox"
-										value={tag}
+										value={tag.id}
 										bind:group={selectedTags}
 									/>
-									<p>{tag}</p>
+									<p>{tag.display_name}</p>
 								</label>
 							{/each}
 						</div>
@@ -452,15 +457,18 @@
 							{/each}
 						</div>
 					</div>
-					<div class="">
-						<label class="label">
-							<span class="label-text">Compact</span>
-							<Switch
-								name="compact"
-								checked={compact}
-								onCheckedChange={(e) => (compact = e.checked)}
-							/>
-						</label>
+					<div class="flex items-center gap-2">
+						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
+							<Switch.Control
+								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+							>
+								<Switch.Thumb
+									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
+								/>
+							</Switch.Control>
+							<Switch.Label class="label-text">Compact</Switch.Label>
+							<Switch.HiddenInput />
+						</Switch>
 					</div>
 				</div>
 			</Accordion.Item>
@@ -468,10 +476,13 @@
 		</Accordion>
 		<!-- Dependencies -->
 		<div class="col-span-4">
-			<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
-			{#if item.dependencies.length > 0}
+			<h2 class="mb-4 text-xl font-bold">
+				{#if filteredDependencies.length > 0}{filteredDependencies.length}
+				{/if} Dependencies
+			</h2>
+			{#if filteredDependencies.length > 0}
 				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
-					{#each item.dependencies as dependency (dependency.id)}
+					{#each filteredDependencies as dependency (dependency.id)}
 						{@render linkSet(dependency)}
 					{/each}
 				</div>
@@ -527,7 +538,7 @@
 			</h2>
 			{#if filteredDependents.length > 0}
 				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
-					{#each slicedSource(filteredDependents) as dependent (dependent.id)}
+					{#each paginatedDependents as dependent (dependent.id)}
 						{@render linkSet(dependent)}
 					{/each}
 				</div>
@@ -585,7 +596,7 @@
 		<h2 class="mb-4 text-xl font-bold"><a href="#relations">Relations</a></h2>
 		<!-- Controls -->
 		<Accordion
-			{filterPanel}
+			value={filterPanel}
 			onValueChange={(e) => (filterPanel = e.value)}
 			collapsible
 			classes="col-span-4"
@@ -607,10 +618,10 @@
 										name="tags"
 										class="checkbox"
 										type="checkbox"
-										value={tag}
+										value={tag.id}
 										bind:group={selectedTags}
 									/>
-									<p>{tag}</p>
+									<p>{tag.display_name}</p>
 								</label>
 							{/each}
 						</div>
@@ -632,15 +643,18 @@
 							{/each}
 						</div>
 					</div>
-					<div class="">
-						<label class="label">
-							<span class="label-text">Compact</span>
-							<Switch
-								name="compact"
-								checked={compact}
-								onCheckedChange={(e) => (compact = e.checked)}
-							/>
-						</label>
+					<div class="flex items-center gap-2">
+						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
+							<Switch.Control
+								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+							>
+								<Switch.Thumb
+									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
+								/>
+							</Switch.Control>
+							<Switch.Label class="label-text">Compact</Switch.Label>
+							<Switch.HiddenInput />
+						</Switch>
 					</div>
 				</div>
 			</Accordion.Item>
@@ -707,8 +721,7 @@
 			</h2>
 			{#if filteredDependents.length > 0}
 				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
-					<!--{@debug slicedSource}-->
-					{#each slicedSource(filteredDependents) as dependent (dependent.id)}
+					{#each paginatedDependents as dependent (dependent.id)}
 						{@render companionCard(dependent)}
 					{/each}
 				</div>
