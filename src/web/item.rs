@@ -393,3 +393,127 @@ pub async fn app_from_item(
         data.try_into().map_err(|_| InnerError::InternalError)?,
     ))
 }
+
+#[cfg(test)]
+mod test {
+    use surrealdb::{engine::local::Mem, Surreal};
+
+    use super::{get_item, Db};
+    use crate::db::IItemID;
+
+    /// Stand up an in-memory database with just enough schema for `get_item`,
+    /// and wire up two dependency edges around item 100:
+    ///   - 100 -> item_dependencies -> 200   (100 depends on 200)
+    ///   - 300 -> item_dependencies -> 100   (300 depends on 100)
+    /// So from item 100's perspective: 200 is a dependency, 300 is a dependant.
+    async fn seed_db() -> Surreal<Db> {
+        let db = Surreal::new::<Mem>(()).await.unwrap();
+        db.use_ns("test").use_db("test").await.unwrap();
+
+        db.query(
+            "
+            DEFINE TABLE apps TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON apps TYPE int PERMISSIONS FULL;
+            DEFINE FIELD name ON apps TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE usernames TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON usernames TYPE int PERMISSIONS FULL;
+            DEFINE FIELD name ON usernames TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE tags TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON tags TYPE string PERMISSIONS FULL;
+            DEFINE FIELD display_name ON tags TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE properties TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;
+
+            DEFINE TABLE workshop_items TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON workshop_items TYPE int PERMISSIONS FULL;
+            DEFINE FIELD app ON workshop_items TYPE record<apps> PERMISSIONS FULL;
+            DEFINE FIELD author ON workshop_items TYPE record<usernames> PERMISSIONS FULL;
+            DEFINE FIELD description ON workshop_items TYPE string PERMISSIONS FULL;
+            DEFINE FIELD languages ON workshop_items TYPE array<int> PERMISSIONS FULL;
+            DEFINE FIELD last_updated ON workshop_items TYPE int PERMISSIONS FULL;
+            DEFINE FIELD preview_url ON workshop_items TYPE none | string PERMISSIONS FULL;
+            DEFINE FIELD score ON workshop_items TYPE float PERMISSIONS FULL;
+            DEFINE FIELD tags ON workshop_items TYPE array<record<tags>> PERMISSIONS FULL;
+            DEFINE FIELD title ON workshop_items TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE item_dependencies TYPE RELATION IN workshop_items OUT workshop_items SCHEMAFULL PERMISSIONS NONE;
+            DEFINE TABLE workshop_item_properties TYPE RELATION IN workshop_items OUT properties SCHEMAFULL PERMISSIONS NONE;
+
+            CREATE apps:1 SET id = 1, name = 'Test App';
+            CREATE usernames:1 SET id = 1, name = 'Test Author';
+            CREATE tags:test SET id = 'test', display_name = 'Test Tag';
+
+            CREATE workshop_items:100 SET id = 100, app = apps:1, author = usernames:1, description = 'item 100', languages = [], last_updated = 0, score = 1.0f, tags = [tags:test], title = 'Item 100';
+            CREATE workshop_items:200 SET id = 200, app = apps:1, author = usernames:1, description = 'item 200', languages = [], last_updated = 0, score = 1.0f, tags = [tags:test], title = 'Item 200';
+            CREATE workshop_items:300 SET id = 300, app = apps:1, author = usernames:1, description = 'item 300', languages = [], last_updated = 0, score = 1.0f, tags = [tags:test], title = 'Item 300';
+
+            RELATE workshop_items:100 -> item_dependencies -> workshop_items:200;
+            RELATE workshop_items:300 -> item_dependencies -> workshop_items:100;
+            ",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+
+        db
+    }
+
+    /// Regression test for the dependency/dependant ordering bug
+    /// (commit 4269efc): the `dependencies` selector traverses outgoing edges
+    /// and must read the edge's `out` node (the thing depended upon), not `in`
+    /// (the item itself). Reading the wrong end made an item report itself as
+    /// its own dependency and dropped its real dependencies.
+    #[tokio::test]
+    async fn dependencies_and_dependants_resolve_to_correct_ends() {
+        let db = seed_db().await;
+
+        let item = get_item(&db, IItemID::from(100i64), None)
+            .await
+            .expect("item 100 should be found");
+
+        // Outgoing edge 100 -> 200 means 200 is a dependency of 100.
+        let dependency_ids: Vec<IItemID> =
+            item.dependencies.iter().map(|dep| dep.id.clone()).collect();
+        assert_eq!(
+            dependency_ids,
+            vec![IItemID::from(200i64)],
+            "dependencies should be the `out` end of outgoing edges (200), not the item itself"
+        );
+
+        // Incoming edge 300 -> 100 means 300 is a dependant of 100.
+        let dependant_ids: Vec<IItemID> =
+            item.dependants.iter().map(|dep| dep.id.clone()).collect();
+        assert_eq!(
+            dependant_ids,
+            vec![IItemID::from(300i64)],
+            "dependants should be the `in` end of incoming edges (300)"
+        );
+    }
+
+    /// A leaf item with only an incoming edge should report a dependant and no
+    /// dependencies, guarding against the two directions being swapped.
+    #[tokio::test]
+    async fn dependency_only_item_reports_no_dependants() {
+        let db = seed_db().await;
+
+        let item = get_item(&db, IItemID::from(200i64), None)
+            .await
+            .expect("item 200 should be found");
+
+        assert!(
+            item.dependencies.is_empty(),
+            "item 200 has no outgoing edges, so it has no dependencies"
+        );
+        let dependant_ids: Vec<IItemID> =
+            item.dependants.iter().map(|dep| dep.id.clone()).collect();
+        assert_eq!(
+            dependant_ids,
+            vec![IItemID::from(100i64)],
+            "item 200 is depended upon by 100"
+        );
+    }
+}
