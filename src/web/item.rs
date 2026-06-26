@@ -255,7 +255,7 @@ async fn get_item(
                     ..Default::default()
                 })),
                 Part::All,
-                Part::Field("in".into()),
+                Part::Field("out".into()),
                 Part::All,
                 Part::Destructure(dep_fields.to_vec()),
             ])),
