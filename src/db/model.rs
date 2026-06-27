@@ -388,12 +388,7 @@ impl SurrealValue for InternalSource {
                 ::surrealdb::types::Value::Object(map)
             }
             Self::User(field_0) => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "User".to_string(),
-                    ::surrealdb::types::Value::from_t(field_0),
-                );
-                ::surrealdb::types::Value::Object(map)
+                ::surrealdb::types::Value::RecordId(field_0.into())
             }
         }
     }
@@ -401,7 +396,7 @@ impl SurrealValue for InternalSource {
     fn from_value(
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
-        match value {
+        match dbg!(value) {
             ::surrealdb::types::Value::Object(mut map) => {
                 {
                     if map.get("System").is_some() {
@@ -422,8 +417,13 @@ impl SurrealValue for InternalSource {
                     return Ok(Self::System);
                 }
             }
-            _ => {}
+            other => {
+                if let Ok(user_id) = IUserID::from_value(other){
+                    return Ok(Self::User(user_id));
+                }
+            }
         };
+
         Err(::surrealdb::types::Error::internal(format!(
             "Failed to decode {}, no variants matched",
             "InternalSource"
@@ -518,40 +518,13 @@ pub enum Class {
 
 impl SurrealValue for Class {
     fn into_value(self) -> ::surrealdb::types::Value {
-        match self {
-            Self::Type => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Type".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-            Self::Theme => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Theme".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-            Self::Genre => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Genre".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-            Self::Feature => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Feature".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-        }
+        let variant = match self {
+            Self::Type => "Type",
+            Self::Theme => "Theme",
+            Self::Genre => "Genre",
+            Self::Feature => "Feature",
+        };
+        ::surrealdb::types::Value::String(variant.to_string())
     }
 
     fn from_value(
@@ -596,92 +569,27 @@ impl SurrealValue for Class {
     }
 
     fn is_value(value: &::surrealdb::types::Value) -> bool {
-        match value {
-            ::surrealdb::types::Value::Object(map) => {
-                {
-                    if map
-                        .get("Type")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-                {
-                    if map
-                        .get("Theme")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-                {
-                    if map
-                        .get("Genre")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-                {
-                    if map
-                        .get("Feature")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-            }
-            _ => {}
-        }
-        false
+        matches!(
+            value,
+            ::surrealdb::types::Value::String(s)
+                if matches!(s.as_str(), "Type" | "Theme" | "Genre" | "Feature")
+        )
     }
 
     fn kind_of() -> ::surrealdb::types::Kind {
         ::surrealdb::types::Kind::Either(vec![
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Type".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Theme".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Genre".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Feature".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
+            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
+                "Type".to_string(),
+            )),
+            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
+                "Theme".to_string(),
+            )),
+            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
+                "Genre".to_string(),
+            )),
+            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
+                "Feature".to_string(),
+            )),
         ])
     }
 }
@@ -721,32 +629,7 @@ pub enum Status {
 // Horrendous manual hack thanks to _another_ surreal bug
 impl SurrealValue for Status {
     fn into_value(self) -> ::surrealdb::types::Value {
-        match self {
-            Self::Rejected => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Rejected".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-            Self::Pending => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Pending".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-            Self::Accepted => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "Accepted".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
-        }
+        ::surrealdb::types::Value::Number(Number::Int(self as i64))
     }
 
     fn from_value(
@@ -869,6 +752,50 @@ pub struct Username {
 
 #[cfg(test)]
 mod test {
+    use surrealdb_types::{RecordIdKey, SurrealValue, Value};
+
+    use super::{Class, Property};
+
+    /// Pins the root cause of `properties:{class: {Type: {}}, value: 'asd'}`.
+    ///
+    /// A `class` is a unit-like enum variant; when bound into a record-id key it
+    /// must serialise to the bare string `"Type"`. The current `into_value`
+    /// impl emits the externally-tagged object `{"Type": {}}` instead, which is
+    /// exactly what leaks into the stored record id.
+    #[test]
+    fn class_serialises_to_bare_string() {
+        let value = Class::Type.into_value();
+        assert_eq!(
+            value,
+            Value::String("Type".to_string()),
+            "Class should serialise to a bare string for record-id keys, but \
+             produced the externally-tagged object form: {value:?}"
+        );
+    }
+
+    /// Reproduces the symptom end-to-end: building the record-id key for a
+    /// property yields `{class: {Type: {}}, value: 'asd'}` instead of
+    /// `{class: 'Type', value: 'asd'}`.
+    #[test]
+    fn property_record_key_uses_bare_class_string() {
+        let prop = Property {
+            class: Class::Type,
+            value: "asd".to_string(),
+        };
+
+        let key: RecordIdKey = prop.into();
+        let RecordIdKey::Object(obj) = key else {
+            panic!("expected an object record-id key, got: {key:?}");
+        };
+
+        assert_eq!(
+            obj.get("class"),
+            Some(&Value::String("Type".to_string())),
+            "the `class` part of the record-id key must be the bare string \
+             'Type', but was: {:?}",
+            obj.get("class")
+        );
+    }
 
     // use crate::db::{
     //     model::{Class, Id, InternalSource, Source}, IItemID,
