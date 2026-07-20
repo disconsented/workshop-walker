@@ -185,14 +185,30 @@ mod test {
              FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;",
         )
         .await
+        .unwrap()
+        .check()
         .unwrap();
-        let _: Vec<Property> = db
-            .insert("properties")
-            .content(Property {
-                class: Class::Type,
-                value: "test".to_string(),
-            })
+
+        // A property's identity *is* its {class, value} composite id, so it must
+        // be inserted as the id rather than as top-level content (which would
+        // generate a random string id and fail schema coercion).
+        db.query("INSERT INTO properties (id) VALUES (properties:{class:'Type', value:'test'});")
+            .await
+            .unwrap()
+            .check()
+            .unwrap();
+
+        let mut r = db
+            .query("SELECT id.class AS class, id.value AS value FROM properties;")
             .await
             .unwrap();
+        let props: Vec<Property> = r.take(0).unwrap();
+        assert_eq!(
+            props,
+            vec![Property {
+                class: Class::Type,
+                value: "test".to_string(),
+            }]
+        );
     }
 }

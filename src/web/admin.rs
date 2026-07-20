@@ -1,14 +1,14 @@
-use ractor::{call, ActorProcessingErr, RactorErr};
+use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
-    oapi::extract::JsonBody,
-    prelude::{endpoint, Json, StatusCode, StatusError},
     Writer,
+    oapi::extract::JsonBody,
+    prelude::{Json, StatusCode, StatusError, endpoint},
 };
-use snafu::{prelude::*, ErrorCompat};
+use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
-        admin_actor::{AdminMsg, ADMIN_ACTOR},
+        admin_actor::{ADMIN_ACTOR, AdminMsg},
         model::{ExternalUser, ExternalWorkshopItemProperties, InternalUser},
     },
     domain::admin::{AdminError, PatchRelationshipData, PatchUserData},

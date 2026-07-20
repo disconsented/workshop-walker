@@ -1,11 +1,12 @@
 ## Workshop Walker
 
-Workshop Walker is a "better" interface to the steam workshop, aiming to solve some of the limitations that I personally
-encounter whilst browsing Rimworld mods.
+Workshop Walker is an alternate interface to the steam workshop, improving discoverability and filtering of items on the steam workshop.
 
-- Language filtering support
-- Discovering _dependants_ for a mod
-- Better classification for existing mods
+Specific improvements:
+
+- Dependant discovery, find everything that depends on this item
+- Language detection, filter for specific languages. No more poorly marked translations
+- Properties, extended classification, submit new ones or vote on existing entries for relevance 
 
 A live version of this project can be found at https://workshop-walker.disconsented.com/
 

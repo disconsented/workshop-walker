@@ -12,10 +12,10 @@ pub enum Class {
 #[test]
 fn test_reproduce_class_deserialization_bug() {
     let val = Value::String("Type".to_string());
-    
+
     // This is expected to fail with the current SurrealValue derive implementation
     let result = Class::from_value(val);
-    
+
     match result {
         Ok(c) => println!("Successfully deserialized: {:?}", c),
         Err(e) => {

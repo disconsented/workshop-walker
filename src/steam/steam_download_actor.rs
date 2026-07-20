@@ -202,10 +202,10 @@ async fn start_downloader(
         info!(period = %humantime::Duration::from(time_since), app = ?app, "newest mod is at least 12 hours out of date; running update now");
     }
 
-    if let Some(old) = state.apps.insert(
-        app.clone(),
-        myself.send_interval(h12, message_builder),
-    ) {
+    if let Some(old) = state
+        .apps
+        .insert(app.clone(), myself.send_interval(h12, message_builder))
+    {
         // Remember to abort the old timer
         old.abort();
     }

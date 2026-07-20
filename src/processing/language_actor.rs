@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    convert::Into,
-    fmt,
-};
+use std::{collections::HashMap, convert::Into, fmt};
 
 use lingua::{
     Language,

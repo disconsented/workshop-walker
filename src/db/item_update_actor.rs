@@ -1,20 +1,20 @@
 use std::num::ParseIntError;
 
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
+    Expr,
     data::Data,
     statements::{InsertStatement, UpsertStatement},
-    Expr,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     db::{
-        model::{InsertableWorkshopItem, InternalWorkshopItem},
         IItemID,
+        model::{InsertableWorkshopItem, InternalWorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,

@@ -6,38 +6,38 @@ use std::{
 };
 
 use biscuit_auth::{
-    builder_ext::AuthorizerExt, macros::{authorizer, biscuit}, Authorizer,
-    Biscuit,
-    KeyPair,
+    Authorizer, Biscuit, KeyPair,
+    builder_ext::AuthorizerExt,
+    macros::{authorizer, biscuit},
 };
 use chrono::{NaiveDateTime, TimeDelta, Utc};
 use multimap::MultiMap;
-use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
+use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
 use reqwest::{Client, Url};
 use salvo::{
+    Depot, Request, Response,
     http::{
-        cookie::{time::Duration, Cookie, SameSite},
         HeaderValue,
-    }, prelude::{endpoint, Redirect, StatusCode, StatusError}, Depot,
-    Request,
-    Response,
+        cookie::{Cookie, SameSite, time::Duration},
+    },
+    prelude::{Redirect, StatusCode, StatusError, endpoint},
 };
 use serde::{Deserialize, Serialize};
 use serde_xml_rs::from_str;
-use snafu::{prelude::*, ErrorCompat};
-use surrealdb::{engine::local::Db, Surreal};
+use snafu::{ErrorCompat, prelude::*};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-    data::{Assignment, Data}, expression::Expr, statements::InsertStatement,
-    AssignOperator,
-    Idiom,
-    Part,
+    AssignOperator, Idiom, Part,
+    data::{Assignment, Data},
+    expression::Expr,
+    statements::InsertStatement,
 };
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     app_config::BiscuitConfig,
-    db::{model::InternalUser, IUserID, UserID},
+    db::{IUserID, UserID, model::InternalUser},
     steam::steam_user_actor::SteamUserMsg,
 };
 
@@ -500,8 +500,6 @@ impl AuthActor {
         )
         .build(keypair)
         .map_err(|_| InnerError::PeerValidationFailed)?;
-
-
 
         let _ = state
             .steam_user_actor_ref

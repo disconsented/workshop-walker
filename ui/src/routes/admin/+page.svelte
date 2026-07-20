@@ -188,7 +188,7 @@
 						<td><a class="anchor" href="/item/{property.in}">{property.in}</a></td>
 						<td>{property.out.class}</td>
 						<td>{property.out.value}</td>
-						<td>{property.source}</td>
+						<td>{property.source}</td> <!--N.B. this needs to be updated, currently it renders out as 	[object Object]-->
 						<td>
 							{#if property.status === -1}
 								<span class="text-error-500">Denied</span>

@@ -1,16 +1,14 @@
 use std::time::Duration;
 
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use scraper::{Html, Selector};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use tracing::{debug, error, info, warn};
 
 use crate::{
     application::{apps_service::AppsService, tags_service::TagsService},
-    db::{
-        apps_repository::AppsSilo, model::InternalTag, tags_repository::TagsSilo, ITagID,
-    },
+    db::{ITagID, apps_repository::AppsSilo, model::InternalTag, tags_repository::TagsSilo},
 };
 
 pub struct SteamTagActor;

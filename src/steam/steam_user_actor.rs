@@ -1,15 +1,15 @@
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use itertools::Itertools;
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::{Client, Response, StatusCode};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use tokio::{sync::mpsc, task::JoinHandle, time::sleep};
 use tracing::{debug, error};
 
 use crate::{
     application::user_names_service::UserNamesService,
-    db::{user_names_repository::UserNamesSilo, IUsernameID},
+    db::{IUsernameID, user_names_repository::UserNamesSilo},
     steam::model::{SteamRoot, SteamUserResponse},
 };
 

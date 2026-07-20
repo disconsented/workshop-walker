@@ -71,9 +71,7 @@ impl PropertiesPort for PropertiesSilo {
             }
             let existing_properties: Vec<InternalWorkshopItemProperties> =
                 res.take(1).unwrap_or_default();
-            existing_properties
-                .iter()
-                .any(|prop| prop.out == test_prop)
+            existing_properties.iter().any(|prop| prop.out == test_prop)
         };
 
         debug!(%test_prop, exists = prop_exists, "property already exists?");
@@ -81,6 +79,7 @@ impl PropertiesPort for PropertiesSilo {
         // Insert any new properties and relate
         match self
             .db
+            .query("BEGIN")
             .query(
                 "INSERT IGNORE INTO properties (id) values (properties:{class: $class, value: \
                  $value});",
@@ -101,6 +100,7 @@ impl PropertiesPort for PropertiesSilo {
                 },
             ))
             .bind(("status", status))
+            .query("COMMIT")
             .await
             .map(surrealdb::IndexedResults::check)
         {
@@ -124,27 +124,28 @@ impl PropertiesPort for PropertiesSilo {
     ) -> Result<(), PropertiesError> {
         let query = self
             .db
+            .query("BEGIN")
             .query("LET $link = properties:{class: $class, value: $value}")
             .query(r#"IF !record::exists($link){THROW "FAIL LINK";}"#)
             .query(r#"IF !record::exists($item){THROW "FAIL ITEM";}"#)
             .query(
-                "LET $changed = INSERT INTO votes (id, score, when) VALUES ({link: $link, user: \
-                 $user, item: $item}, $score, time::now()) ON DUPLICATE KEY UPDATE when=time::now(), \
-                 score=$score RETURN BEFORE;",
+                "LET $changed = INSERT INTO votes (id, score, when, user) VALUES ({link: $link, \
+                 user: $user, item: $item}, $score, time::now(), $user) ON DUPLICATE KEY UPDATE \
+                 when=time::now(), score=$score RETURN BEFORE;",
             )
             .query(
                 r"
-            LET $changed_score = $changed.score[0];
+            LET $changed_score = $changed[0].score;
             IF $changed_score && $changed_score != $score{
-                LET $vote_diff = ($changed_score * -1);
-                UPDATE ONLY workshop_item_properties SET vote_count += $vote_count, upvote_count += $vote_diff WHERE in = $item AND out = $link;
-                RETURN $vote_diff
+                -- Existing vote whose score flipped: total vote count is unchanged,
+                -- only the net (upvote) tally shifts by the delta.
+                UPDATE ONLY workshop_item_properties SET upvote_count += ($score - $changed_score) WHERE in = $item AND out = $link;
             } else if !$changed_score{
+                -- Brand new vote for this (item, property, user).
                 UPDATE ONLY workshop_item_properties SET vote_count += 1, upvote_count += $score WHERE in = $item AND out = $link;
-            } else {
-                return {changed_score: $changed_score, score: $score};
             };",
             )
+            .query("COMMIT")
             .bind(("class", vote_data.class))
             .bind(("value", vote_data.value))
             .bind(("user", user))
@@ -207,5 +208,281 @@ impl PropertiesPort for PropertiesSilo {
                 Err(PropertiesError::Internal)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use surrealdb::{
+        Surreal,
+        engine::local::{Db, Mem},
+    };
+
+    use super::PropertiesSilo;
+    use crate::{
+        db::{IItemID, IUserID, model::Class},
+        domain::properties::{InternalVoteData, PropertiesError, PropertiesPort},
+    };
+
+    const ITEM: i64 = 294100;
+
+    /// Minimal in-memory copy of the production (SCHEMAFULL) schema the vote
+    /// flow touches.
+    ///
+    /// On the `workshop_item_properties` relation:
+    ///   * `vote_count`   = total number of votes cast (up + down)
+    ///   * `upvote_count` = net score (sum of every voter's +1 / -1)
+    const SCHEMA: &str = "
+        DEFINE TABLE workshop_items TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+        DEFINE FIELD name ON workshop_items TYPE option<string> PERMISSIONS FULL;
+
+        DEFINE TABLE properties TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+        DEFINE FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;
+
+        DEFINE TABLE users TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+
+        DEFINE TABLE workshop_item_properties TYPE RELATION IN workshop_items OUT properties SCHEMAFULL PERMISSIONS NONE;
+        DEFINE FIELD note ON workshop_item_properties TYPE none | string PERMISSIONS FULL;
+        DEFINE FIELD source ON workshop_item_properties TYPE 'system' | record<users> PERMISSIONS FULL;
+        DEFINE FIELD status ON workshop_item_properties TYPE -1 | 0 | 1 DEFAULT 0 PERMISSIONS FULL;
+        DEFINE FIELD upvote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
+        DEFINE FIELD vote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
+        DEFINE INDEX unique_workshop_item_properties ON workshop_item_properties FIELDS in, out UNIQUE;
+
+        DEFINE TABLE votes TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+        DEFINE FIELD id ON votes TYPE { item: record<workshop_items>, link: record<properties>, user: record<users> } PERMISSIONS FULL;
+        DEFINE FIELD score ON votes TYPE int PERMISSIONS FULL;
+        DEFINE FIELD user ON votes TYPE record<users> PERMISSIONS FULL;
+        DEFINE FIELD when ON votes TYPE datetime PERMISSIONS FULL;
+    ";
+
+    /// Build a `PropertiesSilo` over an in-memory DB seeded with one item, one
+    /// `Feature/ffff` property, two users, and the link between item and
+    /// property. Returns the silo plus a handle to the same DB for assertions.
+    async fn setup() -> (PropertiesSilo, Surreal<Db>) {
+        let db = Surreal::new::<Mem>(()).await.unwrap();
+        db.use_ns("test").use_db("test").await.unwrap();
+
+        db.query(SCHEMA)
+            .await
+            .unwrap()
+            .check()
+            .expect("schema setup failed");
+
+        db.query("CREATE workshop_items:294100 SET name = 'test';")
+            .query(
+                "INSERT INTO properties (id) VALUES (properties:{class:'Feature', value:'ffff'});",
+            )
+            .query("CREATE users:1; CREATE users:2;")
+            .query(
+                "RELATE workshop_items:294100 -> workshop_item_properties -> \
+                 properties:{class:'Feature', value:'ffff'} SET note = NONE, source = 'system', \
+                 status = 0;",
+            )
+            .await
+            .unwrap()
+            .check()
+            .expect("seed data failed");
+
+        (PropertiesSilo::new(db.clone()), db)
+    }
+
+    /// A vote for the seeded `Feature/ffff` property on the seeded item.
+    fn vote(score: i32) -> InternalVoteData {
+        InternalVoteData {
+            item: IItemID::from(ITEM),
+            class: Class::Feature,
+            value: "ffff".to_string(),
+            score,
+        }
+    }
+
+    fn user(id: i64) -> IUserID {
+        IUserID::from(id)
+    }
+
+    /// `(vote_count, upvote_count)` on the seeded relation.
+    async fn counts(db: &Surreal<Db>) -> (i64, i64) {
+        let mut r = db
+            .query("SELECT vote_count, upvote_count FROM ONLY workshop_item_properties LIMIT 1;")
+            .await
+            .unwrap();
+        let v: serde_json::Value = r
+            .take::<Option<serde_json::Value>>(0)
+            .unwrap()
+            .expect("the seeded relation should always exist");
+        (
+            v["vote_count"].as_i64().unwrap(),
+            v["upvote_count"].as_i64().unwrap(),
+        )
+    }
+
+    /// Number of rows currently in the `votes` table.
+    async fn vote_rows(db: &Surreal<Db>) -> usize {
+        let mut r = db.query("SELECT VALUE id FROM votes;").await.unwrap();
+        r.take::<Vec<serde_json::Value>>(0)
+            .unwrap_or_default()
+            .len()
+    }
+
+    // --- adding a vote to a property (none -> vote) ---
+
+    #[tokio::test]
+    async fn add_upvote_sets_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, 1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    #[tokio::test]
+    async fn add_downvote_sets_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(-1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, -1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    // --- changing a vote (vote -> different vote): score must follow ---
+
+    #[tokio::test]
+    async fn change_upvote_to_downvote_updates_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, 1));
+        silo.vote(vote(-1), user(1)).await.unwrap();
+        // total votes unchanged, net score swings +1 -> -1
+        assert_eq!(counts(&db).await, (1, -1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    #[tokio::test]
+    async fn change_downvote_to_upvote_updates_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(-1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, -1));
+        silo.vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, 1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    // --- re-casting the same vote is a no-op ---
+
+    #[tokio::test]
+    async fn recasting_same_upvote_is_noop() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        silo.vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, 1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    #[tokio::test]
+    async fn recasting_same_downvote_is_noop() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(-1), user(1)).await.unwrap();
+        silo.vote(vote(-1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, -1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    // --- removing a vote (vote -> none) ---
+
+    #[tokio::test]
+    async fn remove_upvote_clears_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        silo.remove_vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (0, 0));
+        assert_eq!(vote_rows(&db).await, 0);
+    }
+
+    #[tokio::test]
+    async fn remove_downvote_clears_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(-1), user(1)).await.unwrap();
+        silo.remove_vote(vote(-1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (0, 0));
+        assert_eq!(vote_rows(&db).await, 0);
+    }
+
+    #[tokio::test]
+    async fn remove_without_existing_vote_is_noop() {
+        let (silo, db) = setup().await;
+        silo.remove_vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (0, 0));
+        assert_eq!(vote_rows(&db).await, 0);
+    }
+
+    // --- multiple voters: the score aggregates every voter ---
+
+    #[tokio::test]
+    async fn two_users_upvoting_sum_the_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        silo.vote(vote(1), user(2)).await.unwrap();
+        assert_eq!(counts(&db).await, (2, 2));
+        assert_eq!(vote_rows(&db).await, 2);
+    }
+
+    #[tokio::test]
+    async fn opposing_votes_net_to_zero() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        silo.vote(vote(-1), user(2)).await.unwrap();
+        assert_eq!(counts(&db).await, (2, 0));
+        assert_eq!(vote_rows(&db).await, 2);
+    }
+
+    #[tokio::test]
+    async fn one_user_changing_does_not_affect_the_other() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        silo.vote(vote(1), user(2)).await.unwrap();
+        // user 2 flips to a downvote: still two votes, net back to zero
+        silo.vote(vote(-1), user(2)).await.unwrap();
+        assert_eq!(counts(&db).await, (2, 0));
+        assert_eq!(vote_rows(&db).await, 2);
+    }
+
+    #[tokio::test]
+    async fn removing_one_of_two_votes_updates_score() {
+        let (silo, db) = setup().await;
+        silo.vote(vote(1), user(1)).await.unwrap();
+        silo.vote(vote(1), user(2)).await.unwrap();
+        silo.remove_vote(vote(1), user(1)).await.unwrap();
+        assert_eq!(counts(&db).await, (1, 1));
+        assert_eq!(vote_rows(&db).await, 1);
+    }
+
+    // --- voting against records that don't exist is rejected ---
+
+    #[tokio::test]
+    async fn vote_on_missing_property_errors() {
+        let (silo, db) = setup().await;
+        let missing = InternalVoteData {
+            item: IItemID::from(ITEM),
+            class: Class::Feature,
+            value: "does-not-exist".to_string(),
+            score: 1,
+        };
+        let err = silo.vote(missing, user(1)).await.unwrap_err();
+        assert!(matches!(err, PropertiesError::BadRequest { .. }));
+        assert_eq!(counts(&db).await, (0, 0));
+        assert_eq!(vote_rows(&db).await, 0);
+    }
+
+    #[tokio::test]
+    async fn vote_on_missing_item_errors() {
+        let (silo, db) = setup().await;
+        let missing = InternalVoteData {
+            item: IItemID::from(999_i64),
+            class: Class::Feature,
+            value: "ffff".to_string(),
+            score: 1,
+        };
+        let err = silo.vote(missing, user(1)).await.unwrap_err();
+        assert!(matches!(err, PropertiesError::BadRequest { .. }));
+        assert_eq!(vote_rows(&db).await, 0);
     }
 }
