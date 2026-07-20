@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use chrono::{DateTime, Utc};
 use macros::dual_struct;
 use salvo::prelude::ToSchema;
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -208,7 +208,6 @@ fn to_internal_tag_id(external: Vec<TagID>) -> Vec<ITagID> {
     external.into_iter().map(ITagID::from).collect()
 }
 
-
 /// A workshop walker user
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct User {
@@ -387,9 +386,7 @@ impl SurrealValue for InternalSource {
                 );
                 ::surrealdb::types::Value::Object(map)
             }
-            Self::User(field_0) => {
-                ::surrealdb::types::Value::RecordId(field_0.into())
-            }
+            Self::User(field_0) => ::surrealdb::types::Value::RecordId(field_0.into()),
         }
     }
 
@@ -411,14 +408,14 @@ impl SurrealValue for InternalSource {
                         }
                     }
                 }
-            },
+            }
             ::surrealdb::types::Value::String(string) => {
                 if string == "system" {
                     return Ok(Self::System);
                 }
             }
             other => {
-                if let Ok(user_id) = IUserID::from_value(other){
+                if let Ok(user_id) = dbg!(IUserID::from_value(other)) {
                     return Ok(Self::User(user_id));
                 }
             }

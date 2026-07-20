@@ -1,11 +1,11 @@
 use surrealdb::{Surreal, engine::local::Db};
 use tracing::error;
 
+use crate::db::{IItemID, IUserID};
 use crate::{
     db::model::{InternalUser, InternalWorkshopItemProperties},
     domain::admin::{AdminError, AdminPort, PatchRelationshipData, PatchUserData},
 };
-use crate::db::{IItemID, IUserID};
 
 pub struct AdminSilo {
     pub db: Surreal<Db>,
@@ -63,11 +63,10 @@ impl AdminPort for AdminSilo {
     async fn list_workshop_item_properties(
         &self,
     ) -> Result<Vec<InternalWorkshopItemProperties>, AdminError> {
+        // ToDo: Pagination and sorting by pending
         match self
             .db
-            .query(
-                "SELECT out.id().{class,value} as out, source.to_string(), * FROM workshop_item_properties",
-            )
+            .query("SELECT out.id().{class,value} as out, source, * FROM workshop_item_properties")
             .await
             .map(|mut q| q.take(0))
         {
@@ -85,11 +84,13 @@ impl AdminPort for AdminSilo {
     ) -> Result<(), AdminError> {
         let res = self
             .db
+            .query("BEGIN")
             .query("LET $link = properties:{class: $class, value: $value}")
             .query(
                 "UPDATE ONLY workshop_item_properties SET status=$status WHERE in = $item AND out \
                  = $link;",
             )
+            .query("COMMIT")
             .bind(("class", patch.property.class))
             .bind(("value", patch.property.value))
             .bind(("item", IItemID::from(patch.item)))

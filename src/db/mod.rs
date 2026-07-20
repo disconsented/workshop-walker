@@ -9,9 +9,9 @@ pub mod properties_repository;
 pub mod tags_repository;
 pub mod user_names_repository;
 
+use crate::db::model::Property;
 use macros::define_id;
 use surrealdb_types::SurrealValue;
-use crate::db::model::Property;
 
 define_id!("users", IUserID, UserID, i64);
 define_id!("workshop_items", IItemID, ItemID, i64);

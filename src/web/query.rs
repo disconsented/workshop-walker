@@ -1,26 +1,26 @@
 use salvo::{
-    oapi::{endpoint, extract::QueryParam}, prelude::Json,
-    Request,
-    Writer,
+    Request, Writer,
+    oapi::{endpoint, extract::QueryParam},
+    prelude::Json,
 };
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-    field::Selector, lookup::{LookupKind, LookupSubject}, order::{OrderList, Ordering}, part::DestructurePart, statements::SelectStatement, BinaryOperator, Closure, Cond, Dir, Expr, Field,
-    Fields, Idiom, Kind, Limit, Literal,
-    Lookup,
-    Order,
-    Param,
-    Part,
-    Start,
+    BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields, Idiom, Kind, Limit, Literal, Lookup,
+    Order, Param, Part, Start,
+    field::Selector,
+    lookup::{LookupKind, LookupSubject},
+    order::{OrderList, Ordering},
+    part::DestructurePart,
+    statements::SelectStatement,
 };
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
-use tracing::{debug, info_span, instrument, Instrument};
+use tracing::{Instrument, debug, info_span, instrument};
 
 use crate::{
     db::{
-        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status}, IAppID,
-        ITagID,
+        IAppID, ITagID,
+        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status},
     },
     processing::language_actor::DetectedLanguage,
     web,
@@ -166,7 +166,7 @@ async fn query_inner(
 
         if let Some(language) = language {
             conditions.push(Expr::Binary {
-                left: Box::new(Expr::Idiom(Idiom::field("language".to_string()))),
+                left: Box::new(Expr::Idiom(Idiom::field("languages".to_string()))),
                 op: BinaryOperator::ContainAny,
                 right: Box::new(Expr::Literal(Literal::Integer(language as i64))),
             });

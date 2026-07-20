@@ -53,7 +53,10 @@ impl syn::parse::Parse for DualTypeAttr {
                     surreal.push(meta);
                 } else {
                     return Err(syn::Error::new(
-                        meta.path().get_ident().map(|i| i.span()).unwrap_or_else(|| meta.path().segments[0].ident.span()),
+                        meta.path()
+                            .get_ident()
+                            .map(|i| i.span())
+                            .unwrap_or_else(|| meta.path().segments[0].ident.span()),
                         "expected `to_external = ...`, `to_internal = ...` or `surreal(...)`",
                     ));
                 }

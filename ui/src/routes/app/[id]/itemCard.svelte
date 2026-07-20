@@ -148,14 +148,14 @@
 			>
 		{:else}
 			<div class="flex w-full justify-end h-fit flex-col">
-				{@render suggestProperty()}
+				{@render suggestProperty(item.id)}
 			</div>
 		{/if}
 	</footer>
 </div>
 
-{#snippet suggestProperty()}
-	<SuggestProperty/>
+{#snippet suggestProperty(itemID: string)}
+	<SuggestProperty itemID={itemID}/>
 {/snippet}
 
 <style>

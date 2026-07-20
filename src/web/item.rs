@@ -1,26 +1,26 @@
 use std::sync::OnceLock;
 
-use ractor::{async_trait, call, Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
+use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait, call};
 use salvo::{
-    oapi::{endpoint, extract::PathParam}, prelude::{Json, StatusCode, StatusError},
-    Depot,
-    Writer,
+    Depot, Writer,
+    oapi::{endpoint, extract::PathParam},
+    prelude::{Json, StatusCode, StatusError},
 };
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-    field::Selector, lookup::{LookupKind, LookupSubject}, part::DestructurePart, statements::SelectStatement, BinaryOperator, Closure, Dir, Expr, Field, Fields, Idiom, Kind,
-    Literal,
-    Lookup,
-    Param,
-    Part,
+    BinaryOperator, Closure, Dir, Expr, Field, Fields, Idiom, Kind, Literal, Lookup, Param, Part,
+    field::Selector,
+    lookup::{LookupKind, LookupSubject},
+    part::DestructurePart,
+    statements::SelectStatement,
 };
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{debug, error, instrument};
 
 use crate::{
     db::{
-        model::{ExternalFullWorkshopItem, InternalFullWorkshopItem, Status}, IItemID,
-        IUserID,
+        IItemID, IUserID,
+        model::{ExternalFullWorkshopItem, InternalFullWorkshopItem, Status},
     },
     web::auth,
 };
@@ -396,9 +396,9 @@ pub async fn app_from_item(
 
 #[cfg(test)]
 mod test {
-    use surrealdb::{engine::local::Mem, Surreal};
+    use surrealdb::{Surreal, engine::local::Mem};
 
-    use super::{get_item, Db};
+    use super::{Db, get_item};
     use crate::db::IItemID;
 
     /// Stand up an in-memory database with just enough schema for `get_item`,
