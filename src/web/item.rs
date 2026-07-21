@@ -346,25 +346,6 @@ pub async fn get(id: PathParam<i64>, depot: &mut Depot) -> Result<Json<ExternalF
     ))
 }
 
-/// GET /api/item/{id}/app
-/// Retrieves the app
-#[endpoint]
-#[instrument(skip_all)]
-pub async fn app_from_item(
-    id: PathParam<i64>,
-    depot: &mut Depot,
-) -> Result<Json<ExternalFullWorkshopItem>> {
-    // Lazily spawn the actor on first use and keep a global reference like auth.rs
-    let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
-
-    let user = auth::get_user_from_depot(depot).map(Into::into);
-    let data = call!(actor, |reply| { ItemMsg::Get(id.0.into(), user, reply) })
-        .map_err(|_| InnerError::InternalError)??;
-    Ok(Json(
-        data.try_into().map_err(|_| InnerError::InternalError)?,
-    ))
-}
-
 #[cfg(test)]
 mod test {
     use surrealdb::{Surreal, engine::local::Mem};

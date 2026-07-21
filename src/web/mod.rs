@@ -31,8 +31,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
             .push(
                 Router::with_path("item")
                     .hoop(auth::validate_opt)
-                    .push(Router::with_path("{id}").get(item::get))
-                    .push(Router::with_path("{id}/app").get(item::get)),
+                    .push(Router::with_path("{id}").get(item::get)),
             )
             .push(
                 Router::with_path("property")
