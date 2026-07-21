@@ -27,7 +27,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let router = Router::new().push(
         Router::with_path("api")
             .hoop(max_size(1024 * 1024))
-            .push(Router::with_path("list").get(query::list))
+            .push(Router::with_path("list").hoop(auth::validate_opt).get(query::list))
             .push(
                 Router::with_path("item")
                     .hoop(auth::validate_opt)
