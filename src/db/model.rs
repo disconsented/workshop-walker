@@ -393,7 +393,7 @@ impl SurrealValue for InternalSource {
     fn from_value(
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
-        match dbg!(value) {
+        match value {
             ::surrealdb::types::Value::Object(mut map) => {
                 {
                     if map.get("System").is_some() {
@@ -415,7 +415,7 @@ impl SurrealValue for InternalSource {
                 }
             }
             other => {
-                if let Ok(user_id) = dbg!(IUserID::from_value(other)) {
+                if let Ok(user_id) = IUserID::from_value(other) {
                     return Ok(Self::User(user_id));
                 }
             }

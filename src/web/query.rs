@@ -1,30 +1,32 @@
 use salvo::{
-    Request, Writer,
-    oapi::{endpoint, extract::QueryParam},
-    prelude::Json,
+    oapi::{endpoint, extract::QueryParam}, prelude::Json, Depot,
+    Request,
+    Writer,
 };
 use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
+use surrealdb::{engine::local::Db, Surreal};
 use surrealdb_core::sql::{
-    BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields, Idiom, Kind, Limit, Literal, Lookup,
-    Order, Param, Part, Start,
-    field::Selector,
-    lookup::{LookupKind, LookupSubject},
-    order::{OrderList, Ordering},
-    part::DestructurePart,
-    statements::SelectStatement,
+    field::Selector, literal::ObjectEntry, lookup::{LookupKind, LookupSubject}, order::{OrderList, Ordering}, part::DestructurePart, statements::SelectStatement, BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields,
+    Idiom, Kind, Limit, Literal,
+    Lookup,
+    Order,
+    Param,
+    Part,
+    RecordIdKeyLit,
+    RecordIdLit,
+    Start,
 };
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
-use tracing::{Instrument, debug, info_span, instrument};
+use tracing::{debug, info_span, instrument, Instrument};
 
 use crate::{
     db::{
-        IAppID, ITagID,
-        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status},
+        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status}, IAppID, ITagID,
+        IUserID,
     },
     processing::language_actor::DetectedLanguage,
     web,
-    web::DB_POOL,
+    web::{auth, DB_POOL},
 };
 
 // ToDo: Seperate out filtering to its own struct
@@ -32,7 +34,8 @@ use crate::{
 #[instrument(skip_all)]
 #[endpoint]
 pub async fn list(
-    _: &mut Request,
+    req: &mut Request,
+    depot: &mut Depot,
     app: QueryParam<i64, true>,
     page: QueryParam<u64, false>,
     limit: QueryParam<u64, false>,
@@ -45,6 +48,7 @@ pub async fn list(
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
+    let user = auth::get_user_from_depot(depot).map(Into::into);
 
     let results = query_inner(
         app.into_inner(),
@@ -56,6 +60,7 @@ pub async fn list(
         *last_updated,
         order_by.take(),
         db,
+        user,
     )
     .instrument(info_span!("query list").or_current())
     .await?;
@@ -74,8 +79,9 @@ async fn query_inner(
     last_updated: Option<i64>,
     order_by: Option<OrderBy>,
     db: &Surreal<Db>,
+    user: Option<IUserID>,
 ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
-    let prop_fields = [
+    let mut prop_fields = vec![
         DestructurePart::Field("in".into()),
         DestructurePart::Field("id".into()),
         DestructurePart::Field("source".into()),
@@ -90,6 +96,67 @@ async fn query_inner(
             ]),
         ),
     ];
+
+    // The current user's own vote score for each property, if any. Mirrors
+    // `item::get_item`: looks up the per-user vote record keyed the same way the
+    // write side keys it (see `properties_repository::vote`): votes:{ link, user,
+    // item }. `.score` on a record id that doesn't exist yields NONE, so
+    // un-voted properties come back as `None`. Only computable with a user.
+    if let Some(user) = &user {
+        prop_fields.push(DestructurePart::Aliased(
+            "vote_state".into(),
+            Idiom(vec![
+                Part::Start(Expr::Literal(Literal::RecordId(RecordIdLit {
+                    table: "votes".into(),
+                    key: RecordIdKeyLit::Object(vec![
+                        ObjectEntry {
+                            key: "link".into(),
+                            // The property record this edge points at.
+                            value: Expr::Idiom(Idiom(vec![Part::Field("out".into())])),
+                        },
+                        ObjectEntry {
+                            key: "user".into(),
+                            value: Expr::from_public_value(user.clone().into_value()),
+                        },
+                        ObjectEntry {
+                            key: "item".into(),
+                            // The workshop item this edge originates from.
+                            value: Expr::Idiom(Idiom(vec![Part::Field("in".into())])),
+                        },
+                    ]),
+                }))),
+                Part::Field("score".into()),
+            ]),
+        ));
+    }
+
+    // Keep accepted properties, plus (for a signed-in user) their own submitted
+    // ones regardless of status. Mirrors `item::get_item`.
+    let status_accepted = Expr::Binary {
+        left: Box::new(Expr::Idiom(Idiom(vec![
+            Part::Start(Expr::Param(Param::new("prop".to_string()))),
+            Part::Field("status".into()),
+        ]))),
+        op: BinaryOperator::ExactEqual,
+        right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
+    };
+    let properties_expression = if let Some(user) = &user {
+        Expr::Binary {
+            left: Box::new(status_accepted),
+            op: BinaryOperator::Or,
+            right: Box::new(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom(vec![
+                    Part::Start(Expr::Param(Param::new("prop".to_string()))),
+                    Part::Field("source".into()),
+                ]))),
+                op: BinaryOperator::ExactEqual,
+                right: Box::new(Expr::from_public_value(user.clone().into_value())),
+            }),
+        }
+    } else {
+        status_accepted
+    };
+
     let app = IAppID::from(app);
     let mut stmt = SelectStatement::default();
     stmt.what = vec![Expr::Table("workshop_items".into())];
@@ -111,21 +178,11 @@ async fn query_inner(
                 alias: Some(Idiom(vec![
                     Part::Field("properties".into()),
                     Part::Method(
-                        // ToDo: Filter for user-submitted props
                         "filter".into(),
                         vec![Expr::Closure(Box::new(Closure {
                             args: vec![(Param::new("prop".to_string()), Kind::Any)],
                             returns: None,
-                            body: Expr::Binary {
-                                left: Box::new(Expr::Idiom(Idiom(vec![
-                                    Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                                    Part::Field("status".into()),
-                                ]))),
-                                op: BinaryOperator::ExactEqual,
-                                right: Box::new(Expr::Literal(Literal::Integer(
-                                    Status::Accepted as i64,
-                                ))),
-                            },
+                            body: properties_expression,
                         }))],
                     ),
                 ])),

@@ -9,7 +9,9 @@ use salvo::{
 use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
     BinaryOperator, Closure, Dir, Expr, Field, Fields, Idiom, Kind, Literal, Lookup, Param, Part,
+    RecordIdKeyLit, RecordIdLit,
     field::Selector,
+    literal::ObjectEntry,
     lookup::{LookupKind, LookupSubject},
     part::DestructurePart,
     statements::SelectStatement,
@@ -116,7 +118,7 @@ async fn get_item(
     id: IItemID,
     user: Option<IUserID>,
 ) -> Result<InternalFullWorkshopItem> {
-    let prop_fields = [
+    let mut prop_fields = vec![
         DestructurePart::Field("in".into()),
         DestructurePart::Field("id".into()),
         DestructurePart::Field("source".into()),
@@ -131,6 +133,39 @@ async fn get_item(
             ]),
         ),
     ];
+
+    // The current user's own vote score for this property, if any. Looks up the
+    // per-user vote record keyed the same way the write side keys it (see
+    // `properties_repository::vote`): votes:{ link, user, item }. `.score` on a
+    // record id that doesn't exist yields NONE, so un-voted properties come back
+    // as `None`. Only computable when we know who the caller is.
+    if let Some(user) = &user {
+        prop_fields.push(DestructurePart::Aliased(
+            "vote_state".into(),
+            Idiom(vec![
+                Part::Start(Expr::Literal(Literal::RecordId(RecordIdLit {
+                    table: "votes".into(),
+                    key: RecordIdKeyLit::Object(vec![
+                        ObjectEntry {
+                            key: "link".into(),
+                            // The property record this edge points at.
+                            value: Expr::Idiom(Idiom(vec![Part::Field("out".into())])),
+                        },
+                        ObjectEntry {
+                            key: "user".into(),
+                            value: Expr::from_public_value(user.clone().into_value()),
+                        },
+                        ObjectEntry {
+                            key: "item".into(),
+                            // The workshop item this edge originates from.
+                            value: Expr::Idiom(Idiom(vec![Part::Field("in".into())])),
+                        },
+                    ]),
+                }))),
+                Part::Field("score".into()),
+            ]),
+        ));
+    }
     let dep_fields = [
         DestructurePart::Field("app".into()),
         DestructurePart::All("author".into()),
@@ -179,7 +214,7 @@ async fn get_item(
             right: Box::new(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom(vec![
                     Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                    Part::Field("soure".into()),
+                    Part::Field("source".into()),
                 ]))),
                 op: BinaryOperator::ExactEqual,
                 right: Box::new(Expr::from_public_value(user.into_value())),
@@ -288,70 +323,6 @@ async fn get_item(
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to query database"))
         .map_err(|_| InnerError::InternalError)?;
 
-    // match thing.results.get(&0).unwrap().1.clone().unwrap() {
-    //     Value::None => {}
-    //     Value::Null => {}
-    //     Value::Bool(_) => {}
-    //     Value::Number(_) => {}
-    //     Value::String(_) => {}
-    //     Value::Bytes(_) => {}
-    //     Value::Duration(_) => {}
-    //     Value::Datetime(_) => {}
-    //     Value::Uuid(_) => {}
-    //     Value::Geometry(_) => {}
-    //     Value::Table(_) => {}
-    //     Value::RecordId(_) => {}
-    //     Value::File(_) => {}
-    //     Value::Range(_) => {}
-    //     Value::Regex(_) => {}
-    //     Value::Array(arr) => match &arr.0[0] {
-    //         Value::None => {}
-    //         Value::Null => {}
-    //         Value::Bool(_) => {}
-    //         Value::Number(_) => {}
-    //         Value::String(_) => {}
-    //         Value::Bytes(_) => {}
-    //         Value::Duration(_) => {}
-    //         Value::Datetime(_) => {}
-    //         Value::Uuid(_) => {}
-    //         Value::Geometry(_) => {}
-    //         Value::Table(_) => {}
-    //         Value::RecordId(_) => {}
-    //         Value::File(_) => {}
-    //         Value::Range(_) => {}
-    //         Value::Regex(_) => {}
-    //         Value::Array(_) => {}
-    //         Value::Object(obj) => {
-    //             match obj.get("properties").unwrap() {
-    //                 Value::None => {}
-    //                 Value::Null => {}
-    //                 Value::Bool(_) => {}
-    //                 Value::Number(_) => {}
-    //                 Value::String(_) => {}
-    //                 Value::Bytes(_) => {}
-    //                 Value::Duration(_) => {}
-    //                 Value::Datetime(_) => {}
-    //                 Value::Uuid(_) => {}
-    //                 Value::Geometry(_) => {}
-    //                 Value::Table(_) => {}
-    //                 Value::RecordId(_) => {}
-    //                 Value::File(_) => {}
-    //                 Value::Range(_) => {}
-    //                 Value::Regex(_) => {}
-    //                 Value::Array(array) => {
-    //                     for prop in array{
-    //
-    //                     }
-    //                 }
-    //                 Value::Object(_) => {}
-    //                 Value::Set(_) => {}
-    //             }
-    //         }
-    //         Value::Set(_) => {}
-    //     },
-    //     Value::Object(_) => {}
-    //     Value::Set(_) => {}
-    // }
     let result: Option<InternalFullWorkshopItem> = thing
         .take(0)
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to take result"))
@@ -399,7 +370,7 @@ mod test {
     use surrealdb::{Surreal, engine::local::Mem};
 
     use super::{Db, get_item};
-    use crate::db::IItemID;
+    use crate::db::{IItemID, IUserID};
 
     /// Stand up an in-memory database with just enough schema for `get_item`,
     /// and wire up two dependency edges around item 100:
@@ -452,6 +423,31 @@ mod test {
 
             RELATE workshop_items:100 -> item_dependencies -> workshop_items:200;
             RELATE workshop_items:300 -> item_dependencies -> workshop_items:100;
+
+            DEFINE TABLE users TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON users TYPE int PERMISSIONS FULL;
+
+            DEFINE TABLE votes TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON votes TYPE { item: record<workshop_items>, link: record<properties>, user: record<users> } PERMISSIONS FULL;
+            DEFINE FIELD score ON votes TYPE int PERMISSIONS FULL;
+            DEFINE FIELD user ON votes TYPE record<users> PERMISSIONS FULL;
+            DEFINE FIELD when ON votes TYPE datetime PERMISSIONS FULL;
+
+            DEFINE FIELD note ON workshop_item_properties TYPE none | string PERMISSIONS FULL;
+            DEFINE FIELD source ON workshop_item_properties TYPE 'system' | record<users> PERMISSIONS FULL;
+            DEFINE FIELD status ON workshop_item_properties TYPE -1 | 0 | 1 DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD upvote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD vote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
+
+            CREATE users:1 SET id = 1;
+            CREATE users:2 SET id = 2;
+            CREATE properties:{ class: 'Type', value: 'test' };
+
+            -- Accepted property on item 100 so it survives the status filter.
+            RELATE workshop_items:100 -> workshop_item_properties -> properties:{ class: 'Type', value: 'test' } SET status = 1, source = 'system', upvote_count = 1, vote_count = 1;
+
+            -- User 1 has voted +1 on that property; user 2 has not voted.
+            CREATE votes:{ item: workshop_items:100, link: properties:{ class: 'Type', value: 'test' }, user: users:1 } SET score = 1, user = users:1, when = time::now();
             ",
         )
         .await
@@ -514,6 +510,63 @@ mod test {
             dependant_ids,
             vec![IItemID::from(100i64)],
             "item 200 is depended upon by 100"
+        );
+    }
+
+    /// Regression test: `vote_state` on a property should reflect the current
+    /// user's own vote score. User 1 voted +1 on item 100's property, so
+    /// fetching item 100 as user 1 must surface `Some(1)` — guarding against the
+    /// projection dropping the per-user vote lookup (it silently returned `None`
+    /// after the raw-SQL query was ported to the AST builder).
+    #[tokio::test]
+    async fn vote_state_reflects_current_users_vote() {
+        let db = seed_db().await;
+
+        let item = get_item(&db, IItemID::from(100i64), Some(IUserID::from(1i64)))
+            .await
+            .expect("item 100 should be found");
+
+        let prop = item
+            .properties
+            .first()
+            .expect("item 100 has one accepted property");
+        assert_eq!(
+            prop.vote_state,
+            Some(1),
+            "user 1 voted +1 on this property, so vote_state should be Some(1)"
+        );
+    }
+
+    /// A user who hasn't voted (user 2) — and the anonymous case (no user) —
+    /// should see `vote_state == None`, since the vote record id won't resolve.
+    #[tokio::test]
+    async fn vote_state_none_when_user_has_not_voted() {
+        let db = seed_db().await;
+
+        let as_other_user = get_item(&db, IItemID::from(100i64), Some(IUserID::from(2i64)))
+            .await
+            .expect("item 100 should be found");
+        assert_eq!(
+            as_other_user
+                .properties
+                .first()
+                .expect("item 100 has one accepted property")
+                .vote_state,
+            None,
+            "user 2 has not voted, so vote_state should be None"
+        );
+
+        let anonymous = get_item(&db, IItemID::from(100i64), None)
+            .await
+            .expect("item 100 should be found");
+        assert_eq!(
+            anonymous
+                .properties
+                .first()
+                .expect("item 100 has one accepted property")
+                .vote_state,
+            None,
+            "anonymous request has no user, so vote_state should be None"
         );
     }
 }
