@@ -25,6 +25,7 @@
 	let { loggedIn = $bindable(), property, hideVote, itemID }: Props = $props();
 	let request = undefined;
 	let voteState = $state(property.vote_state);
+	let upvoteCount = $state(property.upvote_count);
 
 	// Downvote the property or remove the vote
 	const downvote = () => {
@@ -32,10 +33,12 @@
 			// Remove
 			voteState = 0;
 			property.upvote_count++;
+			upvoteCount++;
 		} else {
 			// Downvote
 			voteState--;
 			property.upvote_count--;
+			upvoteCount--;
 		}
 
 		voteRequest();
@@ -45,9 +48,11 @@
 		if (voteState === 1) {
 			voteState = 0;
 			property.upvote_count--;
+			upvoteCount--;
 		} else {
 			voteState = 1;
 			property.upvote_count++;
+			upvoteCount++;
 		}
 
 		voteRequest();
@@ -103,7 +108,7 @@
 		</div>
 
 		{#if property.status === 1 && !hideVote}
-			{@const score = property.vote_count ?? 0}
+			{@const score = upvoteCount ?? 0}
 			{@const textColour = loggedIn
 				? score > 0
 					? 'text-success-500'
