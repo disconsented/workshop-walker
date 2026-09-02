@@ -14,11 +14,13 @@ license = "MPL-2"
 version = "0.2.0"
 
 [workspace.dependencies]
-classification = { path = "./classification" }
-macros = { path = "./macros" }
-migrations-tool = { path = "./migrations-tool" }
-proc-macros = { path = "./proc-macros" }
-serde-hack = { path = "./serde-hack" }
+
+# Versions needed for release plz
+classification = { path = "./classification", version = "0" }
+macros = { path = "./macros", version = "0" }
+migrations-tool = { path = "./migrations-tool", version = "0" }
+proc-macros = { path = "./proc-macros", version = "0" }
+serde-hack = { path = "./serde-hack", version = "0" }
 
 async-stream = "0.3.6"
 bbscope = "0.2"
