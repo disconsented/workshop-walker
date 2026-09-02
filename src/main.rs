@@ -14,8 +14,10 @@ use tokio_stream::StreamExt;
 use tracing::{Instrument, debug, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
 
-use crate::db::UserID;
-use crate::{application::admin_service::AdminService, db::admin_repository::AdminSilo};
+use crate::{
+    application::admin_service::AdminService,
+    db::{UserID, admin_repository::AdminSilo},
+};
 
 mod actors;
 mod app_config;

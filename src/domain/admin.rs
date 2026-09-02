@@ -2,8 +2,10 @@ use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 
-use crate::db::model::{InternalUser, InternalWorkshopItemProperties, Property, Status};
-use crate::db::{ItemID, UserID};
+use crate::db::{
+    ItemID, UserID,
+    model::{InternalUser, InternalWorkshopItemProperties, Property, Status},
+};
 
 #[derive(Debug, Snafu, Clone)]
 #[non_exhaustive]

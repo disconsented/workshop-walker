@@ -83,7 +83,8 @@ struct ExampleItem {
 #[test]
 fn test_surreal_attr() {
     // This test primarily checks that it compiles with the surreal(wrap) attribute
-    // We can also check if the attribute is present via some reflection or just trust compilation for now
+    // We can also check if the attribute is present via some reflection or just
+    // trust compilation for now
     let _item = InternalExampleItem {
         id: IItemID(surrealdb_types::RecordId::new("workshop_items", 1)),
         appid: IAppID(surrealdb_types::RecordId::new("apps", 1)),

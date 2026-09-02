@@ -1,32 +1,31 @@
 use salvo::{
-    oapi::{endpoint, extract::QueryParam}, prelude::Json, Depot,
-    Request,
-    Writer,
+    Depot, Request, Writer,
+    oapi::{endpoint, extract::QueryParam},
+    prelude::Json,
 };
 use snafu::{ResultExt, Whatever};
-use surrealdb::{engine::local::Db, Surreal};
+use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
-    field::Selector, literal::ObjectEntry, lookup::{LookupKind, LookupSubject}, order::{OrderList, Ordering}, part::DestructurePart, statements::SelectStatement, BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields,
-    Idiom, Kind, Limit, Literal,
-    Lookup,
-    Order,
-    Param,
-    Part,
-    RecordIdKeyLit,
-    RecordIdLit,
-    Start,
+    BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields, Idiom, Kind, Limit, Literal, Lookup,
+    Order, Param, Part, RecordIdKeyLit, RecordIdLit, Start,
+    field::Selector,
+    literal::ObjectEntry,
+    lookup::{LookupKind, LookupSubject},
+    order::{OrderList, Ordering},
+    part::DestructurePart,
+    statements::SelectStatement,
 };
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
-use tracing::{debug, info_span, instrument, Instrument};
+use tracing::{Instrument, debug, info_span, instrument, trace};
 
 use crate::{
     db::{
-        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status}, IAppID, ITagID,
-        IUserID,
+        IAppID, ITagID, IUserID,
+        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status},
     },
     processing::language_actor::DetectedLanguage,
     web,
-    web::{auth, DB_POOL},
+    web::{DB_POOL, auth},
 };
 
 // ToDo: Seperate out filtering to its own struct
@@ -131,24 +130,21 @@ async fn query_inner(
     }
 
     // Keep accepted properties, plus (for a signed-in user) their own submitted
-    // ones regardless of status. Mirrors `item::get_item`.
+    // ones regardless of status. Mirrors `item::get_item`. The condition goes on
+    // the graph lookup itself: a `.filter()` after the lookup binds to each edge
+    // rather than to the array, and the parentheses which would fix that are
+    // lost when the driver prints the statement back to SQL.
     let status_accepted = Expr::Binary {
-        left: Box::new(Expr::Idiom(Idiom(vec![
-            Part::Start(Expr::Param(Param::new("prop".to_string()))),
-            Part::Field("status".into()),
-        ]))),
+        left: Box::new(Expr::Idiom(Idiom::field("status".to_string()))),
         op: BinaryOperator::ExactEqual,
         right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
     };
-    let properties_expression = if let Some(user) = &user {
+    let properties_condition = if let Some(user) = &user {
         Expr::Binary {
             left: Box::new(status_accepted),
             op: BinaryOperator::Or,
             right: Box::new(Expr::Binary {
-                left: Box::new(Expr::Idiom(Idiom(vec![
-                    Part::Start(Expr::Param(Param::new("prop".to_string()))),
-                    Part::Field("source".into()),
-                ]))),
+                left: Box::new(Expr::Idiom(Idiom::field("source".to_string()))),
                 op: BinaryOperator::ExactEqual,
                 right: Box::new(Expr::from_public_value(user.clone().into_value())),
             }),
@@ -171,22 +167,14 @@ async fn query_inner(
                             table: "workshop_item_properties".into(),
                             referencing_field: None,
                         }],
+                        cond: Some(Cond(properties_condition)),
                         ..Default::default()
                     })),
                     Part::Destructure(prop_fields.to_vec()),
                 ])),
-                alias: Some(Idiom(vec![
-                    Part::Field("properties".into()),
-                    Part::Method(
-                        "filter".into(),
-                        vec![Expr::Closure(Box::new(Closure {
-                            args: vec![(Param::new("prop".to_string()), Kind::Any)],
-                            returns: None,
-                            body: properties_expression,
-                        }))],
-                    ),
-                ])),
+                alias: Some(Idiom::field("properties".to_string())),
             }),
+            // Author's are more so considered eventually consistent
             Field::Single(Selector {
                 expr: Expr::Idiom(Idiom(vec![
                     Part::Field("tags".into()),
@@ -285,7 +273,7 @@ async fn query_inner(
     debug!(sql = stmt.to_sql(), "running big query");
     let mut results = db.query(stmt).await.whatever_context("querying")?;
 
-    debug!(?results, "results");
+    trace!(?results, "results");
 
     let results: Vec<InternalWorkshopItem> = results.take(0).whatever_context("taking result")?;
 
@@ -294,4 +282,200 @@ async fn query_inner(
         .map(ExternalWorkshopItem::try_from)
         .collect::<Result<_, _>>()
         .whatever_context("converting internal to external")
+}
+
+#[cfg(test)]
+mod test {
+    use surrealdb::{Surreal, engine::local::Mem};
+
+    use super::{Db, query_inner};
+    use crate::db::{
+        IUserID,
+        model::{Class, ExternalSource, Status},
+    };
+
+    /// In-memory database with one app, one item, and three property edges on
+    /// that item: one accepted, one pending (submitted by user 2) and one
+    /// rejected. Only the accepted one is visible to everybody; user 2 also
+    /// sees their own pending submission.
+    async fn seed_db() -> Surreal<Db> {
+        let db = Surreal::new::<Mem>(()).await.unwrap();
+        db.use_ns("test").use_db("test").await.unwrap();
+
+        db.query(
+            "
+            DEFINE TABLE apps TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON apps TYPE int PERMISSIONS FULL;
+            DEFINE FIELD name ON apps TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE usernames TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON usernames TYPE int PERMISSIONS FULL;
+            DEFINE FIELD name ON usernames TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE tags TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON tags TYPE string PERMISSIONS FULL;
+            DEFINE FIELD display_name ON tags TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE properties TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;
+
+            DEFINE TABLE workshop_items TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON workshop_items TYPE int PERMISSIONS FULL;
+            DEFINE FIELD app ON workshop_items TYPE record<apps> PERMISSIONS FULL;
+            DEFINE FIELD author ON workshop_items TYPE record<usernames> PERMISSIONS FULL;
+            DEFINE FIELD description ON workshop_items TYPE string PERMISSIONS FULL;
+            DEFINE FIELD languages ON workshop_items TYPE array<int> PERMISSIONS FULL;
+            DEFINE FIELD last_updated ON workshop_items TYPE int PERMISSIONS FULL;
+            DEFINE FIELD preview_url ON workshop_items TYPE none | string PERMISSIONS FULL;
+            DEFINE FIELD score ON workshop_items TYPE float PERMISSIONS FULL;
+            DEFINE FIELD tags ON workshop_items TYPE array<record<tags>> PERMISSIONS FULL;
+            DEFINE FIELD title ON workshop_items TYPE string PERMISSIONS FULL;
+
+            DEFINE TABLE workshop_item_properties TYPE RELATION IN workshop_items OUT properties \
+             SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD note ON workshop_item_properties TYPE none | string PERMISSIONS FULL;
+            DEFINE FIELD source ON workshop_item_properties TYPE 'system' | record<users> \
+             PERMISSIONS FULL;
+            DEFINE FIELD status ON workshop_item_properties TYPE -1 | 0 | 1 DEFAULT 0 PERMISSIONS \
+             FULL;
+            DEFINE FIELD upvote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS \
+             FULL;
+            DEFINE FIELD vote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS \
+             FULL;
+
+            DEFINE TABLE users TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON users TYPE int PERMISSIONS FULL;
+
+            DEFINE TABLE votes TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+            DEFINE FIELD id ON votes TYPE { item: record<workshop_items>, link: \
+             record<properties>, user: record<users> } PERMISSIONS FULL;
+            DEFINE FIELD score ON votes TYPE int PERMISSIONS FULL;
+            DEFINE FIELD user ON votes TYPE record<users> PERMISSIONS FULL;
+            DEFINE FIELD when ON votes TYPE datetime PERMISSIONS FULL;
+
+            CREATE apps:1 SET id = 1, name = 'Test App';
+            CREATE usernames:1 SET id = 1, name = 'Test Author';
+            CREATE tags:test SET id = 'test', display_name = 'Test Tag';
+            CREATE users:1 SET id = 1;
+            CREATE users:2 SET id = 2;
+
+            CREATE workshop_items:100 SET id = 100, app = apps:1, author = usernames:1, \
+             description = 'item 100', languages = [], last_updated = 0, score = 1.0f, tags = \
+             [tags:test], title = 'Item 100';
+
+            CREATE properties:{ class: 'Type', value: 'accepted' };
+            CREATE properties:{ class: 'Type', value: 'pending' };
+            CREATE properties:{ class: 'Type', value: 'rejected' };
+
+            RELATE workshop_items:100 -> workshop_item_properties -> properties:{ class: 'Type', \
+             value: 'accepted' } SET status = 1, source = 'system';
+            RELATE workshop_items:100 -> workshop_item_properties -> properties:{ class: 'Type', \
+             value: 'pending' } SET status = 0, source = users:2;
+            RELATE workshop_items:100 -> workshop_item_properties -> properties:{ class: 'Type', \
+             value: 'rejected' } SET status = -1, source = 'system';
+            ",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+
+        db
+    }
+
+    async fn list_property_values(
+        db: &Surreal<Db>,
+        user: Option<IUserID>,
+    ) -> Vec<(String, Status)> {
+        let items = query_inner(1, 0, 100, None, vec![], None, None, None, db, user)
+            .await
+            .expect("query should succeed");
+        let item = items.first().expect("item 100 should be returned");
+        let mut props: Vec<(String, Status)> = item
+            .properties
+            .iter()
+            .map(|prop| {
+                assert_eq!(prop.out.class, Class::Type);
+                (prop.out.value.clone(), prop.status)
+            })
+            .collect();
+        props.sort();
+        props
+    }
+
+    /// Regression test: the list query must only return accepted properties for
+    /// an anonymous caller. Pending and rejected edges leaked through when the
+    /// status filter was attached to the projection's alias instead of its
+    /// expression, so the filter was parsed but never evaluated.
+    #[tokio::test]
+    async fn anonymous_listing_only_returns_accepted_properties() {
+        let db = seed_db().await;
+
+        assert_eq!(
+            list_property_values(&db, None).await,
+            vec![("accepted".to_string(), Status::Accepted)],
+            "anonymous callers must not see pending or rejected properties"
+        );
+    }
+
+    /// A signed-in user sees accepted properties plus their own submissions,
+    /// whatever the status, and still never sees somebody else's pending work.
+    #[tokio::test]
+    async fn user_listing_returns_accepted_properties_and_own_submissions() {
+        let db = seed_db().await;
+
+        assert_eq!(
+            list_property_values(&db, Some(IUserID::from(2i64))).await,
+            vec![
+                ("accepted".to_string(), Status::Accepted),
+                ("pending".to_string(), Status::Pending),
+            ],
+            "user 2 should see the accepted property and their own pending one"
+        );
+
+        let other_user = list_property_values(&db, Some(IUserID::from(1i64))).await;
+        assert_eq!(
+            other_user,
+            vec![("accepted".to_string(), Status::Accepted)],
+            "user 1 submitted nothing, so they only see the accepted property"
+        );
+        assert!(
+            !other_user
+                .iter()
+                .any(|(value, _)| value == "pending" || value == "rejected"),
+            "user 1 must not see user 2's pending submission"
+        );
+    }
+
+    /// The property `source` must survive the projection so the UI can tell
+    /// which entries the caller submitted themselves.
+    #[tokio::test]
+    async fn property_source_is_projected() {
+        let db = seed_db().await;
+
+        let items = query_inner(
+            1,
+            0,
+            100,
+            None,
+            vec![],
+            None,
+            None,
+            None,
+            &db,
+            Some(IUserID::from(2i64)),
+        )
+        .await
+        .expect("query should succeed");
+        let item = items.first().expect("item 100 should be returned");
+        let pending = item
+            .properties
+            .iter()
+            .find(|prop| prop.out.value == "pending")
+            .expect("user 2 sees their own pending property");
+        assert!(
+            matches!(&pending.source, ExternalSource::User(id) if *id == 2i64.into()),
+            "the pending property was submitted by user 2"
+        );
+    }
 }

@@ -1,5 +1,4 @@
-use surrealdb_types::SurrealValue;
-use surrealdb_types::Value;
+use surrealdb_types::{SurrealValue, Value};
 
 #[derive(Debug, SurrealValue, PartialEq)]
 pub enum Class {

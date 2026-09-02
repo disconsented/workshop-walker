@@ -170,8 +170,8 @@ async fn start_downloader(
     let timestamp: Option<u64> = state
         .database
         .query(
-            "SELECT last_updated FROM workshop_items WHERE app = $app ORDER BY last_updated \
-             DESC LIMIT 1",
+            "SELECT last_updated FROM workshop_items WHERE app = $app ORDER BY last_updated DESC \
+             LIMIT 1",
         )
         .bind(("app", app.clone()))
         .await

@@ -241,16 +241,20 @@ mod tests {
 
         DEFINE TABLE users TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
-        DEFINE TABLE workshop_item_properties TYPE RELATION IN workshop_items OUT properties SCHEMAFULL PERMISSIONS NONE;
+        DEFINE TABLE workshop_item_properties TYPE RELATION IN workshop_items OUT properties \
+                          SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD note ON workshop_item_properties TYPE none | string PERMISSIONS FULL;
-        DEFINE FIELD source ON workshop_item_properties TYPE 'system' | record<users> PERMISSIONS FULL;
+        DEFINE FIELD source ON workshop_item_properties TYPE 'system' | record<users> PERMISSIONS \
+                          FULL;
         DEFINE FIELD status ON workshop_item_properties TYPE -1 | 0 | 1 DEFAULT 0 PERMISSIONS FULL;
         DEFINE FIELD upvote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
         DEFINE FIELD vote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
-        DEFINE INDEX unique_workshop_item_properties ON workshop_item_properties FIELDS in, out UNIQUE;
+        DEFINE INDEX unique_workshop_item_properties ON workshop_item_properties FIELDS in, out \
+                          UNIQUE;
 
         DEFINE TABLE votes TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
-        DEFINE FIELD id ON votes TYPE { item: record<workshop_items>, link: record<properties>, user: record<users> } PERMISSIONS FULL;
+        DEFINE FIELD id ON votes TYPE { item: record<workshop_items>, link: record<properties>, \
+                          user: record<users> } PERMISSIONS FULL;
         DEFINE FIELD score ON votes TYPE int PERMISSIONS FULL;
         DEFINE FIELD user ON votes TYPE record<users> PERMISSIONS FULL;
         DEFINE FIELD when ON votes TYPE datetime PERMISSIONS FULL;
