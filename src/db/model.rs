@@ -755,18 +755,18 @@ mod test {
 
     /// Pins the root cause of `properties:{class: {Type: {}}, value: 'asd'}`.
     ///
-    /// A `class` is a unit-like enum variant; when bound into a record-id key it
-    /// must serialise to the bare string `"Type"`. The current `into_value`
-    /// impl emits the externally-tagged object `{"Type": {}}` instead, which is
-    /// exactly what leaks into the stored record id.
+    /// A `class` is a unit-like enum variant; when bound into a record-id key
+    /// it must serialise to the bare string `"Type"`. The current
+    /// `into_value` impl emits the externally-tagged object `{"Type": {}}`
+    /// instead, which is exactly what leaks into the stored record id.
     #[test]
     fn class_serialises_to_bare_string() {
         let value = Class::Type.into_value();
         assert_eq!(
             value,
             Value::String("Type".to_string()),
-            "Class should serialise to a bare string for record-id keys, but \
-             produced the externally-tagged object form: {value:?}"
+            "Class should serialise to a bare string for record-id keys, but produced the \
+             externally-tagged object form: {value:?}"
         );
     }
 
@@ -788,8 +788,7 @@ mod test {
         assert_eq!(
             obj.get("class"),
             Some(&Value::String("Type".to_string())),
-            "the `class` part of the record-id key must be the bare string \
-             'Type', but was: {:?}",
+            "the `class` part of the record-id key must be the bare string 'Type', but was: {:?}",
             obj.get("class")
         );
     }

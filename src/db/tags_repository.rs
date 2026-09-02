@@ -98,7 +98,8 @@ mod test {
 
         DEFINE TABLE apps TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD id ON apps TYPE int PERMISSIONS FULL;
-        DEFINE FIELD tags ON apps TYPE array<record<tags>> DEFAULT [] VALUE $value.distinct() PERMISSIONS FULL;
+        DEFINE FIELD tags ON apps TYPE array<record<tags>> DEFAULT [] VALUE $value.distinct() \
+                          PERMISSIONS FULL;
     ";
 
     async fn setup() -> Surreal<Db> {
