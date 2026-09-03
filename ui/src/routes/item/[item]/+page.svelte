@@ -295,7 +295,7 @@
 				>
 			{/if}
 			<span>Last Updated: <TimeAgo date={item.last_updated}></TimeAgo></span>
-			<span>Upvote Percentage: {(Math.round(item.score * 100) / 100) * 100}%</span>
+			<span>Upvote Percentage: {Math.round(item.score * 100)}%</span>
 			<span
 				>Languages:
 				{#each item.languages as lang}

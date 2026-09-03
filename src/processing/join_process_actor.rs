@@ -16,6 +16,7 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
+use crate::db::model::InternalUsername;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`
@@ -108,7 +109,8 @@ impl InternalWorkshopItem {
         );
         Ok(Self {
             app: app.clone(),
-            author,
+            // Name gets updated later in theory
+            author: InternalUsername{ id: author, name: "PLACEHOLDER".to_string() },
             languages,
             description,
             id: data
