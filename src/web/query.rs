@@ -242,17 +242,13 @@ async fn query_inner(
         let first = conditions
             .pop()
             .expect("Expected at least one condition to be present");
-        if conditions.len() == 1 {
-            Some(Cond(first))
-        } else {
-            Some(Cond(conditions.into_iter().fold(first, |old, next| {
-                Expr::Binary {
-                    left: Box::new(old),
-                    op: BinaryOperator::And,
-                    right: Box::new(next),
-                }
-            })))
-        }
+        Some(Cond(conditions.into_iter().fold(first, |old, next| {
+            Expr::Binary {
+                left: Box::new(old),
+                op: BinaryOperator::And,
+                right: Box::new(next),
+            }
+        })))
     };
 
     stmt.order = order_by.map(|order_by| {
