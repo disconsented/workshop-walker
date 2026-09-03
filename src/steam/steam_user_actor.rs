@@ -81,6 +81,7 @@ impl Actor for SteamUserActor {
                     continue;
                 }
 
+                let batch_size = user_ids.len();
                 let id_string = user_ids
                     .drain()
                     .map(|id| i64::from(id.try_into_external().unwrap()).to_string())
@@ -90,7 +91,7 @@ impl Actor for SteamUserActor {
                     args.steam_token
                 );
 
-                debug!(%total_processed, next_batch = user_ids.len(), "Fetching player summaries from Steam");
+                debug!(%total_processed, next_batch = batch_size, "Fetching player summaries from Steam");
                 // Retry up to 3 times
                 for _ in 0..3 {
                     match args
@@ -132,8 +133,7 @@ impl Actor for SteamUserActor {
                         }
                     }
                 }
-                total_processed += user_ids.len();
-                user_ids.clear();
+                total_processed += batch_size;
             }
         });
 
