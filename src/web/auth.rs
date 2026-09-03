@@ -103,11 +103,48 @@ impl From<InnerError> for StatusError {
     }
 }
 
+/// Rejects an OpenID response nonce whose timestamp is not close to now.
+///
+/// Without this, a captured `/api/verify` query string stays a valid
+/// credential forever, because the signature over it does not expire.
+fn validate_nonce(nonce: &str, now: NaiveDateTime) -> Result<()> {
+    let (timestamp, _) = nonce
+        .split_once('Z')
+        .ok_or(InnerError::SelfValidationFailed)?;
+    let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
+        .map_err(|_| InnerError::SelfValidationFailed)?;
+
+    // Five minutes either side, to allow for clock drift.
+    if (now - timestamp).abs() > TimeDelta::minutes(5) {
+        return Err(InnerError::SelfValidationFailed)?;
+    }
+    Ok(())
+}
+
+/// Accepts only a site-relative path.
+///
+/// The `location` parameter decides where the user lands after login and
+/// logout. An absolute or protocol-relative value makes our own domain
+/// redirect to an attacker's site. A backslash is included because browsers
+/// read it as a path separator, so `/\evil.example` is protocol-relative too.
+fn validate_location(location: &str) -> Result<&str> {
+    if location.starts_with('/')
+        && !location.starts_with("//")
+        && !location.contains('\\')
+        && !location.contains(char::is_control)
+    {
+        Ok(location)
+    } else {
+        Err(InnerError::SelfValidationFailed)?
+    }
+}
+
 #[endpoint]
 pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> Result<()> {
     let location = req
         .query::<String>("location")
         .ok_or(InnerError::SelfValidationFailed)?;
+    validate_location(&location)?;
     let actor = AUTH_ACTOR
         .get()
         .cloned()
@@ -128,6 +165,7 @@ pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response)
     let redirect_to = req
         .query::<String>("location")
         .ok_or(InnerError::SelfValidationFailed)?;
+    validate_location(&redirect_to)?;
     let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
     let map = mem::take(req.queries_mut());
     let token = call!(actor, |reply| {
@@ -165,9 +203,10 @@ pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()
     response
         .headers
         .insert("Clear-Site-Data", HeaderValue::from_static("\"cookies\""));
-    let redirect_to = req
-        .query::<&str>("location")
-        .ok_or(InnerError::SelfValidationFailed)?;
+    let redirect_to = validate_location(
+        req.query::<&str>("location")
+            .ok_or(InnerError::SelfValidationFailed)?,
+    )?;
     response.render(Redirect::found(redirect_to));
     Ok(())
 }
@@ -427,19 +466,11 @@ impl AuthActor {
             if (map.get("openid.op_endpoint")) != (Some(&state.open_id_info.uri)) {
                 return Err(InnerError::SelfValidationFailed)?;
             }
-            if let Some((timestamp, _)) = map
-                .get("openid.response_nonce")
-                .ok_or(InnerError::SelfValidationFailed)?
-                .split_once('Z')
-            {
-                let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
-                    .map_err(|_| InnerError::SelfValidationFailed)?;
-                if timestamp - Utc::now().naive_utc() > TimeDelta::minutes(5) {
-                    return Err(InnerError::SelfValidationFailed)?;
-                }
-            } else {
-                return Err(InnerError::SelfValidationFailed)?;
-            }
+            validate_nonce(
+                map.get("openid.response_nonce")
+                    .ok_or(InnerError::SelfValidationFailed)?,
+                Utc::now().naive_utc(),
+            )?;
         }
 
         let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
@@ -537,5 +568,90 @@ impl AuthActor {
             }
         }
         Ok(based)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{NaiveDate, NaiveDateTime};
+    use salvo::http::StatusCode;
+
+    use super::{validate_location, validate_nonce};
+
+    fn now() -> NaiveDateTime {
+        NaiveDate::from_ymd_opt(2026, 9, 3)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap()
+    }
+
+    /// Steam puts a random suffix after the `Z`.
+    fn nonce(timestamp: &str) -> String {
+        format!("{timestamp}ZbGVFvAo3nQ=")
+    }
+
+    #[test]
+    fn accepts_a_current_nonce() {
+        assert!(validate_nonce(&nonce("2026-09-03T12:00:00"), now()).is_ok());
+    }
+
+    #[test]
+    fn accepts_a_nonce_inside_the_window() {
+        assert!(validate_nonce(&nonce("2026-09-03T11:55:00"), now()).is_ok());
+        assert!(validate_nonce(&nonce("2026-09-03T12:05:00"), now()).is_ok());
+    }
+
+    /// The check used to compare `timestamp - now`, so it only caught nonces
+    /// from the future and a captured response replayed for ever.
+    #[test]
+    fn rejects_an_old_nonce() {
+        let error = validate_nonce(&nonce("2026-09-03T11:54:59"), now()).unwrap_err();
+        assert_eq!(error.code, StatusCode::FORBIDDEN);
+
+        assert!(validate_nonce(&nonce("2026-09-03T11:00:00"), now()).is_err());
+        assert!(validate_nonce(&nonce("2025-09-03T12:00:00"), now()).is_err());
+    }
+
+    #[test]
+    fn rejects_a_nonce_from_the_future() {
+        assert!(validate_nonce(&nonce("2026-09-03T12:05:01"), now()).is_err());
+        assert!(validate_nonce(&nonce("2027-09-03T12:00:00"), now()).is_err());
+    }
+
+    #[test]
+    fn rejects_a_malformed_nonce() {
+        // No `Z` separator.
+        assert!(validate_nonce("2026-09-03T12:00:00", now()).is_err());
+        // Not a timestamp.
+        assert!(validate_nonce(&nonce("hello"), now()).is_err());
+        assert!(validate_nonce("", now()).is_err());
+    }
+
+    #[test]
+    fn accepts_a_relative_location() {
+        for location in ["/", "/app/294100", "/item/1?tag=a&tag=b", "/a#b"] {
+            assert!(validate_location(location).is_ok(), "{location}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_location_that_leaves_the_site() {
+        for location in [
+            "https://evil.example",
+            "//evil.example",
+            "/\\evil.example",
+            "\\\\evil.example",
+            "javascript:alert(1)",
+            "app/294100",
+            "",
+        ] {
+            assert!(validate_location(location).is_err(), "{location}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_location_with_control_characters() {
+        assert!(validate_location("/a\r\nSet-Cookie: token=x").is_err());
+        assert!(validate_location("/a\0b").is_err());
     }
 }

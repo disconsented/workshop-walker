@@ -239,7 +239,6 @@ async fn query_inner(
                 right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
             });
         }
-
         let first = conditions
             .pop()
             .expect("Expected at least one condition to be present");

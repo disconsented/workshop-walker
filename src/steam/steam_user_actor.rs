@@ -116,6 +116,7 @@ impl Actor for SteamUserActor {
                                             break;
                                         }
                                 }
+                                break;
                             }
                             Err(error) => {
                                 error!(?error, "Failed to deserialize SteamUserResponse");
