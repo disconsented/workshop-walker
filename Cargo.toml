@@ -153,9 +153,9 @@ ml-classification = ["classification", "classification/mkl"]
 
 
 [patch.crates-io]
-surrealdb = { path = "../surrealdb/surrealdb" }
-surrealdb-core = { path = "../surrealdb/surrealdb/core" }
-surrealdb-types = { path = "../surrealdb/surrealdb/types" }
+surrealdb = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
+surrealdb-core = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
+surrealdb-types = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
 
 [profile.release]
 lto = true

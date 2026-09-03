@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use tracing::{debug, trace};
+use tracing::trace;
 
 use crate::{
     db::IUsernameID,

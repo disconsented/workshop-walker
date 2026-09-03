@@ -104,8 +104,8 @@ impl Actor for SteamUserActor {
                         Ok(resp) => match resp.json::<SteamRoot<SteamUserResponse>>().await {
                             Ok(root) => {
                                 for users in root.response.players {
-                                    if let Ok(id) = users.steamid.parse::<i64>() {
-                                        if let Err(error) = user_names_service
+                                    if let Ok(id) = users.steamid.parse::<i64>()
+                                        && let Err(error) = user_names_service
                                             .update_user_name(
                                                 IUsernameID::from(id),
                                                 users.personaname,
@@ -115,7 +115,6 @@ impl Actor for SteamUserActor {
                                             error!(?error, "Failed to update user name");
                                             break;
                                         }
-                                    }
                                 }
                             }
                             Err(error) => {

@@ -237,7 +237,7 @@ impl TextGeneration {
     }
 }
 
-const NOTHING: &'static str = "";
+const NOTHING: &str = "";
 
 /// The text replacement cases were things I ran into during development, the
 /// '{' search is an effort to protect against prompt repeating by the model.

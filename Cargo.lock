@@ -7634,6 +7634,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 [[package]]
 name = "surrealdb"
 version = "3.1.3"
+source = "git+https://github.com/disconsented/surrealdb.git?rev=3475af9429c9ddcdf054c2be02c225abde0e7b3e#3475af9429c9ddcdf054c2be02c225abde0e7b3e"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -7670,6 +7671,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-collections"
 version = "3.1.3"
+source = "git+https://github.com/disconsented/surrealdb.git?rev=3475af9429c9ddcdf054c2be02c225abde0e7b3e#3475af9429c9ddcdf054c2be02c225abde0e7b3e"
 dependencies = [
  "revision",
  "storekey",
@@ -7678,6 +7680,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-core"
 version = "3.1.3"
+source = "git+https://github.com/disconsented/surrealdb.git?rev=3475af9429c9ddcdf054c2be02c225abde0e7b3e#3475af9429c9ddcdf054c2be02c225abde0e7b3e"
 dependencies = [
  "addr",
  "affinitypool",
@@ -7826,6 +7829,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-strand"
 version = "3.1.3"
+source = "git+https://github.com/disconsented/surrealdb.git?rev=3475af9429c9ddcdf054c2be02c225abde0e7b3e#3475af9429c9ddcdf054c2be02c225abde0e7b3e"
 dependencies = [
  "revision",
  "serde",
@@ -7835,6 +7839,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-types"
 version = "3.1.3"
+source = "git+https://github.com/disconsented/surrealdb.git?rev=3475af9429c9ddcdf054c2be02c225abde0e7b3e#3475af9429c9ddcdf054c2be02c225abde0e7b3e"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -7864,6 +7869,7 @@ dependencies = [
 [[package]]
 name = "surrealdb-types-derive"
 version = "3.1.3"
+source = "git+https://github.com/disconsented/surrealdb.git?rev=3475af9429c9ddcdf054c2be02c225abde0e7b3e#3475af9429c9ddcdf054c2be02c225abde0e7b3e"
 dependencies = [
  "heck 0.4.1",
  "proc-macro2",

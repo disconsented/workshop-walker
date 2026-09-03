@@ -114,7 +114,7 @@ pub async fn remove(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) ->
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::Remove(
         vote_data.0.into(),
-        userid.into(),
+        userid,
         reply
     ))
     .map_err(InnerError::from)?

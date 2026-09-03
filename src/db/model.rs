@@ -256,11 +256,11 @@ impl Display for Property {
     }
 }
 
-impl Into<RecordIdKey> for Property {
-    fn into(self) -> RecordIdKey {
+impl From<Property> for RecordIdKey {
+    fn from(val: Property) -> Self {
         let mut obj = Object::new();
-        obj.insert("class", self.class);
-        obj.insert("value", self.value);
+        obj.insert("class", val.class);
+        obj.insert("value", val.value);
         RecordIdKey::Object(obj)
     }
 }
@@ -419,7 +419,7 @@ impl SurrealValue for InternalSource {
                     return Ok(Self::User(user_id));
                 }
             }
-        };
+        }
 
         Err(::surrealdb::types::Error::internal(format!(
             "Failed to decode {}, no variants matched",
@@ -428,23 +428,20 @@ impl SurrealValue for InternalSource {
     }
 
     fn is_value(value: &::surrealdb::types::Value) -> bool {
-        match value {
-            ::surrealdb::types::Value::Object(map) => {
+        if let ::surrealdb::types::Value::Object(map) = value {
+            {
+                if map
+                    .get("System")
+                    .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
                 {
-                    if map
-                        .get("System")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-                {
-                    if let Some(value) = map.get("User") {
-                        return <IUserID as SurrealValue>::is_value(value);
-                    }
+                    return true;
                 }
             }
-            _ => {}
+            {
+                if let Some(value) = map.get("User") {
+                    return <IUserID as SurrealValue>::is_value(value);
+                }
+            }
         }
         false
     }
@@ -558,7 +555,7 @@ impl SurrealValue for Class {
                 _ => {}
             },
             _ => {}
-        };
+        }
         Err(::surrealdb::types::Error::internal(format!(
             "Failed to decode {}, no variants matched",
             "Class"
@@ -663,7 +660,7 @@ impl SurrealValue for Status {
                 _ => {}
             },
             _ => {}
-        };
+        }
         Err(::surrealdb::types::Error::internal(format!(
             "Failed to decode {}, no variants matched",
             "Status"
@@ -672,34 +669,31 @@ impl SurrealValue for Status {
 
     fn is_value(value: &::surrealdb::types::Value) -> bool {
         warn!("{:?}", value);
-        match dbg!(value) {
-            ::surrealdb::types::Value::Object(map) => {
+        if let ::surrealdb::types::Value::Object(map) = value {
+            {
+                if map
+                    .get("Rejected")
+                    .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
                 {
-                    if map
-                        .get("Rejected")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-                {
-                    if map
-                        .get("Pending")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
-                }
-                {
-                    if map
-                        .get("Accepted")
-                        .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
-            _ => {}
+            {
+                if map
+                    .get("Pending")
+                    .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                {
+                    return true;
+                }
+            }
+            {
+                if map
+                    .get("Accepted")
+                    .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
+                {
+                    return true;
+                }
+            }
         }
         false
     }

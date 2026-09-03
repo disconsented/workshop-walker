@@ -196,7 +196,7 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         Some(userid) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
             let admin = call!(actor, |reply| {
-                AuthMessage::IsAdmin(userid.into(), reply)
+                AuthMessage::IsAdmin(userid, reply)
             })
             .map_err(|_| InnerError::InternalError)??;
 

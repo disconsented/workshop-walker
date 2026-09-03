@@ -265,7 +265,7 @@ async fn get_item(
                     cond: Some(Cond(properties_condition)),
                     ..Default::default()
                 })),
-                Part::Destructure(prop_fields.to_vec()),
+                Part::Destructure(prop_fields.clone()),
             ])),
             alias: Some(Idiom::field("properties".to_string())),
         }),
@@ -328,7 +328,7 @@ pub async fn get(id: PathParam<i64>, depot: &mut Depot) -> Result<Json<ExternalF
     // Lazily spawn the actor on first use and keep a global reference like auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
-    let user = auth::get_user_from_depot(depot).map(Into::into);
+    let user = auth::get_user_from_depot(depot);
     let data = call!(actor, |reply| { ItemMsg::Get(id.0.into(), user, reply) })
         .map_err(|_| InnerError::InternalError)??;
     Ok(Json(

@@ -33,7 +33,7 @@ use crate::{
 #[instrument(skip_all)]
 #[endpoint]
 pub async fn list(
-    req: &mut Request,
+    _: &mut Request,
     depot: &mut Depot,
     app: QueryParam<i64, true>,
     page: QueryParam<u64, false>,
@@ -47,7 +47,7 @@ pub async fn list(
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
-    let user = auth::get_user_from_depot(depot).map(Into::into);
+    let user = auth::get_user_from_depot(depot);
 
     let results = query_inner(
         app.into_inner(),
@@ -165,7 +165,7 @@ async fn query_inner(
                         cond: Some(Cond(properties_condition)),
                         ..Default::default()
                     })),
-                    Part::Destructure(prop_fields.to_vec()),
+                    Part::Destructure(prop_fields.clone()),
                 ])),
                 alias: Some(Idiom::field("properties".to_string())),
             }),
