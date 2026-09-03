@@ -10,10 +10,10 @@
 		faCross,
 		faEllipsis,
 		faLink,
-		faSearch,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit, title } from './store.svelte';
+	import { tags, orderBy, language, limit, title, app } from './store.svelte';
+	import ItemCard from './itemCard.svelte';
 
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
@@ -25,8 +25,11 @@
 
 	let { data }: { data: PageData } = $props();
 
-	console.log(data);
-	let storeTags = tags; // Ugly hack to work around svelte folks not actually fixing https://github.com/sveltejs/svelte/issues/15037
+	$inspect(tags.v, app.v);
+	if (tags.v.length === 0 && app.v.tags) {
+		tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
+	}
+
 	let viewMode = $state('grid');
 	let showTableImages = $state(false);
 
@@ -51,7 +54,7 @@
 	<meta property="og:url" content={window.location.href} />
 </svelte:head>
 
-{#await data.req}
+{#await data.searchRequest}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
 	</div>
@@ -93,7 +96,7 @@
 						{/if}
 					</div>
 
-					<div class="flex flex-row place-content-between">
+					<div class="flex flex-row place-content-stretch">
 						<span>{value.length} Result(s)</span>
 						<div>{@render pagination({ data: value })}</div>
 					</div>
@@ -132,7 +135,7 @@
 			<div>
 				<span class="mb-2 block text-sm font-medium">Language:</span>
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
-					<option>None</option>
+					<option>Any</option>
 					<option value="1">English</option>
 					<option value="2">Russian</option>
 					<option value="3">Chinese</option>
@@ -148,22 +151,13 @@
 				<select class="select w-full rounded-lg border px-3 py-2" bind:value={orderBy.v}>
 					<option value="LastUpdated">Last Updated</option>
 					<option value="Alphabetical">Alphabetical</option>
-					<option value="Score">Score</option>
-					<option value="Dependents">Dependents</option>
 				</select>
 			</div>
 
 			<div class="flex flex-wrap gap-2 md:col-span-4">
-				<!--ToDo: Load tags from backend-->
-				{#each ['Mod', 'Translation', 'Scenario', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6'] as tag}
+				{#each app.v.tags as tag}
 					<span class="flex items-center space-x-2">
-						<input
-							name="tag"
-							class="checkbox"
-							type="checkbox"
-							value={tag}
-							bind:group={storeTags.v}
-						/>
+						<input name="tag" class="checkbox" type="checkbox" value={tag} bind:group={tags.v} />
 						<p>{tag}</p>
 					</span>
 				{/each}
@@ -300,71 +294,7 @@
 {#snippet rgrid(data)}
 	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
-			<div
-				class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 block w-md divide-y overflow-hidden border-[1px]"
-			>
-				<header>
-					<img
-						src={item.preview_url ||
-							'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-						class="h-48 w-full w-full object-cover"
-						alt="banner"
-						class:hue-rotate-90={!item.preview_url}
-						class:grayscale={!item.preview_url}
-						onerror={(e) =>
-							(e.target.src =
-								'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
-						loading="lazy"
-					/>
-				</header>
-				<article class="space-y-4 p-4">
-					<h6 class="h6">
-						<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class="hover:anchor">
-							{item.title}
-							<Icon data={faLink} class="fa-fw"></Icon>
-						</a>
-					</h6>
-					<div class="mb-2 flex items-center justify-between">
-						<span class="text-sm text-gray-500"
-							>Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
-						>
-						<small class="text-xs text-gray-500">
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class="anchor hover:text-gray-700"
-								>Steam
-								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-							</a>
-						</small>
-					</div>
-					<p class="mb-2 truncate text-sm text-gray-600">{item.description}</p>
-				</article>
-				<footer class="m-2">
-					<div class="flex flex-wrap gap-1">
-						{#each item.tags as tag (tag.id)}
-							<span class="badge preset-filled">{tag.display_name}</span>
-						{:else}
-							<span class="badge preset-filled">-</span>
-						{/each}
-					</div>
-					{#if item.properties && item.properties.length > 0}
-						<hr class="hr my-1" />
-						<div class="flex flex-wrap gap-1">
-							{#each item.properties as prop}
-								{@debug prop}
-								<Property
-									loggedIn={logged_in}
-									property={{ class: prop.out.class, value: prop.out.value, ...prop }}
-									hideVote={true}
-									itemID={item.id}
-								></Property>
-							{/each}
-						</div>
-					{/if}
-				</footer>
-			</div>
+			<ItemCard {item} loggedIn={logged_in}></ItemCard>
 		{:else}
 			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}

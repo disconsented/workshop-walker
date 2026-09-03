@@ -1,15 +1,28 @@
+extern crate alloc;
+extern crate core;
+
 use std::{env, sync::Arc};
 
-use salvo::__private::tracing::debug;
+use migrations_tool::{Migrator, Outcome};
 use snafu::{Whatever, prelude::*};
-use surrealdb::{Surreal, engine::local::RocksDb, opt::auth::Root};
-use surrealdb_migrations::MigrationRunner;
-use tracing::{Instrument, info_span};
+use surrealdb::{
+    Surreal,
+    engine::local::{Db, RocksDb},
+    opt::auth::Root,
+};
+use tokio_stream::StreamExt;
+use tracing::{Instrument, debug, error, info_span};
 use tracing_subscriber::fmt::format::FmtSpan;
+
+use crate::{
+    application::admin_service::AdminService,
+    db::{UserID, admin_repository::AdminSilo},
+};
 
 mod actors;
 mod app_config;
 mod application;
+mod apps;
 mod db;
 mod domain;
 mod processing;
@@ -31,7 +44,34 @@ async fn main() -> Result<()> {
         .try_deserialize()
         .whatever_context("deserializing config")?;
     let span = info_span!("spawn");
-    let db = Surreal::new::<RocksDb>("./workshopdb")
+
+    let db = setup_database(&settings)
+        .await
+        .inspect_err(|error| error!(?error, "Failed to setup db"))?;
+    {
+        let admin_service = AdminService::new(AdminSilo::new(db.clone()));
+        for user in &settings.admin_users {
+            debug!(%user, "Setting admin flag for user");
+            let _ = admin_service
+                .patch_user(domain::admin::PatchUserData {
+                    id: UserID::from(*user),
+                    banned: None,
+                    admin: Some(true),
+                })
+                .await
+                .inspect_err(|error| error!(?error, %user, "Failed to set admin flag for user"));
+        }
+    }
+
+    actors::spawn(&settings, &db)
+        .instrument(info_span!(parent: &span, "spawn actors"))
+        .await?;
+    web::start(db, Arc::new(settings)).await;
+    Ok(())
+}
+
+async fn setup_database(settings: &app_config::Config) -> Result<Surreal<Db>, Error> {
+    let db = Surreal::new::<RocksDb>("./workshopdb".to_string())
         .await
         .whatever_context("connecting to db")?;
 
@@ -50,25 +90,40 @@ async fn main() -> Result<()> {
 
     // Signin as db user (root)
     db.signin(Root {
-        username: &settings.database.user,
-        password: &settings.database.password,
+        username: settings.database.user.clone(),
+        password: settings.database.password.clone(),
     })
     .await
     .whatever_context("signing in to db")?;
 
-    debug!("checking migrations");
-    // Run migrations
-    MigrationRunner::new(&db)
-        .up()
-        .instrument(info_span!(parent: &span, "run migrations"))
+    let plan = Migrator::from_files("./migrations")
+        .whatever_context("loading migrations")?
+        .with_table("_migrations")
+        .ignore_checksum_changes(false)
+        .validate()
+        .whatever_context("validating migrations")?
+        .plan(&db)
         .await
-        .whatever_context("Failed to apply migrations")?;
-    debug!("migrations finished");
-    actors::spawn(&settings, &db)
-        .instrument(info_span!(parent: &span, "spawn actors"))
-        .await?;
-    web::start(db, Arc::new(settings)).await;
-    Ok(())
+        .whatever_context("planning migrations")?;
+
+    debug!("will apply {} migrations", plan.pending().len());
+
+    {
+        // The stream is not Unpin; pin it before polling.
+        let mut stream = std::pin::pin!(plan.execute(&db));
+        while let Some(outcome) = stream.next().await {
+            match outcome.whatever_context("applying migration")? {
+                Outcome::Applied { id, duration } => {
+                    debug!("applied {id} in {:?}", duration);
+                }
+                Outcome::Skipped { id, .. } => {
+                    debug!("skipped {id}");
+                }
+            }
+        }
+    }
+
+    Ok(db)
 }
 
 /// Inserts data from either the disk cache (for development) or from stream
@@ -83,7 +138,6 @@ mod test {
         #[derive(Serialize)]
         pub enum Ordering {
             Order(Vec<bool>),
-            Random,
         }
 
         dbg!(serde_json::to_string(&Ordering::Order(vec![true])).unwrap());

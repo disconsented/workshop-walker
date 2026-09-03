@@ -1,0 +1,18 @@
+[package]
+edition.workspace = true
+license.workspace = true
+name = "proc-macros"
+version.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote.workspace = true
+syn.workspace = true
+
+[dev-dependencies]
+salvo.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+surrealdb-types.workspace = true

@@ -8,10 +8,10 @@ use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
-        model::{Source, Status},
+        model::{ExternalSource, Status},
         properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
     },
-    domain::properties::{NewProperty, PropertiesError, VoteData},
+    domain::properties::{ExternalNewProperty, ExternalVoteData, PropertiesError},
     web::auth,
 };
 
@@ -54,7 +54,7 @@ impl From<InnerError> for StatusError {
             .unwrap_or_default()
             .to_string();
         error.brief = value.to_string();
-        error.detail = value.backtrace().map(std::string::ToString::to_string);
+        error.detail = value.backtrace().map(ToString::to_string);
         error
     }
 }
@@ -84,7 +84,7 @@ impl From<PropertiesError> for InnerError {
 /// Add or change a vote for a property.
 /// Property must exist; score must be either 1 or -1.
 #[endpoint]
-pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()> {
+pub async fn vote(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> Result<()> {
     let Some(userid) = auth::get_user_from_depot(depot) else {
         return Err(InnerError::Unauthorized.into());
     };
@@ -93,7 +93,7 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()
         .cloned()
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::Vote(
-        vote_data.0,
+        vote_data.0.into(),
         userid,
         reply
     ))
@@ -104,7 +104,7 @@ pub async fn vote(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()
 
 /// Remove a vote previously cast for a property by the current user.
 #[endpoint]
-pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<()> {
+pub async fn remove(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> Result<()> {
     let Some(userid) = auth::get_user_from_depot(depot) else {
         return Err(InnerError::Unauthorized.into());
     };
@@ -113,7 +113,7 @@ pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<
         .cloned()
         .ok_or(InnerError::InternalError)?;
     call!(actor, |reply| PropertiesMsg::Remove(
-        vote_data.0,
+        vote_data.0.into(),
         userid,
         reply
     ))
@@ -127,7 +127,7 @@ pub async fn remove(vote_data: JsonBody<VoteData>, depot: &mut Depot) -> Result<
 /// - Likeness checks are done on the value only using Damerau–Levenshtein
 ///   distance.
 #[endpoint]
-pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Result<()> {
+pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot) -> Result<()> {
     let Some(userid) = auth::get_user_from_depot(depot) else {
         return Err(InnerError::Unauthorized.into());
     };
@@ -135,9 +135,15 @@ pub async fn new(new_property: JsonBody<NewProperty>, depot: &mut Depot) -> Resu
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
+    let source = ExternalSource::User(
+        userid
+            .try_into_external()
+            .map_err(|_| InnerError::InternalError)?,
+    )
+    .into();
     call!(actor, |reply| PropertiesMsg::NewProperty(
-        new_property.0,
-        Source::User(userid),
+        new_property.0.into(),
+        source,
         Status::Pending,
         reply,
     ))
@@ -179,14 +185,30 @@ mod test {
              FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;",
         )
         .await
+        .unwrap()
+        .check()
         .unwrap();
-        let _: Vec<Property> = db
-            .insert("properties")
-            .content(Property {
-                class: Class::Type,
-                value: "test".to_string(),
-            })
+
+        // A property's identity *is* its {class, value} composite id, so it must
+        // be inserted as the id rather than as top-level content (which would
+        // generate a random string id and fail schema coercion).
+        db.query("INSERT INTO properties (id) VALUES (properties:{class:'Type', value:'test'});")
+            .await
+            .unwrap()
+            .check()
+            .unwrap();
+
+        let mut r = db
+            .query("SELECT id.class AS class, id.value AS value FROM properties;")
             .await
             .unwrap();
+        let props: Vec<Property> = r.take(0).unwrap();
+        assert_eq!(
+            props,
+            vec![Property {
+                class: Class::Type,
+                value: "test".to_string(),
+            }]
+        );
     }
 }

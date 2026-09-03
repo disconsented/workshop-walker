@@ -25,17 +25,20 @@ use salvo::{
 use serde::{Deserialize, Serialize};
 use serde_xml_rs::from_str;
 use snafu::{ErrorCompat, prelude::*};
-use surrealdb::{
-    Surreal,
-    engine::local::Db,
-    sql::{Data, Operator, Value, statements::InsertStatement, to_value},
-    syn::idiom,
+use surrealdb::{Surreal, engine::local::Db};
+use surrealdb_core::sql::{
+    AssignOperator, Idiom, Part,
+    data::{Assignment, Data},
+    expression::Expr,
+    statements::InsertStatement,
 };
+use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error};
 
 use crate::{
     app_config::BiscuitConfig,
-    db::{UserID, model::User},
+    db::{IUserID, UserID, model::InternalUser},
+    steam::steam_user_actor::SteamUserMsg,
 };
 
 static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
@@ -95,8 +98,44 @@ impl From<InnerError> for StatusError {
             .unwrap_or_default()
             .to_string();
         error.brief = value.to_string();
-        error.detail = value.backtrace().map(std::string::ToString::to_string);
+        error.detail = value.backtrace().map(ToString::to_string);
         error
+    }
+}
+
+/// Rejects an OpenID response nonce whose timestamp is not close to now.
+///
+/// Without this, a captured `/api/verify` query string stays a valid
+/// credential forever, because the signature over it does not expire.
+fn validate_nonce(nonce: &str, now: NaiveDateTime) -> Result<()> {
+    let (timestamp, _) = nonce
+        .split_once('Z')
+        .ok_or(InnerError::SelfValidationFailed)?;
+    let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
+        .map_err(|_| InnerError::SelfValidationFailed)?;
+
+    // Five minutes either side, to allow for clock drift.
+    if (now - timestamp).abs() > TimeDelta::minutes(5) {
+        return Err(InnerError::SelfValidationFailed)?;
+    }
+    Ok(())
+}
+
+/// Accepts only a site-relative path.
+///
+/// The `location` parameter decides where the user lands after login and
+/// logout. An absolute or protocol-relative value makes our own domain
+/// redirect to an attacker's site. A backslash is included because browsers
+/// read it as a path separator, so `/\evil.example` is protocol-relative too.
+fn validate_location(location: &str) -> Result<&str> {
+    if location.starts_with('/')
+        && !location.starts_with("//")
+        && !location.contains('\\')
+        && !location.contains(char::is_control)
+    {
+        Ok(location)
+    } else {
+        Err(InnerError::SelfValidationFailed)?
     }
 }
 
@@ -105,6 +144,7 @@ pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> R
     let location = req
         .query::<String>("location")
         .ok_or(InnerError::SelfValidationFailed)?;
+    validate_location(&location)?;
     let actor = AUTH_ACTOR
         .get()
         .cloned()
@@ -125,6 +165,7 @@ pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response)
     let redirect_to = req
         .query::<String>("location")
         .ok_or(InnerError::SelfValidationFailed)?;
+    validate_location(&redirect_to)?;
     let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
     let map = mem::take(req.queries_mut());
     let token = call!(actor, |reply| {
@@ -162,9 +203,10 @@ pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()
     response
         .headers
         .insert("Clear-Site-Data", HeaderValue::from_static("\"cookies\""));
-    let redirect_to = req
-        .query::<&str>("location")
-        .ok_or(InnerError::SelfValidationFailed)?;
+    let redirect_to = validate_location(
+        req.query::<&str>("location")
+            .ok_or(InnerError::SelfValidationFailed)?,
+    )?;
     response.render(Redirect::found(redirect_to));
     Ok(())
 }
@@ -192,8 +234,10 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         None => Err(InnerError::Unauthorized)?,
         Some(userid) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
-            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid, reply) })
-                .map_err(|_| InnerError::InternalError)??;
+            let admin = call!(actor, |reply| {
+                AuthMessage::IsAdmin(userid, reply)
+            })
+            .map_err(|_| InnerError::InternalError)??;
 
             if admin {
                 Ok(())
@@ -211,12 +255,12 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     Ok(())
 }
 /// Returns the user id of the current user, if any.
-pub fn get_user_from_depot(depot: &mut Depot) -> Option<String> {
+pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
     let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
-    let (userid, _): (String, i64) = authorizer
+    let (userid, _): (i64, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
         .ok()?;
-    Some(userid)
+    Some(IUserID::from(userid))
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -242,19 +286,21 @@ pub enum AuthMessage {
     GetAuthUrl(String, RpcReplyPort<String>),
     VerifySteamResponse(MultiMap<String, String>, RpcReplyPort<String>),
     ValidateToken(Cookie<'static>, RpcReplyPort<Result<Authorizer>>),
-    IsAdmin(String, RpcReplyPort<Result<bool>>),
+    IsAdmin(IUserID, RpcReplyPort<Result<bool>>),
 }
 pub struct AuthState {
     open_id_info: Info,
     database: Surreal<Db>,
     base_url: Arc<String>,
     biscuit: Arc<BiscuitConfig>,
+    steam_user_actor_ref: ActorRef<SteamUserMsg>,
 }
 pub struct AuthArgs {
     pub database: Surreal<Db>,
     pub client: Client,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
+    pub steam_user_actor_ref: ActorRef<SteamUserMsg>,
 }
 #[async_trait]
 impl Actor for AuthActor {
@@ -273,6 +319,7 @@ impl Actor for AuthActor {
             database: args.database,
             base_url: args.base_url.clone(),
             biscuit: args.biscuit.clone(),
+            steam_user_actor_ref: args.steam_user_actor_ref,
         })
     }
 
@@ -325,12 +372,12 @@ impl Actor for AuthActor {
 }
 
 impl AuthActor {
-    async fn is_admin(db: &Surreal<Db>, userid: String) -> Result<bool> {
+    async fn is_admin(db: &Surreal<Db>, userid: IUserID) -> Result<bool> {
         match db
             .query("SELECT admin FROM $user")
-            .bind(("user", UserID::from(userid).into_recordid()))
+            .bind(("user", userid))
             .await
-            .map(surrealdb::Response::check)
+            .map(surrealdb::IndexedResults::check)
         {
             Err(_) | Ok(Err(_)) => Err(InnerError::InternalError)?,
             Ok(Ok(mut db_response)) => Ok(db_response.take("admin").ok().flatten() == Some(true)),
@@ -419,19 +466,11 @@ impl AuthActor {
             if (map.get("openid.op_endpoint")) != (Some(&state.open_id_info.uri)) {
                 return Err(InnerError::SelfValidationFailed)?;
             }
-            if let Some((timestamp, _)) = map
-                .get("openid.response_nonce")
-                .ok_or(InnerError::SelfValidationFailed)?
-                .split_once('Z')
-            {
-                let timestamp = NaiveDateTime::parse_from_str(timestamp, "%Y-%m-%dT%H:%M:%S")
-                    .map_err(|_| InnerError::SelfValidationFailed)?;
-                if timestamp - Utc::now().naive_utc() > TimeDelta::minutes(5) {
-                    return Err(InnerError::SelfValidationFailed)?;
-                }
-            } else {
-                return Err(InnerError::SelfValidationFailed)?;
-            }
+            validate_nonce(
+                map.get("openid.response_nonce")
+                    .ok_or(InnerError::SelfValidationFailed)?,
+                Utc::now().naive_utc(),
+            )?;
         }
 
         let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
@@ -479,6 +518,9 @@ impl AuthActor {
             .ok_or(InnerError::PeerValidationFailed)?;
 
         let keypair = &KeyPair::from(&state.biscuit.private_key);
+        let Ok(user_id) = user_id.parse::<i64>() else {
+            return Err(InnerError::PeerValidationFailed)?;
+        };
 
         let biscuit: Biscuit = biscuit!(
             r#"
@@ -490,27 +532,31 @@ impl AuthActor {
         .build(keypair)
         .map_err(|_| InnerError::PeerValidationFailed)?;
 
+        let _ = state
+            .steam_user_actor_ref
+            .send_message(SteamUserMsg::Fetch(user_id.into()));
+
         let based = biscuit
             .to_base64()
             .map_err(|_| InnerError::PeerValidationFailed)?;
 
         {
-            let user = User {
-                id: UserID::from(user_id.to_owned()).into_recordid(),
+            let user = InternalUser {
+                id: UserID::from(user_id).into(),
                 admin: false,
                 banned: false,
                 last_logged_in: Utc::now(),
             };
-            let mut stmt = InsertStatement::default();
-            stmt.into = Some(Value::Table("users".into()));
-            stmt.data = Data::SingleExpression(
-                to_value(user.clone()).map_err(|_| InnerError::PeerValidationFailed)?,
-            );
-            stmt.update = Some(Data::UpdateExpression(vec![(
-                idiom("last_logged_in").map_err(|_| InnerError::PeerValidationFailed)?,
-                Operator::Equal,
-                Utc::now().into(),
-            )]));
+            let stmt = InsertStatement {
+                into: Some(Expr::Table("users".into())),
+                data: Data::SingleExpression(Expr::from_public_value(user.clone().into_value())),
+                update: Some(Data::UpdateExpression(vec![Assignment {
+                    place: Idiom(vec![Part::Field("last_logged_in".into())]),
+                    operator: AssignOperator::Assign,
+                    value: Expr::from_public_value(Value::Datetime(Utc::now().into())),
+                }])),
+                ..Default::default()
+            };
             for (i, error) in state
                 .database
                 .query(stmt)
@@ -522,5 +568,90 @@ impl AuthActor {
             }
         }
         Ok(based)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{NaiveDate, NaiveDateTime};
+    use salvo::http::StatusCode;
+
+    use super::{validate_location, validate_nonce};
+
+    fn now() -> NaiveDateTime {
+        NaiveDate::from_ymd_opt(2026, 9, 3)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap()
+    }
+
+    /// Steam puts a random suffix after the `Z`.
+    fn nonce(timestamp: &str) -> String {
+        format!("{timestamp}ZbGVFvAo3nQ=")
+    }
+
+    #[test]
+    fn accepts_a_current_nonce() {
+        assert!(validate_nonce(&nonce("2026-09-03T12:00:00"), now()).is_ok());
+    }
+
+    #[test]
+    fn accepts_a_nonce_inside_the_window() {
+        assert!(validate_nonce(&nonce("2026-09-03T11:55:00"), now()).is_ok());
+        assert!(validate_nonce(&nonce("2026-09-03T12:05:00"), now()).is_ok());
+    }
+
+    /// The check used to compare `timestamp - now`, so it only caught nonces
+    /// from the future and a captured response replayed for ever.
+    #[test]
+    fn rejects_an_old_nonce() {
+        let error = validate_nonce(&nonce("2026-09-03T11:54:59"), now()).unwrap_err();
+        assert_eq!(error.code, StatusCode::FORBIDDEN);
+
+        assert!(validate_nonce(&nonce("2026-09-03T11:00:00"), now()).is_err());
+        assert!(validate_nonce(&nonce("2025-09-03T12:00:00"), now()).is_err());
+    }
+
+    #[test]
+    fn rejects_a_nonce_from_the_future() {
+        assert!(validate_nonce(&nonce("2026-09-03T12:05:01"), now()).is_err());
+        assert!(validate_nonce(&nonce("2027-09-03T12:00:00"), now()).is_err());
+    }
+
+    #[test]
+    fn rejects_a_malformed_nonce() {
+        // No `Z` separator.
+        assert!(validate_nonce("2026-09-03T12:00:00", now()).is_err());
+        // Not a timestamp.
+        assert!(validate_nonce(&nonce("hello"), now()).is_err());
+        assert!(validate_nonce("", now()).is_err());
+    }
+
+    #[test]
+    fn accepts_a_relative_location() {
+        for location in ["/", "/app/294100", "/item/1?tag=a&tag=b", "/a#b"] {
+            assert!(validate_location(location).is_ok(), "{location}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_location_that_leaves_the_site() {
+        for location in [
+            "https://evil.example",
+            "//evil.example",
+            "/\\evil.example",
+            "\\\\evil.example",
+            "javascript:alert(1)",
+            "app/294100",
+            "",
+        ] {
+            assert!(validate_location(location).is_err(), "{location}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_location_with_control_characters() {
+        assert!(validate_location("/a\r\nSet-Cookie: token=x").is_err());
+        assert!(validate_location("/a\0b").is_err());
     }
 }

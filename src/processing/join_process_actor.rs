@@ -1,12 +1,15 @@
 use std::mem::take;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
-use snafu::{OptionExt, Whatever};
-use surrealdb::RecordId;
+use snafu::{OptionExt, ResultExt, Whatever};
 use tracing::error;
 
 use crate::{
-    db::{item_update_actor::ItemUpdateMsg, model, model::WorkshopItem},
+    db::{
+        IAppID, ITagID, IUsernameID,
+        item_update_actor::ItemUpdateMsg,
+        model::{InternalTag, InternalUsername, InternalWorkshopItem},
+    },
     processing::{
         bb_actor::BBMsg,
         language_actor::{DetectedLanguage, LanguageMsg},
@@ -58,11 +61,18 @@ impl Actor for JoinProcessActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             JoinProcessMsg::Process(mut data) => {
+                // Sometimes we'll find items that are missing this and they're effectively
+                // empty, so, just skip them and carry on
+                if data.consumer_appid.is_none() {
+                    myself.stop(None);
+                    return Ok(());
+                }
                 let description = take(&mut data.file_description).unwrap_or_default();
                 let languages = call!(state.language, LanguageMsg::Detect, description.clone())?;
                 let description = call!(state.bb, BBMsg::Process, description)?;
                 let children = take(&mut data.children);
-                match Self::new_item(data, languages, description) {
+
+                match InternalWorkshopItem::try_new(data, languages, description) {
                     Ok(item) => {
                         state
                             .item_update
@@ -79,35 +89,53 @@ impl Actor for JoinProcessActor {
     }
 }
 
-impl JoinProcessActor {
-    fn new_item(
+impl InternalWorkshopItem {
+    fn try_new(
         data: IPublishedStruct,
         languages: Vec<DetectedLanguage>,
         description: String,
-    ) -> Result<WorkshopItem<RecordId>, Whatever> {
-        let app_id = data.creator_appid.whatever_context("Missing app id")?;
-        let item: WorkshopItem<RecordId> = WorkshopItem {
-            appid: app_id,
-            author: data.creator.whatever_context("Missing author")?,
+    ) -> Result<Self, Whatever> {
+        let app: IAppID = data
+            .consumer_appid
+            .whatever_context("Missing app id")
+            .inspect_err(|_| error!(?data, "creating new item"))?
+            .into();
+
+        let author = IUsernameID::from(
+            data.creator
+                .whatever_context("Missing author")?
+                .parse::<i64>()
+                .whatever_context("Invalid author format")?,
+        );
+        Ok(Self {
+            app: app.clone(),
+            // Name gets updated later in theory
+            author: InternalUsername {
+                id: author,
+                name: "PLACEHOLDER".to_string(),
+            },
             languages,
             description,
-            id: RecordId::from_table_key("workshop_items", data.publishedfileid),
+            id: data
+                .publishedfileid
+                .parse::<i64>()
+                .whatever_context("parsing item id")?
+                .into(),
             title: data.title.whatever_context("Missing title")?,
-            preview_url: data.preview_url,
+            preview_url: data
+                .preview_url
+                .or_else(|| data.previews.first().map(|preview| preview.url.clone())),
             last_updated: data.time_updated.unwrap_or_default() as _,
             tags: data
                 .tags
                 .iter()
-                .cloned()
-                .map(|tag| model::Tag {
-                    app_id: app_id as _,
-                    display_name: tag.display_name,
-                    tag: tag.tag,
+                .map(|tag| InternalTag {
+                    id: ITagID::from(tag.tag.clone()),
+                    display_name: tag.display_name.clone(),
                 })
                 .collect::<Vec<_>>(),
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
             properties: vec![],
-        };
-        Ok(item)
+        })
     }
 }

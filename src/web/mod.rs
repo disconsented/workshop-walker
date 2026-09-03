@@ -1,4 +1,5 @@
 mod admin;
+mod apps;
 pub mod auth;
 mod companions;
 pub mod item;
@@ -26,11 +27,15 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let router = Router::new().push(
         Router::with_path("api")
             .hoop(max_size(1024 * 1024))
-            .push(Router::with_path("list").get(query::list))
             .push(
-                Router::with_path("item/{id}")
+                Router::with_path("list")
                     .hoop(auth::validate_opt)
-                    .get(item::get),
+                    .get(query::list),
+            )
+            .push(
+                Router::with_path("item")
+                    .hoop(auth::validate_opt)
+                    .push(Router::with_path("{id}").get(item::get)),
             )
             .push(
                 Router::with_path("property")
@@ -59,8 +64,12 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                         Router::with_path("users")
                             .get(admin::get_users)
                             .put(admin::patch_user),
-                    ),
+                    )
+                    .push(Router::with_path("apps").get(apps::list).post(apps::upsert))
+                    .push(Router::with_path("app").delete(apps::remove)),
             )
+            .push(Router::with_path("app/{id}").get(apps::get))
+            .push(Router::with_path("apps").get(apps::list_available))
             .hoop(affix_state::inject(config))
             .push(Router::with_path("login").get(auth::redirect_to_steam_auth))
             .push(Router::with_path("verify").get(auth::verify_token_from_steam))

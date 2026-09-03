@@ -1,5 +1,8 @@
 <script lang="ts">
 	import AppCard from '$lib/app_card.svelte';
+
+	let { data } = $props();
+	console.log(data);
 </script>
 
 <svelte:head>
@@ -9,14 +12,17 @@
 	<meta property="og:url" content={window.location.href} />
 </svelte:head>
 
-<div class="flex gap-4">
-	<AppCard
-		appid="294100"
-		image_url="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189"
-		description="A sci-fi colony sim driven by an intelligent AI storyteller. Generates stories by simulating psychology, ecology, gunplay, melee combat, climate, biomes, diplomacy, interpersonal relationships, art, medicine, trade, and more."
-		developer="Ludeon Studios"
-		name="Rimworld"
-	></AppCard>
+<div class="flex flex-wrap gap-4">
+	{#each data.items as app}
+		<AppCard
+			appid={app.id}
+			image_url={app.banner}
+			description={app.description}
+			developer={app.developer}
+			name={app.name}
+			url={undefined}
+		></AppCard>
+	{/each}
 	<AppCard
 		appid="#"
 		image_url="https://community.cloudflare.steamstatic.com/public/shared/images/header/logo_steam.svg?t=962016"

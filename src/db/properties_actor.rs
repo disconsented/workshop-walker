@@ -6,10 +6,11 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::properties_service::PropertiesService,
     db::{
-        model::{Source, Status},
+        IUserID,
+        model::{InternalSource, Status},
         properties_repository::PropertiesSilo,
     },
-    domain::properties::{NewProperty, PropertiesError, VoteData},
+    domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError},
 };
 
 pub static PROPERTIES_ACTOR: OnceLock<ActorRef<PropertiesMsg>> = OnceLock::new();
@@ -31,13 +32,21 @@ pub struct PropertiesState {
 /// Messages handled by `PropertiesActor`.
 pub enum PropertiesMsg {
     NewProperty(
-        NewProperty,
-        Source<String>,
+        InternalNewProperty,
+        InternalSource,
         Status,
         RpcReplyPort<Result<(), PropertiesError>>,
     ),
-    Vote(VoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
-    Remove(VoteData, String, RpcReplyPort<Result<(), PropertiesError>>),
+    Vote(
+        InternalVoteData,
+        IUserID,
+        RpcReplyPort<Result<(), PropertiesError>>,
+    ),
+    Remove(
+        InternalVoteData,
+        IUserID,
+        RpcReplyPort<Result<(), PropertiesError>>,
+    ),
 }
 
 #[async_trait]

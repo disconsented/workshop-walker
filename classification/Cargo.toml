@@ -1,23 +1,26 @@
 [package]
+edition.workspace = true
 name = "classification"
 version.workspace = true
-edition.workspace = true
 
 [dependencies]
-snafu.workspace = true
 candle-core.workspace = true
-intel-mkl-src = { workspace = true, optional = true }
-candle-transformers.workspace = true
-candle-nn.workspace = true
-hf-hub.workspace = true
-tokenizers.workspace = true
-serde_json.workspace = true
 candle-examples.workspace = true
-serde = { workspace = true, features = ["derive"] }
-tracing.workspace = true
+candle-nn.workspace = true
+candle-transformers.workspace = true
+hf-hub.workspace = true
+intel-mkl-src = { optional = true, workspace = true }
 ractor.workspace = true
+serde = { features = ["derive"], workspace = true }
+serde_json.workspace = true
+snafu.workspace = true
+tokenizers.workspace = true
 tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tracing-subscriber.workspace = true
 
 [features]
 default = ["mkl"]
-mkl = ["dep:intel-mkl-src", "candle-core/mkl"]
+mkl = ["candle-core/mkl", "dep:intel-mkl-src"]

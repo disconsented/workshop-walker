@@ -13,12 +13,13 @@ pub struct Config {
     pub force_update: bool,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
+    pub admin_users: Vec<i64>,
 }
 #[derive(Deserialize, Redact)]
 pub struct Steam {
     #[redact]
     pub api_token: Arc<String>,
-    pub appid: u32,
+    pub tags_selector: String,
 }
 #[derive(Deserialize, Redact)]
 pub struct Database {
@@ -31,7 +32,6 @@ pub struct Database {
 #[redact(all)]
 pub struct BiscuitConfig {
     pub private_key: PrivateKey,
-    // pub lifetime: Duration,
 }
 
 impl<'de> serde::Deserialize<'de> for BiscuitConfig {

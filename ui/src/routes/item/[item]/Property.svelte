@@ -1,10 +1,11 @@
 <script lang="ts">
 	import Icon from 'svelte-awesome';
 	import {
-		faChevronDown,
-		faChevronUp,
 		faCircleXmark,
-		faClock
+		faClock,
+		faLock,
+		faThumbsDown,
+		faThumbsUp
 	} from '@fortawesome/free-solid-svg-icons';
 
 	interface Props {
@@ -24,6 +25,7 @@
 	let { loggedIn = $bindable(), property, hideVote, itemID }: Props = $props();
 	let request = undefined;
 	let voteState = $state(property.vote_state);
+	let upvoteCount = $state(property.upvote_count);
 
 	// Downvote the property or remove the vote
 	const downvote = () => {
@@ -31,10 +33,12 @@
 			// Remove
 			voteState = 0;
 			property.upvote_count++;
+			upvoteCount++;
 		} else {
 			// Downvote
 			voteState--;
 			property.upvote_count--;
+			upvoteCount--;
 		}
 
 		voteRequest();
@@ -44,25 +48,15 @@
 		if (voteState === 1) {
 			voteState = 0;
 			property.upvote_count--;
+			upvoteCount--;
 		} else {
 			voteState = 1;
 			property.upvote_count++;
+			upvoteCount++;
 		}
 
 		voteRequest();
 	};
-
-	const colour = (() => {
-		switch (property.status) {
-			case 1:
-				return 'preset-tonal-primary';
-			case -1:
-				return 'preset-error-500';
-			case 0:
-			default:
-				return 'preset-tonal-surface';
-		}
-	})();
 
 	const voteRequest = () => {
 		request = fetch('/api/vote/property', {
@@ -76,37 +70,82 @@
 			})
 		});
 	};
+
+	const accentColour = (() => {
+		console.log(property.class);
+		switch (property.class.toLowerCase()) {
+			case 'genre':
+				return '--color-green-500';
+			case 'theme':
+				return '--color-blue-500';
+			case 'type':
+				return '--color-purple-500';
+			case 'feature':
+				return '--color-orange-500';
+		}
+	})();
 </script>
 
-<div class={['badge hover:bg-secondary-500/20 flex w-fit items-center gap-1', colour]}>
-	{#if property.status === -1}
-		<Icon data={faCircleXmark} class="text-error-500 flex-shrink-0" />
-		Rejected
-	{:else if property.status === 0}
-		<Icon data={faClock} class="text-warning-500 flex-shrink-0" />
-		Pending
-	{/if}
-	<span class="text-xs uppercase opacity-70">{property.class}:</span>
-	<span class="capitalize">{property.value}</span>
+<!-- Silly little hack to keep these classes from being removed by the compiler -->
+<!--<div class="bg-(--color-green-500) bg-(--color-blue-500) bg-(--color-purple-500) bg-(--color-orange-500)"></div>-->
+<!--<div class="text-(--color-green-500) text-(--color-blue-500) text-(--color-purple-500) text-(--color-orange-500)"></div>-->
 
-	{#if property.status === 1 && !hideVote}
-		<!-- Voting -->
-		<div class="ml-1 flex items-center gap-1">
-			<button
-				class={[voteState === -1 ? 'text-error-500' : 'hover:text-error-500', 'p-0.5']}
-				disabled={!loggedIn}
-				onclick={downvote}
-			>
-				<Icon data={faChevronDown} class="text-xs" />
-			</button>
-			<span class="min-w-[1ch] font-mono text-xs">{property.upvote_count ?? 0}</span>
-			<button
-				class={[voteState === 1 ? 'text-success-500' : 'hover:text-success-500', 'p-0.5']}
-				disabled={!loggedIn}
-				onclick={upvote}
-			>
-				<Icon data={faChevronUp} class="text-xs" />
-			</button>
+<div class={['badge preset-outlined-surface-200-800 flex grow basis-0 overflow-clip p-0']}>
+	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})">&nbsp</div>
+	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
+		<div class="flex h-full">
+			<div class="h-auto pr-2">
+				{#if property.status === -1}
+					<Icon data={faCircleXmark} class="text-error-500 flex-shrink-0" />
+					Rejected
+				{:else if property.status === 0}
+					<Icon data={faClock} class="text-warning-500 flex-shrink-0" />
+					Pending
+				{/if}
+				<span class="text-xs uppercase text-({accentColour})">{property.class}:</span>
+				<span class="capitalize">{property.value}</span>
+			</div>
 		</div>
-	{/if}
+
+		{#if property.status === 1 && !hideVote}
+			{@const score = upvoteCount ?? 0}
+			{@const textColour = loggedIn
+				? score > 0
+					? 'text-success-500'
+					: score < 0
+						? 'text-error-500'
+						: ''
+				: 'text-gray-600'}
+			<div class="flex">
+				<span class="vr"></span>
+				<!-- Voting -->
+				<div class="ml-1 flex items-center gap-1 pr-1">
+					{#if loggedIn}
+						<button
+							class={[voteState === 1 ? 'text-success-500' : 'hover:text-success-500', 'p-0.5']}
+							disabled={!loggedIn}
+							onclick={upvote}
+						>
+							<Icon data={faThumbsUp} class="text-xs" scale={0.8} />
+						</button>
+					{:else}
+						<Icon data={faLock} class="text-xs text-gray-600" scale={0.8} />
+					{/if}
+
+					<span class={['min-w-[1ch] font-mono text-xs', textColour]}
+						>{#if score > 0}+{/if}{score}</span
+					>
+					{#if loggedIn}
+						<button
+							class={[voteState === -1 ? 'text-error-500' : 'hover:text-error-500', 'p-0.5']}
+							disabled={!loggedIn}
+							onclick={downvote}
+						>
+							<Icon data={faThumbsDown} class="text-xs" scale={0.8} />
+						</button>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	</div>
 </div>

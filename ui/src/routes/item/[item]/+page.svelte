@@ -1,13 +1,10 @@
 <script lang="ts">
 	import Icon from 'svelte-awesome';
-	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import {
 		fa1,
 		faArrowLeft,
 		faArrowRight,
-		faChevronDown,
-		faChevronUp,
 		faCross,
 		faEllipsis,
 		faFilter,
@@ -16,19 +13,17 @@
 		faThumbsUp,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { Switch } from '@skeletonlabs/skeleton-svelte';
-	import { Accordion } from '@skeletonlabs/skeleton-svelte';
-	import { Pagination } from '@skeletonlabs/skeleton-svelte';
+	import { Accordion, Dialog, Pagination, Switch } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import PropertyPrompt from './PropertyPrompt.svelte';
 	import Property from './Property.svelte';
-	import { Modal } from '@skeletonlabs/skeleton-svelte';
 	import { onNavigate } from '$app/navigation';
+	import type { PageData } from '*.svelte';
 
 	let { data }: { data: PageData } = $props();
-	console.log('Hello, wolrd!', data);
-	let item = data;
+	console.log(data);
+	let item = data.data;
 
 	function whichLang(lang: Number): String {
 		switch (lang) {
@@ -53,54 +48,64 @@
 
 	function get_tags(data) {
 		let out = new Map();
-		data.dependants.forEach((e) =>
-			e.tags.forEach((e) => {
-				out.set(e.id, e);
+		(data.dependants || []).forEach((e) =>
+			(e.tags || []).forEach((t) => {
+				out.set(t.id, t.display_name);
 			})
 		);
-		data.dependencies.forEach((e) =>
-			e.tags.forEach((e) => {
-				out.set(e.id, e);
+		(data.dependencies || []).forEach((e) =>
+			(e.tags || []).forEach((t) => {
+				out.set(t.id, t.display_name);
 			})
 		);
-		return Array.from(out).map(([name]) => name);
+		return Array.from(out).map(([id, display_name]) => ({ id, display_name }));
 	}
 
-	// Merge deps, flatten, dedup via set, back to array, map to names
 	function get_languages(data) {
-		return Array.from(
-			new Set(
-				[data.dependants.map((e) => e.languages), data.dependencies.map((e) => e.languages)]
-					.flat()
-					.flat()
-			)
-		).map((e) => whichLang(e));
+		const langIds = new Set(
+			[(data.dependants || []).flatMap((e) => e.languages || []), (data.dependencies || []).flatMap((e) => e.languages || [])].flat()
+		);
+		return Array.from(langIds).map((id) => id !== undefined && id !== null ? whichLang(id) : null).filter(Boolean);
 	}
 
-	const tags = get_tags(data);
-	const languages = get_languages(data);
+	const tags = $derived(get_tags(data.data));
+	const languages = $derived(get_languages(data.data));
 
-	let selectedTags = $state(['tags:Mod', 'tags:⟨1.6⟩']);
+	let selectedTags = $state([]);
 	let selectedLangs = $state(['English']);
 
+	$effect(() => {
+		selectedTags;
+		selectedLangs;
+		page = 1;
+	});
+
 	function filter(item) {
-		const itemTags = item.tags.map((e) => e.id);
-		const tags = selectedTags.every((e) => {
-			console.log(itemTags, 'includes', e, ':', itemTags.includes(e));
-			return itemTags.includes(e);
-		});
-		const langs = item.languages.every((e) => selectedLangs.includes(whichLang(e)));
-		console.log('item', item.title, 'tags', tags, 'langs', langs, ':', !tags && !langs);
-		return !(tags && langs);
+		const itemTags = (item.tags || []).map((e) => e.id);
+		const matchesTags =
+			selectedTags.length === 0 || selectedTags.every((tagId) => itemTags.includes(tagId));
+		const itemLangs = (item.languages || []).map((langId) => whichLang(langId));
+		const matchesLangs =
+			selectedLangs.length === 0 || itemLangs.some((langName) => selectedLangs.includes(langName));
+		return matchesTags && matchesLangs;
 	}
 
 	let compact = $state(false);
 	let filterPanel = $state(['open']);
-	let filteredDependents = $derived(data.dependants.filter((e) => !filter(e)));
+	let filteredDependencies = $derived(
+		(data.data.dependencies || [])
+			.filter((e) => filter(e))
+			.toSorted((b, a) => (a.last_updated || 0) - (b.last_updated || 0))
+	);
+	let filteredDependents = $derived(
+		(data.data.dependants || [])
+			.filter((e) => filter(e))
+			.toSorted((b, a) => (a.last_updated || 0) - (b.last_updated || 0))
+	);
+	console.log(filteredDependents);
 	let page = $state(1);
 	let size = $state(20);
-	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
-	$inspect(slicedSource);
+	let paginatedDependents = $derived(filteredDependents.slice((page - 1) * size, page * size));
 	let openPanels = $state(['relations', 'companions', 'description']);
 
 	let loginModalState = $state(false);
@@ -115,8 +120,12 @@
 </script>
 
 <svelte:head>
-	<title>{item.title ? 'Workshop Walker - ' + item.title : 'Workshop Walker - Loading'}</title>
 	{#await data then data}
+		<title
+			>{data.data.title
+				? 'Workshop Walker - ' + data.data.title
+				: 'Workshop Walker - Loading'}</title
+		>
 		<meta property="og:title" content={'Workshop Walker - ' + data.title} />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content={window.location.href} />
@@ -125,11 +134,12 @@
 </svelte:head>
 
 {@render loginModal()}
-{#await data}
+{#await data.data}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
 	</div>
 {:then item}
+	{@debug item}
 	{#if item.status}
 		{@render errorCard(item)}
 	{:else}
@@ -149,21 +159,23 @@
 							multiple
 							padding=""
 						>
-							<Accordion.Item value="relations" panelPadding="">
-								<!-- Control -->
-								{#snippet lead()}
-									<Icon data={faLink} class="fa-fw"></Icon>
+							<Accordion.Item value="relations">
+								{#snippet trigger()}
+									<div class="flex items-center gap-4">
+										<Icon data={faLink} class="fa-fw"></Icon>
+										<span>Relations</span>
+									</div>
 								{/snippet}
-								{#snippet control()}Relations{/snippet}
-								<!-- Panel -->
-								{#snippet panel()}{@render relations()}{/snippet}
+								{@render relations()}
 							</Accordion.Item>
-							<Accordion.Item value="description" panelPadding="">
-								{#snippet lead()}
-									<Icon data={faLink} class="fa-fw"></Icon>
+							<Accordion.Item value="description">
+								{#snippet trigger()}
+									<div class="flex items-center gap-4">
+										<Icon data={faLink} class="fa-fw"></Icon>
+										<span>Description</span>
+									</div>
 								{/snippet}
-								{#snippet control()}Description{/snippet}
-								{#snippet panel()}{@render description()}{/snippet}
+								{@render description()}
 							</Accordion.Item>
 						</Accordion>
 					</div>
@@ -261,6 +273,7 @@
 {/snippet}
 
 {#snippet titleCard()}
+	{@debug item}
 	<div
 		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 rounded-lg border-[1px] p-6"
 	>
@@ -268,19 +281,21 @@
 		<h1 class="mb-4 text-4xl font-bold"><a href="#title">{item.title}</a></h1>
 		<!--Details-->
 		<div class="text-surface-600 dark:text-surface-400 flex flex-wrap items-center gap-4 text-sm">
-			<span
-				>Author: <a
-					href="https://steamcommunity.com/profiles/{item.author}"
-					target="_self"
-					rel=""
-					class="btn preset-tonal-primary"
+			{#if item.author}
+				<span
+					>Author: <a
+						href="https://steamcommunity.com/profiles/{item.author.id}"
+						target="_self"
+						rel=""
+						class="btn preset-tonal-primary"
+					>
+						{item.author.name}
+						<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+					</a></span
 				>
-					Unknown Name
-					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-				</a></span
-			>
+			{/if}
 			<span>Last Updated: <TimeAgo date={item.last_updated}></TimeAgo></span>
-			<span>Score: {Math.round(item.score * 100) / 100}</span>
+			<span>Upvote Percentage: {Math.round(item.score * 100)}%</span>
 			<span
 				>Languages:
 				{#each item.languages as lang}
@@ -293,7 +308,12 @@
 		<!-- Preview Image -->
 		{#if item.preview_url}
 			<div class="pt-6">
-				<img src={item.preview_url} alt={item.title} class="h-auto max-w-full rounded-lg" loading="lazy"/>
+				<img
+					src={item.preview_url}
+					alt={item.title}
+					class="h-auto max-w-full rounded-lg"
+					loading="lazy"
+				/>
 			</div>
 		{:else}
 			<div class="pt-6 text-xs opacity-60">No preview image available</div>
@@ -315,7 +335,7 @@
 				Properties:
 				<div class="flex flex-row flex-wrap items-center gap-2">
 					{#each item.properties as property}
-						{@debug property}
+						<!--{@debug property}-->
 						<Property
 							loggedIn={logged_in}
 							property={{ class: property.out.class, value: property.out.value, ...property }}
@@ -354,7 +374,7 @@
 
 {#snippet navigation()}
 	<div class="mb-8 flex gap-4">
-		<a href="/app/{item.appid}" class="btn preset-tonal-primary flex items-center gap-2">
+		<a href="/app/{item.app}" class="btn preset-tonal-primary flex items-center gap-2">
 			<Icon data={faArrowLeft} class="fa-fw"></Icon>
 			Back to Search
 		</a>
@@ -380,7 +400,7 @@
 		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#description">Description</a></h2>
-		<p class="whitespace-pre-wrap prose prose-invert max-w-none">{@html data.description}</p>
+		<p class="prose prose-invert max-w-none whitespace-pre-wrap">{@html data.data.description}</p>
 	</div>
 {/snippet}
 
@@ -390,75 +410,79 @@
 	>
 		<!-- Controls -->
 		<Accordion
-			{filterPanel}
+			value={filterPanel}
 			onValueChange={(e) => (filterPanel = e.value)}
 			collapsible
 			classes="col-span-4"
 		>
 			<Accordion.Item value="open">
-				<!-- Control -->
-				{#snippet lead()}Filter{/snippet}
-				{#snippet control()}
-					<Icon data={faFilter} class="fa-fw"></Icon>
-				{/snippet}
-				<!-- Panel -->
-				{#snippet panel()}
-					<div class="col-span-4 grid w-full min-w-full grid-cols-2">
-						<div class="label shrink-0">
-							<span class="label-text">Tags</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each tags as tag}
-									<label class="flex items-center space-x-2">
-										<input
-											name="tags"
-											class="checkbox"
-											type="checkbox"
-											value={tag}
-											bind:group={selectedTags}
-										/>
-										<p>{tag}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="label shrink-0">
-							<span class="label-text">Languages</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each languages as lang}
-									<label class="flex items-center space-x-2">
-										<input
-											name="langs "
-											class="checkbox"
-											type="checkbox"
-											value={lang}
-											bind:group={selectedLangs}
-										/>
-										<p>{lang}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="">
-							<label class="label">
-								<span class="label-text">Compact</span>
-								<Switch
-									name="compact"
-									checked={compact}
-									onCheckedChange={(e) => (compact = e.checked)}
-								/>
-							</label>
-						</div>
+				{#snippet trigger()}
+					<div class="flex items-center gap-4">
+						<span>Filter</span>
+						<Icon data={faFilter} class="fa-fw"></Icon>
 					</div>
 				{/snippet}
+				<div class="col-span-4 grid w-full min-w-full grid-cols-2">
+					<div class="label shrink-0">
+						<span class="label-text">Tags</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each tags as tag}
+								<label class="flex items-center space-x-2">
+									<input
+										name="tags"
+										class="checkbox"
+										type="checkbox"
+										value={tag.id}
+										bind:group={selectedTags}
+									/>
+									<p>{tag.display_name}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="label shrink-0">
+						<span class="label-text">Languages</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each languages as lang}
+								<label class="flex items-center space-x-2">
+									<input
+										name="langs "
+										class="checkbox"
+										type="checkbox"
+										value={lang}
+										bind:group={selectedLangs}
+									/>
+									<p>{lang}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="flex items-center gap-2">
+						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
+							<Switch.Control
+								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+							>
+								<Switch.Thumb
+									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
+								/>
+							</Switch.Control>
+							<Switch.Label class="label-text">Compact</Switch.Label>
+							<Switch.HiddenInput />
+						</Switch>
+					</div>
+				</div>
 			</Accordion.Item>
 			<hr class="hr" />
 		</Accordion>
 		<!-- Dependencies -->
 		<div class="col-span-4">
-			<h2 class="mb-4 text-xl font-bold">Dependencies</h2>
-			{#if item.dependencies.length > 0}
-				<div class="flex flex-row flex-wrap items-center items-center justify-between gap-2">
-					{#each item.dependencies as dependency (dependency.id)}
+			<h2 class="mb-4 text-xl font-bold">
+				{#if filteredDependencies.length > 0}{filteredDependencies.length}
+				{/if} Dependencies
+			</h2>
+			{#if filteredDependencies.length > 0}
+				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
+					{#each filteredDependencies as dependency (dependency.id)}
 						{@render linkSet(dependency)}
 					{/each}
 				</div>
@@ -514,7 +538,7 @@
 			</h2>
 			{#if filteredDependents.length > 0}
 				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
-					{#each slicedSource(filteredDependents) as dependent (dependent.id)}
+					{#each paginatedDependents as dependent (dependent.id)}
 						{@render linkSet(dependent)}
 					{/each}
 				</div>
@@ -572,66 +596,67 @@
 		<h2 class="mb-4 text-xl font-bold"><a href="#relations">Relations</a></h2>
 		<!-- Controls -->
 		<Accordion
-			{filterPanel}
+			value={filterPanel}
 			onValueChange={(e) => (filterPanel = e.value)}
 			collapsible
 			classes="col-span-4"
 		>
 			<Accordion.Item value="open">
-				<!-- Control -->
-				{#snippet lead()}Filter{/snippet}
-				{#snippet control()}
-					<Icon data={faFilter} class="fa-fw"></Icon>
-				{/snippet}
-				<!-- Panel -->
-				{#snippet panel()}
-					<div class="col-span-4 grid w-full min-w-full grid-cols-2">
-						<div class="label shrink-0">
-							<span class="label-text">Tags</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each tags as tag}
-									<label class="flex items-center space-x-2">
-										<input
-											name="tags"
-											class="checkbox"
-											type="checkbox"
-											value={tag}
-											bind:group={selectedTags}
-										/>
-										<p>{tag}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="label shrink-0">
-							<span class="label-text">Languages</span>
-							<div class="flex flex-row flex-wrap gap-3">
-								{#each languages as lang}
-									<label class="flex items-center space-x-2">
-										<input
-											name="langs "
-											class="checkbox"
-											type="checkbox"
-											value={lang}
-											bind:group={selectedLangs}
-										/>
-										<p>{lang}</p>
-									</label>
-								{/each}
-							</div>
-						</div>
-						<div class="">
-							<label class="label">
-								<span class="label-text">Compact</span>
-								<Switch
-									name="compact"
-									checked={compact}
-									onCheckedChange={(e) => (compact = e.checked)}
-								/>
-							</label>
-						</div>
+				{#snippet trigger()}
+					<div class="flex items-center gap-4">
+						<span>Filter</span>
+						<Icon data={faFilter} class="fa-fw"></Icon>
 					</div>
 				{/snippet}
+				<div class="col-span-4 grid w-full min-w-full grid-cols-2">
+					<div class="label shrink-0">
+						<span class="label-text">Tags</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each tags as tag}
+								<label class="flex items-center space-x-2">
+									<input
+										name="tags"
+										class="checkbox"
+										type="checkbox"
+										value={tag.id}
+										bind:group={selectedTags}
+									/>
+									<p>{tag.display_name}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="label shrink-0">
+						<span class="label-text">Languages</span>
+						<div class="flex flex-row flex-wrap gap-3">
+							{#each languages as lang}
+								<label class="flex items-center space-x-2">
+									<input
+										name="langs "
+										class="checkbox"
+										type="checkbox"
+										value={lang}
+										bind:group={selectedLangs}
+									/>
+									<p>{lang}</p>
+								</label>
+							{/each}
+						</div>
+					</div>
+					<div class="flex items-center gap-2">
+						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
+							<Switch.Control
+								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+							>
+								<Switch.Thumb
+									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
+								/>
+							</Switch.Control>
+							<Switch.Label class="label-text">Compact</Switch.Label>
+							<Switch.HiddenInput />
+						</Switch>
+					</div>
+				</div>
 			</Accordion.Item>
 			<hr class="hr" />
 		</Accordion>
@@ -696,8 +721,7 @@
 			</h2>
 			{#if filteredDependents.length > 0}
 				<div class="flex flex-row flex-wrap items-center justify-between gap-2">
-					<!--{@debug slicedSource}-->
-					{#each slicedSource(filteredDependents) as dependent (dependent.id)}
+					{#each paginatedDependents as dependent (dependent.id)}
 						{@render companionCard(dependent)}
 					{/each}
 				</div>
@@ -827,7 +851,7 @@
 {/snippet}
 
 {#snippet loginModal()}
-	<Modal
+	<Dialog
 		open={loginModalState}
 		onOpenChange={(e) => (loginModalState = e.open)}
 		triggerBase="btn preset-tonal"
@@ -850,9 +874,9 @@
 					/>
 				</a>
 				<button type="button" class="btn preset-tonal" onclick={() => (loginModalState = false)}
-					>Cancel</button
-				>
+					>Cancel
+				</button>
 			</footer>
 		{/snippet}
-	</Modal>
+	</Dialog>
 {/snippet}

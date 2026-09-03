@@ -2,14 +2,13 @@ use std::{collections::HashMap, convert::Into, fmt};
 
 use lingua::{
     Language,
-    Language::{Chinese, English, Japanese, Korean, Portuguese, Russian, Spanish},
+    Language::{Chinese, English, French, Japanese, Korean, Portuguese, Russian, Spanish},
     LanguageDetector, LanguageDetectorBuilder,
 };
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-
-use crate::processing::language_actor::DetectedLanguage::Unknown;
+use surrealdb_types::{Error, Kind, SurrealValue, Value};
 
 // The threshold of total words a language must be, to be considered valid for
 // detection.
@@ -27,6 +26,7 @@ const WORD_PERCENTAGE: f32 = 0.2;
     PartialEq,
     Ord,
     PartialOrd,
+    Hash,
 )]
 #[repr(u8)]
 pub enum DetectedLanguage {
@@ -38,6 +38,7 @@ pub enum DetectedLanguage {
     Korean = 5,
     Spanish = 6,
     Portuguese = 7,
+    French = 9,
     Unknown = 0,
 }
 
@@ -56,7 +57,35 @@ impl From<Language> for DetectedLanguage {
             English => Self::English,
             Spanish => Self::Spanish,
             Portuguese => Self::Portuguese,
-            _ => Unknown,
+            French => Self::French,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+impl SurrealValue for DetectedLanguage {
+    fn kind_of() -> Kind {
+        Kind::Int
+    }
+
+    fn into_value(self) -> Value {
+        Value::Number((self as i64).into())
+    }
+
+    fn from_value(value: Value) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
+        match value.into_u8()? {
+            1 => Ok(DetectedLanguage::English),
+            2 => Ok(DetectedLanguage::Russian),
+            3 => Ok(DetectedLanguage::Chinese),
+            4 => Ok(DetectedLanguage::Japanese),
+            5 => Ok(DetectedLanguage::Korean),
+            6 => Ok(DetectedLanguage::Spanish),
+            7 => Ok(DetectedLanguage::Portuguese),
+            9 => Ok(DetectedLanguage::French),
+            _ => Ok(DetectedLanguage::Unknown),
         }
     }
 }
