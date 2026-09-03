@@ -18,6 +18,9 @@ tokenizers.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 
+[dev-dependencies]
+tracing-subscriber.workspace = true
+
 [features]
 default = ["mkl"]
 mkl = ["candle-core/mkl", "dep:intel-mkl-src"]

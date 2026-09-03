@@ -240,19 +240,21 @@ impl TextGeneration {
     }
 }
 
+const NOTHING: &'static str = "";
+
 /// The text replacement cases were things I ran into during development, the
 /// '{' search is an effort to protect against prompt repeating by the model.
 pub fn sanitise_output(string: String) -> String {
-    let nothing = "";
-    let string =
-        &string[string.find('{').unwrap_or_default()..string.find('}').unwrap_or(string.len())];
-    string
-        .replace("<br>", nothing)
-        .replace("###", nothing)
-        .replace(">", nothing)
-        .replace("```json", nothing)
-        .replace("```", nothing)
-        .replace("Output:", nothing)
+    let range = string.find('{').unwrap_or_default()..=string.find('}').unwrap_or(string.len());
+    let sub_str =
+        &string[range];
+    sub_str
+        .replace("<br>", NOTHING)
+        .replace("###", NOTHING)
+        .replace(">", NOTHING)
+        .replace("```json", NOTHING)
+        .replace("```", NOTHING)
+        .replace("Output:", NOTHING)
 }
 
 /// This took a lot longer to develop than expected, because, having a tab
@@ -288,6 +290,7 @@ mod test {
     use hf_hub::{Repo, RepoType, api::sync::Api};
     use snafu::ResultExt;
     use tokenizers::Tokenizer;
+    use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 
     use crate::{
         Error, MLProperties, MODEL_ID, ModelInitSnafu, ParseConfigSnafu, ReadConfigSnafu,
@@ -296,8 +299,29 @@ mod test {
     const DMS_T: &str = "The Dead Man's Switch";
     const DMS_D: &str = r#"<a href="https://steamcommunity.com/id/FUJIKENGAWA/myworkshopfiles/?appid=294100&amp;sort=score&amp;browsefilter=myfiles&amp;view=imagewall" target="_blank"><img src="https://i.imgur.com/kvppfWO.png"></a><br><br>Millennia earlier, the threat of archotech war machines, pirates, and awry bio-organic weapons arose. Nara an Interstellar Industries Complex initiated the project of semi-automated war-machines, which aimed at creating a legion of war-machines with low technology and maintenance requirements to aid humans in all galaxies in the war against all those threats.<br><br>It was a quite successful project, and as countless fleets of unknown generations of ships marched toward the borders of human civilization, the production technology of these weapons also spread in the edge world... until today.<br><br><h1>Introduction</h1>This is a large-scale mod that was created around the cyberpunk theme of the 1990s. It has a lot of content, including heavy metallic weapons, industrial-tactical robots, and bio-mech bionic, so I don’t intend to teach you how to play it. You experience the story you want to play with the new choices! I believe you will find the joy you want.<br><br><h1>Content</h1><img src="https://i.imgur.com/Z61a1rv.png"><br>A new Scenario<br>A standalone technology tree<br>An Ideology style pack<br>A well-prepared interstellar colonization company<br>A royalty Title system based on military organization<br>A cargo load of heavy weapons and more than 20 types of military-industrial-style killing machines.<br>Mechanoids that have customizable weapons.<br>Cheap but costly bionic<br>lots of new clothes<br>CE compatibility<br><br>Try it for yourself, I guarantee it&#x27;s worth a try.<br><br><h1>FAQ</h1>Q:how to equip mech weapon? (For mech)<br>A:Select Mech and right-click the weapon, if the weapon is supported it will be available to equip.<br><br>Q:how to equip mech weapon? (For Colonists)<br>A:They need an exo-skelton suit before equip it.<br><br>Q:What weapon did a mech supported<br>A: you can find the supported weapon inside the info card.<br><br>Q: how to get ____ compoment<br>A: defeat boss group,or trading<br><br>Q: can i disable some of mech&#x27;s worktype?<br>A: <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3268299107" target="_blank">https://steamcommunity.com/sharedfiles/filedetails/?id=3268299107</a><br><h1>Warning - A new game is highly recommended</h1><br><h1>Known Issues</h1>work mech will get error loading with Rebound.<br><br><h1>Author’s words</h1>This is my fourth year modding in the Rimworld community, also my first year of studying for a master&#x27;s degree after college. I apologize to everyone who has been waiting for this mod for a long time (it’s been a while). Making such a big project is well-challenged.<br><br>DMS is a response that condenses my experience and understanding of countless works to the world and those works and creators who have profoundly affected my life.<br>Completing this project, which included my understanding of Rimworld art and those coolish Science Fiction styles, is also the realization of my dream of creating cool mecha works since I was a child.<br>Therefore, it is quite a torment in terms of technology, time, development enthusiasm, and progress management.<br>From the beginning of the project to the release, it spanned two game versions. Countless setbacks and subversions made me doubt my motivation to continue doing it more than once and questioned whether my work and abilities met expectations...<br><br>But this has all passed, and I have reached a reconciliation between my heavy academic workload and my pursuit of excellence. It was unanimously decided to release the mod before the end of 2023. which is today.<br>Although there may still be some minor problems, anyway still hope you enjoy it. _AOBA 2023/12/25<br><br>If you find any problems or have any ideas while playing, you can give feedback to the Discord group<br><a href="https://discord.gg/Pvj5Xj3yBm" target="_blank"><img src="https://i.ibb.co/CHY91mx/discord-Icon.png"></a><br><a href="https://www.paypal.com/paypalme/AobaKuma" target="_blank"><img src="https://i.ibb.co/cLqX4rv/Paypal-Icon.png"></a><br><a href="https://ko-fi.com/aobakuma" target="_blank"><img src="https://i.ibb.co/KhN0Tgp/Ko-Fi-Icon.png"></a><br><br><br>	"#;
 
+    /// Starts the log output for a test. More than one call is safe; only the
+    /// first call sets the subscriber.
+    fn init_logging() {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(
+                EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+            )
+            .with_span_events(FmtSpan::CLOSE)
+            .with_test_writer()
+            .try_init();
+    }
+
+    #[test]
+    fn test_sanatise(){
+        let test_case = "\n\n**Output:**\n{\n  \"types\": [\"expansion\"],\n  \"features\": [\n    \"scenario\",\n    \"technology tree\",\n    \"ideology style pack\",\n    \"colonization company\",\n    \"royalty title system\",\n    \"heavy weapons\",\n    \"military-industrial-style killing machines\",\n    \"mechanoids with customizable weapons\",\n    \"bionic\",\n    \"clothes\"\n  ]\n}";
+        let themes_json = sanitise_output(test_case.to_string());
+        println!("{themes_json}");
+        let _output: MLProperties = serde_json::from_slice(themes_json.as_bytes()).unwrap();
+    }
+
     #[test]
     fn test_dms() {
+        init_logging();
         let themes_prompt = read_to_string("../prompts/features.txt").unwrap();
         let themes_replaced = populate_prompt(&themes_prompt, DMS_T, DMS_D);
 
@@ -316,6 +340,7 @@ mod test {
     }
     #[test]
     fn test_xeno() {
+        init_logging();
         let title = r#"Euglena Expanded - Euglena Xenotype (Continued)"#;
         let description = r#"<br>Original mod by DemonRoka<br><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2975005239" target="_blank">https://steamcommunity.com/sharedfiles/filedetails/?id=2975005239</a><br>If the original author requests it, I will remove this update.<br><br>--<br><br>Original mod notes (1.5):<br><br>Description:<br>	<br>&quot;A unique tree-like race. These pawns are a symbiosis of plant and animal life, capable of photosynthesis and enhancing their characteristics while in the open sun.<br><br>Mod Features:<br><br>A new race of pawns: the Euglena.<br>Pawns of this race can perform photosynthesis, converting sunlight into nutrients.<br>Eugenes are endowed with the ability to regenerate, allowing them to regenerate lost body parts over time.<br>Euglens require light to maintain their health and can do the work of absorbing light on their own to replenish their energy.<br>Discover this unique race and make the most of their abilities!<br><br>Note: The mod &quot;Euglena Expanded - Euglena Xenotype&quot; is compatible with most other mods and requires only the official add-ons, and the Euglena Framework to work. However, we always recommend that you first check the compatibility of mods in a test game.<br><br>Описание:<br><br>&quot;Уникальную древоподобная раса. Эти пешки - симбиоз растительной и животной жизни, способные осуществлять фотосинтез и улучшать свои характеристики находясь под открытым солнцем.<br><br>Особенности мода:<br><br>Новая раса пешек: Евглена.<br>Пешки этой расы могут осуществлять фотосинтез, превращая солнечный свет в питательные вещества.<br>Евглены наделены способностью регенерации, что позволяет им восстанавливать утраченные части тела со временем.<br>Евглены требуют освещения для поддержания своего здоровья и могут самостоятельно выполнять работу по поглощению света для восполнения своей энергии.<br>Откройте для себя эту уникальную расу и используйте их способности по максимуму!<br><br>Примечание: Мод &quot;Euglena Expanded - Euglena Xenotype&quot; совместим с большинством других модов и требует для своей работы лишь официальные дополнения, и Euglena Framework. Однако мы всегда рекомендуем сначала проверить совместимость модов в тестовой игре. <br>	"#;
         let themes_prompt = read_to_string("../prompts/features.txt").unwrap();

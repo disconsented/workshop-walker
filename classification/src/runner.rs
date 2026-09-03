@@ -6,7 +6,6 @@ use snafu::ResultExt;
 use tokenizers::Tokenizer;
 use tokio::{
     sync::{mpsc, oneshot},
-    task,
     task::{JoinHandle, spawn_blocking},
 };
 use tracing::{Instrument, info_span, warn};
@@ -22,10 +21,6 @@ pub struct PipelineRunner {
 }
 impl PipelineRunner {
     pub async fn setup() -> Result<Self, Error> {
-        return Ok(Self {
-            pipeline_task: task::spawn(async {}),
-            pipeline_tx: mpsc::channel(1).0,
-        });
         let span = info_span!("PipelineRunner::setup");
         let _g = span.enter();
         let api = Api::new().map_err(|e| Error::ApiInit {
