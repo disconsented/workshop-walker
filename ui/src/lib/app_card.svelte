@@ -10,8 +10,21 @@
 
 	let { image_url, name, developer, description, appid, url = undefined }: Props = $props();
 	// Direct URL, anchor or app page link
-	const link = url ? url : appid === '#' ? '#' : '/app/' + appid;
+	const link = url ? url : appid === '#' ? '.' : '/app/' + appid;
 </script>
+
+Card
+
+Steamid overlayed
+
+Name
+Developer
+
+Description
+
+break
+
+Tags
 
 <a
 	href={link}
@@ -21,7 +34,7 @@
 	<header class="flex">
 		<img
 			src={image_url}
-			class="aspect-[21/9] w-full object-fill grayscale hue-rotate-90"
+			class="aspect-[21/9] w-full object-fill"
 			alt="{name} Banner"
 			loading="lazy"
 		/>

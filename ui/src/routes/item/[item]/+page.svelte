@@ -63,9 +63,14 @@
 
 	function get_languages(data) {
 		const langIds = new Set(
-			[(data.dependants || []).flatMap((e) => e.languages || []), (data.dependencies || []).flatMap((e) => e.languages || [])].flat()
+			[
+				(data.dependants || []).flatMap((e) => e.languages || []),
+				(data.dependencies || []).flatMap((e) => e.languages || [])
+			].flat()
 		);
-		return Array.from(langIds).map((id) => id !== undefined && id !== null ? whichLang(id) : null).filter(Boolean);
+		return Array.from(langIds)
+			.map((id) => (id !== undefined && id !== null ? whichLang(id) : null))
+			.filter(Boolean);
 	}
 
 	const tags = $derived(get_tags(data.data));
@@ -460,7 +465,7 @@
 					<div class="flex items-center gap-2">
 						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
 							<Switch.Control
-								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+								class="bg-surface-300-700 data-[state=checked]:bg-primary-500 inline-flex h-6 w-11 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200"
 							>
 								<Switch.Thumb
 									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
@@ -646,7 +651,7 @@
 					<div class="flex items-center gap-2">
 						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
 							<Switch.Control
-								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+								class="bg-surface-300-700 data-[state=checked]:bg-primary-500 inline-flex h-6 w-11 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200"
 							>
 								<Switch.Thumb
 									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
