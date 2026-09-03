@@ -2,6 +2,7 @@
 edition.workspace = true
 license.workspace = true
 name = "proc-macros"
+publish = false
 version.workspace = true
 
 [lib]

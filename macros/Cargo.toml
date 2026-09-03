@@ -1,6 +1,7 @@
 [package]
 edition.workspace = true
 name = "macros"
+publish = false
 version.workspace = true
 
 

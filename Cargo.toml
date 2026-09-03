@@ -88,6 +88,7 @@ veil = "0.3"
 edition.workspace = true
 license.workspace = true
 name = "workshop-walker"
+publish = false
 version.workspace = true
 
 [dependencies]

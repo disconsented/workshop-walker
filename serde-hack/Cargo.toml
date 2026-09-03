@@ -1,6 +1,7 @@
 [package]
 edition.workspace = true
 name = "serde-hack"
+publish = false
 version.workspace = true
 
 [dependencies]

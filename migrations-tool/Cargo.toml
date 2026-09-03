@@ -2,6 +2,7 @@
 edition.workspace = true
 license.workspace = true
 name = "migrations-tool"
+publish = false
 version.workspace = true
 
 [lib]
