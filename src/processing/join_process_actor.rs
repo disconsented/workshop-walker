@@ -8,7 +8,7 @@ use crate::{
     db::{
         IAppID, ITagID, IUsernameID,
         item_update_actor::ItemUpdateMsg,
-        model::{InternalTag, InternalWorkshopItem},
+        model::{InternalTag, InternalUsername, InternalWorkshopItem},
     },
     processing::{
         bb_actor::BBMsg,
@@ -16,7 +16,6 @@ use crate::{
     },
     steam::model::IPublishedStruct,
 };
-use crate::db::model::InternalUsername;
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
 /// `ItemUpdateActor`
@@ -110,7 +109,10 @@ impl InternalWorkshopItem {
         Ok(Self {
             app: app.clone(),
             // Name gets updated later in theory
-            author: InternalUsername{ id: author, name: "PLACEHOLDER".to_string() },
+            author: InternalUsername {
+                id: author,
+                name: "PLACEHOLDER".to_string(),
+            },
             languages,
             description,
             id: data

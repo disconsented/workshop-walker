@@ -243,8 +243,7 @@ const NOTHING: &'static str = "";
 /// '{' search is an effort to protect against prompt repeating by the model.
 pub fn sanitise_output(string: String) -> String {
     let range = string.find('{').unwrap_or_default()..=string.find('}').unwrap_or(string.len());
-    let sub_str =
-        &string[range];
+    let sub_str = &string[range];
     sub_str
         .replace("<br>", NOTHING)
         .replace("###", NOTHING)
@@ -309,8 +308,13 @@ mod test {
     }
 
     #[test]
-    fn test_sanatise(){
-        let test_case = "\n\n**Output:**\n{\n  \"types\": [\"expansion\"],\n  \"features\": [\n    \"scenario\",\n    \"technology tree\",\n    \"ideology style pack\",\n    \"colonization company\",\n    \"royalty title system\",\n    \"heavy weapons\",\n    \"military-industrial-style killing machines\",\n    \"mechanoids with customizable weapons\",\n    \"bionic\",\n    \"clothes\"\n  ]\n}";
+    fn test_sanatise() {
+        let test_case =
+            "\n\n**Output:**\n{\n  \"types\": [\"expansion\"],\n  \"features\": [\n    \
+             \"scenario\",\n    \"technology tree\",\n    \"ideology style pack\",\n    \
+             \"colonization company\",\n    \"royalty title system\",\n    \"heavy weapons\",\n    \
+             \"military-industrial-style killing machines\",\n    \"mechanoids with customizable \
+             weapons\",\n    \"bionic\",\n    \"clothes\"\n  ]\n}";
         let themes_json = sanitise_output(test_case.to_string());
         println!("{themes_json}");
         let _output: MLProperties = serde_json::from_slice(themes_json.as_bytes()).unwrap();
