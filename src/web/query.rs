@@ -129,11 +129,6 @@ async fn query_inner(
         ));
     }
 
-    // Keep accepted properties, plus (for a signed-in user) their own submitted
-    // ones regardless of status. Mirrors `item::get_item`. The condition goes on
-    // the graph lookup itself: a `.filter()` after the lookup binds to each edge
-    // rather than to the array, and the parentheses which would fix that are
-    // lost when the driver prints the statement back to SQL.
     let status_accepted = Expr::Binary {
         left: Box::new(Expr::Idiom(Idiom::field("status".to_string()))),
         op: BinaryOperator::ExactEqual,

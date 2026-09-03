@@ -123,7 +123,7 @@ impl Actor for ItemUpdateActor {
 
                 let _ = state
                     .steam_user_actor
-                    .send_message(SteamUserMsg::Fetch(item.author.clone()));
+                    .send_message(SteamUserMsg::Fetch(item.author.id.clone()));
 
                 if let Err(error) = insert_data(&state.database, item, children).await {
                     error!(?error, title, ?item_id, "upserting item");
@@ -219,7 +219,7 @@ async fn insert_data(
         data: Some(Data::ReplaceExpression(Expr::from_public_value(
             InsertableWorkshopItem {
                 app: item.app,
-                author: item.author,
+                author: item.author.id,
                 description: item.description,
                 id: item.id,
                 languages: item.languages,

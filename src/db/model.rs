@@ -70,8 +70,8 @@ fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
 pub struct WorkshopItem {
     #[dual_type(IAppID)]
     pub app: AppID,
-    #[dual_type(IUsernameID)]
-    pub author: UsernameID,
+    #[dual_type(InternalUsername)]
+    pub author: ExternalUsername,
     pub description: String,
     #[dual_type(IItemID)]
     pub id: ItemID,

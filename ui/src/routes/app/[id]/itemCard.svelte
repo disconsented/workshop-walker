@@ -68,13 +68,13 @@
 				</div>
 				<div class="flex w-full items-center justify-between p-1">
 					<a
-						href="https://steamcommunity.com/id/{item.author}"
+						href="https://steamcommunity.com/id/{item.author.id}"
 						target="_self"
 						rel="noopener noreferrer"
 						class="anchor flex items-center gap-1"
 					>
 						<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-						FUJIKENGAWA</a
+						{item.author.name}</a
 					>
 					<div class="mb-2 flex items-center">
 						<span class="text-[0.5rem] text-gray-500">
