@@ -24,19 +24,19 @@ serde-hack = { path = "./serde-hack", version = "0" }
 async-stream = "0.3.6"
 bbscope = "0.2"
 biscuit-auth = "6.0.0"
-blake2 = "0.10.6"
-candle-core = { version = "0.9" }
-candle-examples = "0.9"
-candle-nn = "0.9"
-candle-transformers = "0.9"
+blake2 = "0.11"
+candle-core = { version = "0.11" }
+candle-examples = "0.11"
+candle-nn = "0.11"
+candle-transformers = "0.11"
 chrono = "0.4"
 clap = { features = ["derive"], version = "4.6" }
 config = "0.15"
-futures = "0.3.32"
-hf-hub = "0.4"
+futures = "0.3"
+hf-hub = "0.5.0"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
-itertools = "0.14"
+itertools = "0.15"
 lingua = { features = [
   "chinese",
   "english",
@@ -48,7 +48,7 @@ lingua = { features = [
 multimap = "0.10"
 paste = "1.0"
 quote = "1.0"
-ractor = { features = ["async-trait", "monitors"], version = "0.15" }
+ractor = { features = ["async-trait", "monitors"], version = "0.16" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
   "affix-state",
@@ -57,7 +57,7 @@ salvo = { features = [
   "oapi",
   "serve-static",
   "size-limiter",
-], version = "0.89" }
+], version = "0.96" }
 serde = { features = ["derive"], version = "1.0" }
 serde-content = "0.1"
 serde-xml-rs = "0.8.1"
@@ -74,8 +74,9 @@ surrealdb = { features = [
 ], version = "3.1" }
 surrealdb-core = "3.1"
 surrealdb-types = "3.1"
-syn = "2.0"
+syn = "3.0"
 tempfile = "3.27.0"
+# Important to make sure this doesn't conflict with the versions that candle uses
 tokenizers = "0.22"
 tokio = { features = ["full"], version = "1.48" }
 tokio-stream = { features = ["fs"], version = "0.1" }
