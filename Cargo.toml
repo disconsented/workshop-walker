@@ -4,7 +4,6 @@ members = [
   "macros",
   "migrations-tool",
   "proc-macros",
-  "scratch",
   "serde-hack",
 ]
 
