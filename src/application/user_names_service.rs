@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     db::IUsernameID,
@@ -26,7 +26,7 @@ impl<R: UserNamesPort> UserNamesService<R> {
             }
             None => true,
         } {
-            debug!(?id, %name, "Upserting username");
+            trace!(?id, %name, "Upserting username");
             self.repo
                 .upsert(UserName {
                     id,
