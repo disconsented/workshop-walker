@@ -59,14 +59,12 @@ salvo = { features = [
   "serve-static",
   "size-limiter",
 ], version = "0.89" }
-scraper = "0.25"
 serde = { features = ["derive"], version = "1.0" }
 serde-content = "0.1"
 serde-xml-rs = "0.8.1"
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.9"
-str-macro = "1"
 surrealdb = { features = [
   "allocator",
   "kv-mem",
@@ -111,7 +109,7 @@ macros.workspace = true
 migrations-tool.workspace = true
 multimap.workspace = true
 ractor = { features = ["async-trait", "monitors"], workspace = true }
-reqwest = { features = ["json", "query"], version = "1.0.0", workspace = true }
+reqwest = { features = ["json", "query"], version = "0.13", workspace = true }
 salvo = { features = [
   "affix-state",
   "cookie",
@@ -120,7 +118,6 @@ salvo = { features = [
   "serve-static",
   "size-limiter",
 ], workspace = true }
-scraper.workspace = true
 serde = { features = ["derive"], workspace = true }
 serde-content.workspace = true
 serde-hack.workspace = true
@@ -128,7 +125,6 @@ serde-xml-rs.workspace = true
 serde_json.workspace = true
 serde_repr.workspace = true
 snafu.workspace = true
-str-macro.workspace = true
 surrealdb = { features = [
   "allocator",
   "kv-mem",
@@ -150,7 +146,6 @@ tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
-log = "0.4.32"
 
 [features]
 default = ["ml-classification"]
@@ -165,7 +160,6 @@ surrealdb-types = { path = "../surrealdb/surrealdb/types" }
 [profile.release]
 lto = true
 opt-level = 3
-panic = 'unwind'
 #codegen-units = 1
 
 [profile.dev.package."*"]
