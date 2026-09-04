@@ -29,6 +29,12 @@ jobs:
           fetch-depth: 0
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      # `.cargo/config.toml` links through clang and mold, and release-plz's
+      # git-only mode runs a verification build of the packaged crate.
+      - name: Install linker
+        run: sudo apt-get update && sudo apt-get install --yes clang mold
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
