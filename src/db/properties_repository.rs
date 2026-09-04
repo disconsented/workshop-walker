@@ -6,7 +6,7 @@ use tracing::{debug, error};
 use crate::{
     db::{
         IUserID,
-        model::{InternalSource, InternalWorkshopItemProperties, Property, Status},
+        model::{InternalSource, Property, Status},
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
@@ -41,11 +41,12 @@ impl PropertiesPort for PropertiesSilo {
                 .db
                 .query(
                     "SELECT id.class as class, id.value as value FROM properties WHERE \
-                     string::distance::damerau_levenshtein(id.value, $value) < 0.8;",
+                     string::distance::damerau_levenshtein(string::join(\":\", class, value), \
+                     string::join(\":\", $class, $value)) < 0.8",
                 )
                 .query(
-                    "SELECT *, in.to_string(), out.*.id.{class,value} as out, source.to_string() \
-                     OMIT id FROM workshop_item_properties WHERE in=$workshop_item",
+                    "SELECT VALUE record::id(out) FROM workshop_item_properties WHERE \
+                     in=$workshop_item;",
                 )
                 .bind(("workshop_item", workshop_id.clone()))
                 .bind(("value", test_prop.value.clone()));
@@ -69,15 +70,22 @@ impl PropertiesPort for PropertiesSilo {
                 debug!(?similar_properties, "Similar properties exist");
                 return Err(PropertiesError::Conflict);
             }
-            let existing_properties: Vec<InternalWorkshopItemProperties> =
-                res.take(1).unwrap_or_default();
-            existing_properties.iter().any(|prop| prop.out == test_prop)
+            let existing_properties = res.take::<Vec<Property>>(1).unwrap_or_default();
+            existing_properties.contains(&test_prop)
         };
 
         debug!(%test_prop, exists = prop_exists, "property already exists?");
 
+        // A repeat link would only trip the unique index, and the server
+        // reports that as an internal error rather than an
+        // already-exists one.
+        if prop_exists {
+            return Err(PropertiesError::Conflict);
+        }
+
         // Insert any new properties and relate
-        match self
+
+        let result = self
             .db
             .query("BEGIN")
             .query(
@@ -101,17 +109,26 @@ impl PropertiesPort for PropertiesSilo {
             ))
             .bind(("status", status))
             .query("COMMIT")
-            .await
-            .map(surrealdb::IndexedResults::check)
-        {
-            Ok(Ok(_)) => Ok(()),
-            Ok(Err(err)) if err.is_already_exists() => Err(PropertiesError::Conflict),
-            Ok(Err(other)) => {
-                error!(?other, "unexpected DB error");
+            .await;
+
+        match result.map(|mut r| r.take_errors()) {
+            Ok(errors) => {
+                if errors.is_empty() {
+                    return Ok(());
+                }
+                // The keys are statement indexes, and a failed statement leaves
+                // gaps: iterate the map itself instead of counting from zero.
+                for (index, error) in &errors {
+                    if error.is_already_exists() {
+                        return Err(PropertiesError::Conflict);
+                    }
+                    error!(?error, index, "error trying to insert/link property");
+                }
+
                 Err(PropertiesError::Internal)
             }
-            Err(e) => {
-                error!(?e, "query error");
+            Err(error) => {
+                error!(?error, "query error");
                 Err(PropertiesError::Internal)
             }
         }
@@ -220,8 +237,13 @@ mod tests {
 
     use super::PropertiesSilo;
     use crate::{
-        db::{IItemID, IUserID, model::Class},
-        domain::properties::{InternalVoteData, PropertiesError, PropertiesPort},
+        db::{
+            IItemID, IUserID,
+            model::{Class, InternalSource, Status},
+        },
+        domain::properties::{
+            InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort,
+        },
     };
 
     const ITEM: i64 = 294100;
@@ -327,6 +349,127 @@ mod tests {
         r.take::<Vec<serde_json::Value>>(0)
             .unwrap_or_default()
             .len()
+    }
+
+    /// A request to attach `class`/`value` to `item`.
+    fn new_property(item: i64, class: Class, value: &str) -> InternalNewProperty {
+        InternalNewProperty {
+            workshop_item: IItemID::from(item),
+            class,
+            value: value.to_string(),
+            note: None,
+        }
+    }
+
+    /// Every `(in, out)` pair on the relation table, as
+    /// `"<item>|<CLASS>:<value>"`.
+    async fn links(db: &Surreal<Db>) -> Vec<String> {
+        let mut r = db
+            .query(
+                "SELECT in.id() as item, out.id.class as class, out.id.value as value FROM \
+                 workshop_item_properties ORDER BY item, class, value;",
+            )
+            .await
+            .unwrap();
+        r.take::<Vec<serde_json::Value>>(0)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|v| {
+                format!(
+                    "{}|{}:{}",
+                    v["item"],
+                    v["class"].as_str().unwrap(),
+                    v["value"].as_str().unwrap()
+                )
+            })
+            .collect()
+    }
+
+    // --- creating and linking properties ---
+
+    #[tokio::test]
+    async fn create_property_that_does_not_exist_yet() {
+        let (silo, db) = setup().await;
+        silo.create_or_link_property(
+            new_property(ITEM, Class::Genre, "fantasy"),
+            InternalSource::System,
+            Status::Accepted,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            links(&db).await,
+            vec![
+                format!("{ITEM}|Feature:ffff"),
+                format!("{ITEM}|Genre:fantasy"),
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn link_property_that_already_exists_to_another_item() {
+        let (silo, db) = setup().await;
+        db.query("CREATE workshop_items:294101 SET name = 'other';")
+            .await
+            .unwrap()
+            .check()
+            .unwrap();
+
+        // `Feature/ffff` is already a row in `properties`, linked to ITEM only.
+        silo.create_or_link_property(
+            new_property(294101, Class::Feature, "ffff"),
+            InternalSource::System,
+            Status::Accepted,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            links(&db).await,
+            vec![
+                format!("{ITEM}|Feature:ffff"),
+                "294101|Feature:ffff".to_string(),
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn create_property_from_a_user() {
+        let (silo, db) = setup().await;
+        silo.create_or_link_property(
+            new_property(ITEM, Class::Genre, "fantasy"),
+            InternalSource::User(user(1)),
+            Status::Pending,
+        )
+        .await
+        .unwrap();
+
+        let mut r = db
+            .query(
+                "SELECT source.to_string() as source, status FROM ONLY workshop_item_properties \
+                 WHERE record::id(out).value = 'fantasy' LIMIT 1;",
+            )
+            .await
+            .unwrap();
+        let row: serde_json::Value = r.take::<Option<serde_json::Value>>(0).unwrap().unwrap();
+        assert_eq!(row["source"], "users:1");
+        assert_eq!(row["status"], 0);
+    }
+
+    #[tokio::test]
+    async fn linking_the_same_property_twice_conflicts() {
+        let (silo, db) = setup().await;
+        let err = silo
+            .create_or_link_property(
+                new_property(ITEM, Class::Feature, "ffff"),
+                InternalSource::System,
+                Status::Accepted,
+            )
+            .await
+            .unwrap_err();
+        assert!(matches!(err, PropertiesError::Conflict), "got {err:?}");
+        assert_eq!(links(&db).await, vec![format!("{ITEM}|Feature:ffff")]);
     }
 
     // --- adding a vote to a property (none -> vote) ---
