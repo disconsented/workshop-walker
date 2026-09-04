@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Icon from 'svelte-awesome';
+	import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+
 	interface Props {
 		image_url: string;
 		name: string;
@@ -13,22 +16,8 @@
 	const link = url ? url : appid === '#' ? '.' : '/app/' + appid;
 </script>
 
-Card
-
-Steamid overlayed
-
-Name
-Developer
-
-Description
-
-break
-
-Tags
-
 <a
 	href={link}
-	class:card-hover={appid !== '#'}
 	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 block w-md max-w-md divide-y overflow-hidden border-[1px]"
 >
 	<header class="flex">
@@ -39,15 +28,21 @@ Tags
 			loading="lazy"
 		/>
 	</header>
-	<article class="space-y-4 p-4">
-		<div>
-			<h2 class="h6">{name}</h2>
+	<article class="flex flex-col space-y-4 p-4">
+		<div class="grid grid-cols-[1fr_auto] items-center">
+			<div>
+				<h2 class="h6">{name}</h2>
+				<small class="text-sm opacity-60">{developer}</small>
+			</div>
+			<div
+				class="btn preset-filled-surface-100-900 border-surface-200-800 h-fit w-fit border-1 p-1 opacity-60"
+			>
+				<Icon data={faArrowRight} class="fa-fw"></Icon>
+			</div>
 		</div>
-		<p class="opacity-60">
+
+		<p class="text-sm opacity-60">
 			{@html description}
 		</p>
 	</article>
-	<footer class="flex items-center justify-between gap-4 p-4">
-		<small class="opacity-60">Developed By {developer}</small>
-	</footer>
 </a>

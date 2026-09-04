@@ -25,6 +25,16 @@
 	console.log(data);
 	let item = data.data;
 
+	item.properties.sort((a, b) => {
+		if (a.vote_count > b.vote_count) {
+			return -1;
+		} else if (a.vote_count < b.vote_count) {
+			return 1;
+		} else {
+			return 0;
+		}
+	});
+
 	function whichLang(lang: Number): String {
 		switch (lang) {
 			case 1:

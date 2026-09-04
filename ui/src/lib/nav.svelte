@@ -4,7 +4,7 @@
 	import { faGithub, faSteam } from '@fortawesome/free-brands-svg-icons';
 	import Logotype from './logotype.svelte';
 
-	export interface Segment{
+	export interface Segment {
 		title: string;
 		href: string;
 	}

@@ -4,11 +4,9 @@
 	import Logotype from '$lib/logotype.svelte';
 </script>
 
-<footer
-	class="border-t-surface-200-800 bg-surface-100-900 border-t-1 p-6"
->
+<footer class="border-t-surface-200-800 bg-surface-100-900 border-t-1 p-6">
 	<div class="flex flex-col">
-		<div class="grid grid-cols-[1fr_auto] w-full pb-4">
+		<div class="grid w-full grid-cols-[1fr_auto] pb-4">
 			<div class="flex flex-col gap-2">
 				<Logotype></Logotype>
 				<span>A better browser for Steam Workshop items.</span>
@@ -27,11 +25,10 @@
 			</div>
 		</div>
 		<div class="border-t-surface-200-800 border-t-1 pt-2">
-			<div class="grid grid-cols-[1fr_auto] w-full text-surface-300-700">
+			<div class="text-surface-300-700 grid w-full grid-cols-[1fr_auto]">
 				<span>Developed by Disconsented</span>
 				<span>Not affiliated with Valve Corporation</span>
 			</div>
 		</div>
 	</div>
-
 </footer>
