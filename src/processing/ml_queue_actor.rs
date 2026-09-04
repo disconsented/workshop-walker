@@ -10,9 +10,8 @@ use crate::{
         model::{Class, InternalSource, Status},
         properties_actor::PropertiesMsg,
     },
-    domain::properties::InternalNewProperty,
+    domain::properties::{InternalNewProperty, PropertiesError},
 };
-use crate::domain::properties::PropertiesError;
 
 pub struct MLQueueActor;
 

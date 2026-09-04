@@ -12,6 +12,7 @@ use crate::{
         apps_actor::{AppsActor, AppsArgs},
         item_update_actor::{ItemUpdateActor, ItemUpdateArgs},
         properties_actor::{PropertiesActor, PropertiesArgs},
+        tags_actor::{TagsActor, TagsArgs},
     },
     processing::{
         bb_actor::{BBActor, BBArgs},
@@ -91,6 +92,17 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .await
     .whatever_context("Spawning steam user actor")?;
 
+    let (tags_actor, _) = Actor::spawn(
+        Some("/tags_updator".to_string()),
+        TagsActor,
+        TagsArgs {
+            database: db.clone(),
+        },
+    )
+    .instrument(info_span!("spawn::tags_actor"))
+    .await
+    .whatever_context("Spawning tags actor")?;
+
     let (item_update_actor, _) = Actor::spawn(
         Some("/item_updater".to_string()),
         ItemUpdateActor {},
@@ -100,6 +112,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             steam_user_actor: steam_user_actor.clone(),
             database: db.clone(),
             ml_queue: config.ml_extraction.then_some(ml_queue_actor),
+            tags_actor,
         },
     )
     .instrument(info_span!("spawn::item_update"))
