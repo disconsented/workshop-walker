@@ -203,7 +203,8 @@ mod test {
         silo.upsert_tags(IAppID::from(APP), vec![tag("mod", "Mod")])
             .await
             .unwrap();
-        // Re-inserting the same tag must not error (INSERT IGNORE) or duplicate.
+        // Re-inserting the same tag must not error (INSERT IGNORE) or
+        // duplicate.
         silo.upsert_tags(IAppID::from(APP), vec![tag("mod", "Mod")])
             .await
             .unwrap();

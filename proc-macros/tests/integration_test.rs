@@ -82,9 +82,9 @@ struct ExampleItem {
 
 #[test]
 fn test_surreal_attr() {
-    // This test primarily checks that it compiles with the surreal(wrap) attribute
-    // We can also check if the attribute is present via some reflection or just
-    // trust compilation for now
+    // This test primarily checks that it compiles with the surreal(wrap)
+    // attribute We can also check if the attribute is present via some
+    // reflection or just trust compilation for now
     let _item = InternalExampleItem {
         id: IItemID(surrealdb_types::RecordId::new("workshop_items", 1)),
         appid: IAppID(surrealdb_types::RecordId::new("apps", 1)),
@@ -139,10 +139,10 @@ fn test_serde_rename() {
 
     let json = serde_json::to_string(&external).unwrap();
     // Should be renamed to "ExampleItem" in JSON if used in a map or similar,
-    // but #[serde(rename = "ExampleItem")] on a struct itself usually affects how
-    // it's named when it's a field in another struct or when using certain
-    // formats. Actually, for a top-level struct, it doesn't change the JSON
-    // unless it's in a container.
+    // but #[serde(rename = "ExampleItem")] on a struct itself usually affects
+    // how it's named when it's a field in another struct or when using
+    // certain formats. Actually, for a top-level struct, it doesn't change
+    // the JSON unless it's in a container.
 
     #[derive(Serialize)]
     struct Container {

@@ -97,10 +97,11 @@ async fn query_inner(
     ];
 
     // The current user's own vote score for each property, if any. Mirrors
-    // `item::get_item`: looks up the per-user vote record keyed the same way the
-    // write side keys it (see `properties_repository::vote`): votes:{ link, user,
-    // item }. `.score` on a record id that doesn't exist yields NONE, so
-    // un-voted properties come back as `None`. Only computable with a user.
+    // `item::get_item`: looks up the per-user vote record keyed the same way
+    // the write side keys it (see `properties_repository::vote`): votes:{
+    // link, user, item }. `.score` on a record id that doesn't exist yields
+    // NONE, so un-voted properties come back as `None`. Only computable
+    // with a user.
     if let Some(user) = &user {
         prop_fields.push(DestructurePart::Aliased(
             "vote_state".into(),
