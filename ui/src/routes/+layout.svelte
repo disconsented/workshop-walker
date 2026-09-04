@@ -16,7 +16,7 @@
 
 <div class="grid h-screen grid-rows-[auto_1fr_auto]">
 	<!-- Header -->
-	<Nav {loggedIn} {location} ></Nav>
+	<Nav {loggedIn} {location}></Nav>
 	<!-- Grid Columns -->
 	<div class="grid grid-cols-1 md:grid-cols-[auto_1fr]">
 		<!-- Left Sidebar. -->
