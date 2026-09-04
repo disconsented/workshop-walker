@@ -377,15 +377,10 @@ impl From<ExternalSource> for InternalSource {
 
 impl SurrealValue for InternalSource {
     fn into_value(self) -> ::surrealdb::types::Value {
+        // The schema declares `'system' | record<users>`, so `System` must go
+        // out as the bare string, not as an enum-shaped object.
         match self {
-            Self::System => {
-                let mut map = ::surrealdb::types::Object::new();
-                map.insert(
-                    "System".to_string(),
-                    ::surrealdb::types::Value::Object(::surrealdb::types::Object::new()),
-                );
-                ::surrealdb::types::Value::Object(map)
-            }
+            Self::System => ::surrealdb::types::Value::String("system".to_string()),
             Self::User(field_0) => ::surrealdb::types::Value::RecordId(field_0.into()),
         }
     }
@@ -428,41 +423,18 @@ impl SurrealValue for InternalSource {
     }
 
     fn is_value(value: &::surrealdb::types::Value) -> bool {
-        if let ::surrealdb::types::Value::Object(map) = value {
-            {
-                if map
-                    .get("System")
-                    .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
-                {
-                    return true;
-                }
-            }
-            {
-                if let Some(value) = map.get("User") {
-                    return <IUserID as SurrealValue>::is_value(value);
-                }
-            }
+        match value {
+            ::surrealdb::types::Value::String(string) => string == "system",
+            other => <IUserID as SurrealValue>::is_value(other),
         }
-        false
     }
 
     fn kind_of() -> ::surrealdb::types::Kind {
         ::surrealdb::types::Kind::Either(vec![
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "System".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert("User".to_string(), <IUserID as SurrealValue>::kind_of());
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
+            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
+                "system".to_string(),
+            )),
+            <IUserID as SurrealValue>::kind_of(),
         ])
     }
 }
