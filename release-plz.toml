@@ -6,9 +6,6 @@ git_release_enable = false # disable GitHub/Gitea releases
 pr_branch_prefix = "release-plz-" # PR branch prefix
 pr_labels = ["release"] # add the `release` label to the release Pull Request
 publish = false # nothing in this workspace goes to a cargo registry
-git_only = true # derive the last release from git tags instead of crates.io.
-# Without this, release-plz looks the crate up on crates.io, finds nothing,
-# treats it as never released, and echoes the current version back unchanged.
 release = false # every member inherits one `workspace.package.version`, so only
 # `workshop-walker` below is released; releasing each member separately would
 # create one tag per crate for what is really a single version.
@@ -18,6 +15,13 @@ release_commits = "^feat:" # prepare release only if at least one commit matches
 [[package]] # the double square brackets define a TOML table array
 name = "workshop-walker"
 release = true # the one crate that is released, standing in for the workspace
+git_only = true # derive the last release from a git tag instead of crates.io.
+# Without this, release-plz looks the crate up on crates.io, finds nothing,
+# treats it as never released, and echoes the current version back unchanged.
+# Keep this per-package. `git_only` is resolved per package, and for each
+# git-only package release-plz checks the last release tag out into a worktree
+# and runs `cargo package --workspace` in it. At the workspace level that is one
+# such pass per member, six full builds of the workspace for one answer.
 git_tag_name = "v{{version}}" # match the existing `v0.1.0` tags. release-plz
 # otherwise defaults to `{{package}}-v{{version}}` in a workspace, which matches
 # none of the tags in this repo — every crate then looks unreleased and the
