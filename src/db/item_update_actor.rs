@@ -15,6 +15,7 @@ use crate::{
     db::{
         IItemID,
         model::{InsertableWorkshopItem, InternalWorkshopItem},
+        tags_actor::TagsMsg,
     },
     processing::{
         bb_actor::BBMsg,
@@ -36,6 +37,7 @@ pub struct ItemUpdateArgs {
     pub steam_user_actor: ActorRef<SteamUserMsg>,
     pub database: Surreal<Db>,
     pub ml_queue: Option<ActorRef<MLQueueMsg>>, // optional ML queue actor
+    pub tags_actor: ActorRef<TagsMsg>,
 }
 pub struct ItemUpdateState {
     language_actor: ActorRef<LanguageMsg>,
@@ -43,6 +45,7 @@ pub struct ItemUpdateState {
     steam_user_actor: ActorRef<SteamUserMsg>,
     database: Surreal<Db>,
     ml_queue: Option<ActorRef<MLQueueMsg>>,
+    tags_actor: ActorRef<TagsMsg>,
 }
 
 pub enum ItemUpdateMsg {
@@ -68,6 +71,7 @@ impl Actor for ItemUpdateActor {
             bb_actor: args.bb_actor,
             steam_user_actor: args.steam_user_actor,
             ml_queue: args.ml_queue,
+            tags_actor: args.tags_actor,
         })
     }
 
@@ -120,6 +124,10 @@ impl Actor for ItemUpdateActor {
             ItemUpdateMsg::Upsert((item, children)) => {
                 let title = item.title.clone();
                 let item_id = item.id.clone();
+
+                state
+                    .tags_actor
+                    .send_message(TagsMsg::AddTagToApp(item.app.clone(), item.tags.clone()));
 
                 let _ = state
                     .steam_user_actor

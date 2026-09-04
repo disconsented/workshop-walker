@@ -4,7 +4,7 @@ use surrealdb_core::{
     val::TableName,
 };
 use surrealdb_types::{SurrealValue, Value};
-use tracing::{debug, error};
+use tracing::{debug, error, trace};
 
 use crate::{
     db::{AppID, IAppID, ITagID, model::InternalTag},
@@ -28,10 +28,6 @@ impl TagsPort for TagsSilo {
             .map(|tag| tag.id.clone())
             .collect::<Vec<ITagID>>();
 
-        // The `tags` table is SCHEMAFULL and requires an `app_id` that isn't
-        // part of `InternalTag`. Without it the INSERTs below coerce-fail and
-        // are *silently* dropped by `INSERT IGNORE`, so the tag rows never get
-        // created. Derive it from the owning app.
         let app_id: i64 = AppID::try_from(app.clone())
             .map_err(|error| TagError::Internal {
                 msg: error.to_string(),
@@ -41,9 +37,10 @@ impl TagsPort for TagsSilo {
         let mut query = self
             .db
             .query("BEGIN TRANSACTION;")
-            .query("UPDATE $id SET tags = $tag_ids;");
+            .query("UPDATE $id SET tags = tags.concat($tag_ids);");
 
         for tag in tags {
+            debug!(?app_id, ?tag, "upserting tag");
             let mut value = tag.into_value();
             if let Value::Object(obj) = &mut value {
                 obj.insert("app_id", app_id);
@@ -60,7 +57,7 @@ impl TagsPort for TagsSilo {
             .bind(("id", app))
             .bind(("tag_ids", tag_ids));
 
-        debug!(?query, "upsert tags");
+        trace!(?query, "upsert tags");
 
         if let Err(error) = query.await.map(IndexedResults::check) {
             error!(?error, "failed to upsert tag");
