@@ -61,8 +61,9 @@ impl Actor for JoinProcessActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             JoinProcessMsg::Process(mut data) => {
-                // Sometimes we'll find items that are missing this and they're effectively
-                // empty, so, just skip them and carry on
+                // Sometimes we'll find items that are missing this and they're
+                // effectively empty, so, just skip them and
+                // carry on
                 if data.consumer_appid.is_none() {
                     myself.stop(None);
                     return Ok(());

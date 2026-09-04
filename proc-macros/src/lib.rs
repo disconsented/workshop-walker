@@ -20,7 +20,8 @@ impl syn::parse::Parse for DualTypeAttr {
 
         if input.peek(syn::Token![,]) {
             input.parse::<syn::Token![,]>()?;
-            // If the next token is an identifier followed by '=', it's a keyword argument
+            // If the next token is an identifier followed by '=', it's a
+            // keyword argument
             if !(input.peek(syn::Ident) && input.peek2(syn::Token![=])) {
                 // Also check if it's `surreal(...)`
                 if !input.peek2(syn::token::Paren) {
@@ -100,8 +101,8 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
     let mut internal_derives = vec![];
     let mut external_derives = vec![];
 
-    // Parse the attribute input: #[dual_struct(derive(A, B), internal_derive(C),
-    // external_derive(D))]
+    // Parse the attribute input: #[dual_struct(derive(A, B),
+    // internal_derive(C), external_derive(D))]
     let mut shared_derives = Vec::new();
 
     {
@@ -232,7 +233,8 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
             .map(|f| {
                 let s = quote!(#f).to_string();
                 // Replace #[doc = r" ..."] with /// ...
-                // This is a naive replacement but should work for most cases in docs
+                // This is a naive replacement but should work for most cases in
+                // docs
                 s.replace("# [doc = r\"", "///")
                     .replace("# [doc = \"", "///")
                     .replace("\"]", "")

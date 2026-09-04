@@ -167,8 +167,8 @@ mod test {
         let biscuit = builder.build(&keypair).unwrap();
 
         let mut authorizer = biscuit.authorizer().unwrap();
-        // Biscuit doesn't have support for querying for a single string, so, we do this
-        // instead.
+        // Biscuit doesn't have support for querying for a single string, so, we
+        // do this instead.
         let res: (String, i64) = authorizer
             .query_exactly_one("data($name, 0) <- user($name, $id)")
             .unwrap();
@@ -189,9 +189,10 @@ mod test {
         .check()
         .unwrap();
 
-        // A property's identity *is* its {class, value} composite id, so it must
-        // be inserted as the id rather than as top-level content (which would
-        // generate a random string id and fail schema coercion).
+        // A property's identity *is* its {class, value} composite id, so it
+        // must be inserted as the id rather than as top-level content
+        // (which would generate a random string id and fail schema
+        // coercion).
         db.query("INSERT INTO properties (id) VALUES (properties:{class:'Type', value:'test'});")
             .await
             .unwrap()

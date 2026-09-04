@@ -234,10 +234,8 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         None => Err(InnerError::Unauthorized)?,
         Some(userid) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
-            let admin = call!(actor, |reply| {
-                AuthMessage::IsAdmin(userid, reply)
-            })
-            .map_err(|_| InnerError::InternalError)??;
+            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid, reply) })
+                .map_err(|_| InnerError::InternalError)??;
 
             if admin {
                 Ok(())
