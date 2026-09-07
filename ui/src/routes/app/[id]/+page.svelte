@@ -22,6 +22,7 @@
 	import { invalidate } from '$app/navigation';
 	import Property from '../../item/[item]/Property.svelte';
 	import { Switch } from '@skeletonlabs/skeleton-svelte';
+	import Search from './search.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -64,6 +65,7 @@
 	{:else}
 		<div class="min-h-screen">
 			<div class="mx-auto px-4 py-8">
+				<Search></Search>
 				{@render SearchPanel()}
 				<div class="mt-6">
 					<div class="mb-4 flex items-center gap-2">
