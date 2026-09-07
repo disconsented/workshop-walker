@@ -125,13 +125,13 @@
 	{/if}
 {:else}
 	<div class="field-group grid-cols-[auto_1fr_auto]">
-		<button class="ig-cell preset-tonal" onclick={onClick}>
+		<button class="label label-text preset-tonal" onclick={onClick}>
 			<Icon data={faPlus} class="fa-fw"></Icon>
 		</button>
-		<button class="btn ig-cell preset-filled" type="button" onclick={onClick}
+		<button class="btn label label-text preset-filled" type="button" onclick={onClick}
 			>Login To Suggest</button
 		>
-		<button class="ig-cell preset-tonal" onclick={onClick}>
+		<button class="label label-text preset-tonal" onclick={onClick}>
 			<Icon data={faRightToBracket} class="fa-fw"></Icon>
 		</button>
 	</div>
