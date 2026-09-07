@@ -20,7 +20,7 @@
 </script>
 
 <div
-	class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 flex w-md flex-col divide-y overflow-hidden border-[1px]"
+	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-md flex-col divide-y overflow-hidden border-[1px]"
 >
 	<header class="relative h-48">
 		<div>
@@ -36,7 +36,7 @@
 						'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
 				loading="lazy"
 			/>
-			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]">&nbsp</div>
+			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]"> </div>
 		</div>
 
 		<!--Details overlaid-->

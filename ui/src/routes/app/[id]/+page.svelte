@@ -177,8 +177,8 @@
 			</div>
 
 			<div class="flex gap-4 md:col-span-full">
-				<button type="submit" class="ig-btn preset-filled" onclick={runSearch}> Search</button>
-				<button type="reset" class="ig-btn preset-filled-warning-500"> Reset</button>
+				<button type="submit" class="btn preset-filled" onclick={runSearch}> Search</button>
+				<button type="reset" class="btn preset-filled-warning-500"> Reset</button>
 			</div>
 		</div>
 	</form>
@@ -262,7 +262,7 @@
 							<div class="relative h-full">
 								<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
 								<div
-									class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--body-background-color-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
+									class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--bg-root-bg-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
 								></div>
 							</div>
 						</td>
