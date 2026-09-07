@@ -202,7 +202,7 @@
 
 {#snippet linkSet(item)}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 flex max-w-xs flex-col place-content-between
+		class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex max-w-xs flex-col place-content-between
 					divide-y overflow-hidden border-[1px]"
 	>
 		<!--Title-->
@@ -240,7 +240,7 @@
 			{/each}
 		</article>
 		<!--Links-->
-		<footer class="input-group w-min-full grid-cols-[auto_auto]">
+		<footer class="field-group w-min-full grid-cols-[auto_auto]">
 			<a
 				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 				target="_blank"
@@ -290,7 +290,7 @@
 {#snippet titleCard()}
 	{@debug item}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 rounded-lg border-[1px] p-6"
+		class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 rounded-lg border-[1px] p-6"
 	>
 		<!--Title-->
 		<h1 class="mb-4 text-4xl font-bold"><a href="#title">{item.title}</a></h1>
@@ -412,7 +412,7 @@
 
 {#snippet description()}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+		class="card preset-filled-surface-100-900 border-surface-200-800 rounded-lg border-[1px] p-6"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#description">Description</a></h2>
 		<p class="prose prose-invert max-w-none whitespace-pre-wrap">{@html data.data.description}</p>
@@ -421,7 +421,7 @@
 
 {#snippet relations()}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
+		class="card preset-filled-surface-100-900 border-surface-200-800 grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
 	>
 		<!-- Controls -->
 		<Accordion
@@ -606,7 +606,7 @@
 
 {#snippet companions()}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
+		class="card preset-filled-surface-100-900 border-surface-200-800 grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#relations">Relations</a></h2>
 		<!-- Controls -->
@@ -789,7 +789,7 @@
 
 {#snippet companionCard(item)}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 border-l-primary-500 flex max-w-xs flex-col
+		class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 border-l-primary-500 flex max-w-xs flex-col
             place-content-between divide-y overflow-hidden border-[1px] border-l-4"
 	>
 		<!-- Title with voting -->
@@ -842,7 +842,7 @@
 		</article>
 
 		<!-- Links -->
-		<footer class="input-group w-min-full grid-cols-[auto_auto]">
+		<footer class="field-group w-min-full grid-cols-[auto_auto]">
 			<a
 				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 				target="_blank"

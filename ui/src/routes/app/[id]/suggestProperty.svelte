@@ -122,20 +122,20 @@
 		</div>
 		<div class="flow-row flex flex-wrap gap-2 p-2" id="suggest-property">
 			<div class="flex w-full">
-				<div class="input-group bg-surface-50-950 w-full grid-cols-[auto_1fr_auto]">
+				<div class="field-group bg-surface-50-950 w-full grid-cols-[auto_1fr_auto]">
 					<div class="ig-cell text-xs uppercase text-(--color-{accentColour}-500)">
 						{prop_class}
 					</div>
-					<input class="ig-input" type="text" required bind:value={property_details.value} />
+					<input class="input" type="text" required bind:value={property_details.value} />
 				</div>
 			</div>
 			<div class="flex w-full" id="suggest-property-reasoning">
-				<div class="input-group bg-surface-50-950 w-full grid-cols-[auto_1fr_auto]">
+				<div class="field-group bg-surface-50-950 w-full grid-cols-[auto_1fr_auto]">
 					<div class="ig-cell text-xs uppercase">
 						<Icon data={faQuoteLeft} class="fa-fw text-xs text-gray-600" scale={0.8} />
 					</div>
 					<input
-						class="ig-input bg-surface-50-950"
+						class="input bg-surface-50-950"
 						type="text"
 						placeholder="Reasoning - optional"
 						bind:value={property_details.note}

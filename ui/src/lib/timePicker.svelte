@@ -35,11 +35,11 @@
 
 <!-- Style override for colour: https://github.com/tailwindlabs/tailwindcss/issues/14499-->
 <div
-	class="input-group input grid-cols-[1fr_auto] rounded-lg border"
+	class="field-group input grid-cols-[1fr_auto] rounded-lg border"
 	style="border-color: oklch(0.551 0.027 264.364)"
 >
-	<input type="date" class="ig-input" bind:value={localDate} onchange={inputChange} />
-	<select class="ig-select" onchange={selectChange}>
+	<input type="date" class="input" bind:value={localDate} onchange={inputChange} />
+	<select class="select" onchange={selectChange}>
 		<option value={1}>Today</option>
 		<option value={7}>One Week</option>
 		<option value={30}>One Month</option>
