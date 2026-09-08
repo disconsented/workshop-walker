@@ -20,7 +20,7 @@
 </script>
 
 <div
-	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-md flex-col divide-y overflow-hidden border-[1px] justify-between"
+	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-md flex-col justify-between divide-y overflow-hidden border-[1px]"
 >
 	<header class="relative h-48">
 		<div>
@@ -49,7 +49,7 @@
 					rel="noopener noreferrer"
 					class="btn preset-filled-surface-50-950 mt-1 rounded-md border-1 border-dashed border-gray-500 text-xs text-gray-500 opacity-80 hover:text-gray-700"
 				>
-					<Icon data={faSteam} class="fa-fw"></Icon>
+					<Icon data={faSteam} class="fa-fw"/>
 					Steam
 				</a>
 			</div>
@@ -70,7 +70,7 @@
 						rel="noopener noreferrer"
 						class="anchor flex items-center gap-1"
 					>
-						<Icon data={faSteam} class="fa-fw"></Icon>
+						<Icon data={faSteam} class="fa-fw"/>
 						{item.author.name}</a
 					>
 					<div class="mb-2 flex items-center">
@@ -82,10 +82,10 @@
 			</div>
 		</div>
 	</header>
-	<article class="space-y-4 p-4 grow flex justify-between flex-col">
+	<article class="flex grow flex-col justify-between space-y-4 p-4">
 		<div
-			class="mb-2 overflow-hidden hover:overflow-scroll text-sm text-wrap text-ellipsis
-						text-gray-600 transition-[height] duration-150 ease-in-out max-h-[4lh] hover:max-h-[10lh]"
+			class="mb-2 max-h-[4lh] overflow-hidden text-sm text-wrap text-ellipsis
+						text-gray-600 transition-[height] duration-150 ease-in-out hover:max-h-[10lh] hover:overflow-scroll"
 		>
 			{@html item.description}
 		</div>
@@ -97,7 +97,7 @@
 			{/each}
 		</div>
 	</article>
-	<footer class="m-2 flex w-full flex-row flex-wrap self-end pl-4 grow-0">
+	<footer class="m-2 flex w-full grow-0 flex-row flex-wrap self-end pl-4">
 		{#if first_props}
 			{@debug first_props}
 			<div class="flex w-full shrink-0 flex-wrap gap-1">
@@ -139,13 +139,13 @@
 			<a
 				href="/api/login?location={location}"
 				class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
-			><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
+				><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
 				<span class="btn btn-sm preset-filled-primary-500"
-				><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
+					><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
 				></a
 			>
 		{:else}
-			<div class="flex h-fit w-full flex-col justify-end grow-0">
+			<div class="flex h-fit w-full grow-0 flex-col justify-end">
 				{@render suggestProperty(item.id)}
 			</div>
 		{/if}
