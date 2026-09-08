@@ -2,7 +2,6 @@
 	import Icon from 'svelte-awesome';
 
 	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
-	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import {
 		fa1,
 		faArrowLeft,
@@ -11,8 +10,9 @@
 		faChevronRight,
 		faCross,
 		faEllipsis,
+		faExternalLink,
 		faGrip,
-		faLink,
+		faImage,
 		faTableList,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
@@ -20,11 +20,12 @@
 	import ItemCard from './itemCard.svelte';
 
 	import { Pagination, SegmentedControl, Switch } from '@skeletonlabs/skeleton-svelte';
-	import TimeAgo from '$lib/timeAgo.svelte';
 	import TimePicker from '$lib/timePicker.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import { invalidate } from '$app/navigation';
 	import Search from './search.svelte';
+	import { faSteam } from '@fortawesome/free-brands-svg-icons';
+	import TimeAgo from '$lib/timeAgo.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -48,6 +49,25 @@
 	}
 
 	const logged_in = document.cookie.includes('token_set=');
+
+	function intToLanguage(int: number) {
+		switch (int) {
+			case 1:
+				return 'EN';
+			case 2:
+				return 'RU';
+			case 3:
+				return 'CN';
+			case 4:
+				return 'JP';
+			case 5:
+				return 'KR';
+			case 6:
+				return 'ES';
+			case 7:
+				return 'PT';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -69,15 +89,19 @@
 			<div class="mx-auto px-4 py-8">
 				<Search tags={app.v.tags}></Search>
 				<div class="mt-6">
-					<div class="mb-4 flex justify-between gap-4 w-full">
+					<div class="mb-4 flex w-full justify-between gap-4">
 						<!--Left-->
 						<div class="flex items-center gap-4">
 							<div>
-								<span class="text-white font-bold">{value.length}</span>
+								<span class="font-bold text-white">{value.length}</span>
 								<span class="text-sm opacity-60">results</span>
 							</div>
 
-							<SegmentedControl value={viewMode} onValueChange={(details) => (viewMode = details.value)} class="p-0">
+							<SegmentedControl
+								value={viewMode}
+								onValueChange={(details) => (viewMode = details.value ?? 'grid')}
+								class="p-0"
+							>
 								<SegmentedControl.Control>
 									<SegmentedControl.Indicator />
 									<SegmentedControl.Item value="grid">
@@ -97,33 +121,28 @@
 								</SegmentedControl.Control>
 							</SegmentedControl>
 
-							<div class="flex items-center gap-2 w-fit">
-								<span class="text-sm opacity-60 shrink-0">Per page</span>
-								<select class="select"
-								        value={pageSize}
-								        onchange={(e) => (pageSize = Number(e.currentTarget.value))}>
+							<div class="flex w-fit items-center gap-2">
+								<span class="shrink-0 text-sm opacity-60">Per page</span>
+								<select
+									class="select"
+									value={pageSize}
+									onchange={(e) => (pageSize = Number(e.currentTarget.value))}
+								>
 									{#each [5, 10, 15, 30] as v}
 										<option value={v}>Items {v}</option>
 									{/each}
 									<option value={value.length}>Show All</option>
 								</select>
 							</div>
-
-							{#if viewMode === 'table'}
-								<div class="flex items-center justify-between gap-1">
-									<Switch
-										name="show_images"
-										checked={showTableImages}
-										onCheckedChange={(e) => (showTableImages = e.checked)}
-									></Switch>
-									<label for="show_images">Show images</label>
-								</div>
-							{/if}
 						</div>
 						<!--Right-->
 						<div>
-
-							<Pagination {page} count={value.length} {pageSize} onPageChange={(event) => (page = event.page)}>
+							<Pagination
+								{page}
+								count={value.length}
+								{pageSize}
+								onPageChange={(event) => (page = event.page)}
+							>
 								<Pagination.PrevTrigger>
 									<Icon data={faChevronLeft} class="fa-fw"></Icon>
 								</Pagination.PrevTrigger>
@@ -148,16 +167,12 @@
 								</Pagination.NextTrigger>
 							</Pagination>
 						</div>
-
-
-						<!--{@debug data}-->
-
 					</div>
 
 					{#if viewMode === 'table'}
 						{@render rTable(value)}
 					{:else}
-						{@render rgrid(value)}
+						{@render rGrid(value)}
 					{/if}
 				</div>
 			</div>
@@ -236,99 +251,110 @@
 {/snippet}
 
 {#snippet rTable(data)}
-	<div class="table-wrap overflow-hidden rounded-lg shadow">
-		<table class="table caption-bottom">
-			<thead class="">
+	<div class="card bg-surface-100-900 table-wrap p-4">
+		<table class="table-zebra table">
+			<caption class="pt-4">
+				<div class="flex flex-row justify-between">
+					<span>{data.length} results</span>
+					<Switch
+						name="showImages"
+						checked={showTableImages}
+						onCheckedChange={(e) => (showTableImages = e.checked)}
+						dir="rtl"
+					>
+						<Switch.Control>
+							<Switch.Thumb />
+						</Switch.Control>
+						<Switch.Label>
+							<Icon data={faImage} class="fa-fw" />
+							Thumbnails
+						</Switch.Label>
+						<Switch.HiddenInput />
+					</Switch>
+				</div>
+			</caption>
+			<thead>
 			<tr>
-				{#if showTableImages === true}
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
+				{#if showTableImages}
+					<th>&nbsp;</th>
 				{/if}
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-					Last Updated
-				</th>
-				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-					Description
-				</th>
+				<th>Item</th>
+				<th>Author</th>
+				<th>Langs</th>
+				<th>Updated</th>
+				<th>Links</th>
 			</tr>
 			</thead>
-			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
+			<tbody class="[&>tr]:hover:preset-tonal-brand">
 			{#each slicedSource(data) as item (item.id)}
-				<tr class="group hover:bg-gray-50">
-					{#if showTableImages === true}
-						<td class="w-52 p-0">
-							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
-								<img
-									class="aspect-video object-cover lg:h-32 lg:min-w-48"
-									class:hue-rotate-90={!item.preview_url}
-									class:grayscale={!item.preview_url}
-									src={item.preview_url ||
-											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-									alt="banner"
-									loading="lazy"
-								/></a
-							>
+				<tr>
+					{#if showTableImages}
+						<td class="w-full h-[2lh]">
+							<img src={item.preview_url} class="rounded-md object-cover" alt="Item Preview" />
 						</td>
 					{/if}
-					<td class="px-6 py-4 text-sm">
-						<a
-							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-							target="_blank"
-							rel="noopener noreferrer"
-							class=""
-						>
-							{item.title}
-						</a>
-						<br />
-						<span class="text-xs text-gray-500"
-						>Lookup: <a
-							href="/item/{item.id}"
-							target="_self"
-							rel="noopener noreferrer"
-							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-						></span
-						>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						<a
-							href="https://steamcommunity.com/profiles/{item.author}"
-							class="anchor whitespace-nowrap"
-						>
-							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-							Author
-						</a>
-						<br />
-						<small class="text-gray-500">
-							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
-							>Details
-								<Icon data={faLink} class="fa-fw"></Icon>
-							</a>
-						</small>
-					</td>
-					<td class="px-6 py-4 text-sm">
-						<TimeAgo date={item.last_updated}></TimeAgo>
-					</td>
-					<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
-						<div class="relative h-full">
-							<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
-							<div
-								class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--bg-root-bg-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
-							></div>
+					<td>
+						<div class="flex flex-col">
+							<span class="font-bold">{item.title}</span>
+							<div class="flex flex-row gap-1 text-ellipsis">
+								{#each item.tags as tag (tag.id)}
+									<span class="badge preset-outlined">{tag.display_name}</span>
+								{:else}
+									<span class="badge preset-outlined">-</span>
+								{/each}
+								<span class="line-clamp-1 max-h-[1lh]">{@html item.description}</span>
+							</div>
 						</div>
 					</td>
-				</tr>
-			{:else}
-				<tr>
-					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+					<td
+					><a
+						href="https://steamcommunity.com/id/{item.author.id}"
+						target="_self"
+						rel="noopener noreferrer"
+						class="anchor flex items-center gap-1"
+					>
+						<Icon data={faSteam} class="fa-fw" />
+						{item.author.name}</a
+					></td
+					>
+					<td>
+						<div class="flex flex-row gap-1">
+							{#each item.languages as language, i}
+								{#if i != 0}·{/if}
+								<span class="text-sm opacity-60">
+										{intToLanguage(language)}</span
+								>{/each}
+						</div>
+					</td>
+					<td>
+						<TimeAgo date={item.last_updated} short={true}></TimeAgo>
+					</td>
+					<td>
+						<div class="flex flex-row gap-1 place-items-center">
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer"
+							   class="btn preset-outlined-surface-300-700 p-2">
+								<Icon data={faExternalLink} class="fa-fw" />
+							</a>
+
+							<a
+								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn preset-outlined-surface-300-700 p-2"
+							>
+								<Icon data={faSteam} class="fa-fw" />
+							</a>
+						</div>
+					</td>
 				</tr>
 			{/each}
 			</tbody>
 		</table>
 	</div>
+
 {/snippet}
 
-{#snippet rgrid(data)}
+{#snippet rGrid(data)}
 	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
 			<ItemCard {item} loggedIn={logged_in}></ItemCard>
@@ -336,35 +362,6 @@
 			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}
 	</div>
-{/snippet}
-
-{#snippet pagination(obj)}
-	<!-- Pagination -->
-
-	<Pagination
-		data={obj.data}
-		{page}
-		onPageChange={(e) => (page = e.page)}
-		pageSize={pageSize}
-		onPageSizeChange={(e) => (pageSize = e.pageSize)}
-		siblingCount={4}
-	>
-		{#snippet labelEllipsis()}
-			<Icon data={faEllipsis} class="fa-fw"></Icon>
-		{/snippet}
-		{#snippet labelNext()}
-			<Icon data={faArrowRight} class="fa-fw"></Icon>
-		{/snippet}
-		{#snippet labelPrevious()}
-			<Icon data={faArrowLeft} class="fa-fw"></Icon>
-		{/snippet}
-		{#snippet labelFirst()}
-			<Icon data={fa1} class="fa-fw"></Icon>
-		{/snippet}
-		{#snippet labelLast()}
-			<Icon data={faCross} class="fa-fw"></Icon>
-		{/snippet}
-	</Pagination>
 {/snippet}
 
 {#snippet errorCard(value)}

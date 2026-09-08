@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { timeAgo } from '$lib/timeAgo';
 
-	let { date }: { date: number } = $props();
+	let { date, short = false }: { date: number; short?: boolean } = $props();
 </script>
 
-{timeAgo.format(new Date(date * 1000))}
+{#if short}
+	{timeAgo.format(new Date(date * 1000), 'mini')}
+{:else}{timeAgo.format(new Date(date * 1000))}
+{/if}
