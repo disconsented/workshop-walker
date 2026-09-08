@@ -11,7 +11,8 @@
 	--typo-base--letter-spacing: 0em;
 	--typo-heading--color-light: inherit;
 	--typo-heading--color-dark: inherit;
-	--typo-heading--font-family: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
+	--typo-heading--font-family:
+		'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
 	--typo-heading--font-weight: bold;
 	--typo-heading--font-style: normal;
 	--typo-heading--letter-spacing: inherit;
