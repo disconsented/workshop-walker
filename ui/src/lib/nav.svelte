@@ -3,33 +3,45 @@
 	import Icon from 'svelte-awesome';
 	import { faGithub, faSteam } from '@fortawesome/free-brands-svg-icons';
 	import Logotype from './logotype.svelte';
-
-	export interface Segment {
-		title: string;
-		href: string;
-	}
+	import type { Breadcrumbs, Segment } from './breadcrumbs';
 
 	interface Props {
 		loggedIn: boolean;
 		location: string;
-		segments?: Segment[];
+		segments?: Breadcrumbs;
 	}
 
-	let { loggedIn = $bindable(), segments = undefined }: Props = $props();
+	let { loggedIn = $bindable(), location, segments = [] }: Props = $props();
 </script>
+
+{#snippet trail(segments: Segment[])}
+	{#each segments as segment, index (segment.href)}
+		<li class="opacity-50" aria-hidden="true">/</li>
+		<li>
+			{#if index === segments.length - 1}
+				<a href={segment.href} aria-current="page" class="hover:underline">{segment.title}</a>
+			{:else}
+				<a class="opacity-60 hover:underline" href={segment.href}>{segment.title}</a>
+			{/if}
+		</li>
+	{/each}
+{/snippet}
 
 <header class="">
 	<AppBar>
 		<AppBar.Toolbar class="grid-cols-[1fr_1fr]">
 			<AppBar.Lead>
-				<ol class="flex items-center gap-4">
+				<ol class="flex items-center gap-4" aria-label="Breadcrumb">
 					<li class="flex">
-						<Logotype></Logotype>
+						<a href="/" aria-label="Workshop Walker"><Logotype></Logotype></a>
 					</li>
-					{#each segments as segment}
-						<li class="opacity-50" aria-hidden>/</li>
-						<li><a class="opacity-60 hover:underline" href={segment.href}>{segment.title}</a></li>
-					{/each}
+					{#if Array.isArray(segments)}
+						{@render trail(segments)}
+					{:else}
+						{#await segments then resolved}
+							{@render trail(resolved)}
+						{/await}
+					{/if}
 				</ol>
 			</AppBar.Lead>
 			<AppBar.Trail class="justify-end">
