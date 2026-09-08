@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { faChevronDown, faChevronUp, faLink, faLock } from '@fortawesome/free-solid-svg-icons';
-	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
+	import { faSteam, faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import Property from '../../item/[item]/Property.svelte';
 	import Icon from 'svelte-awesome';
@@ -20,7 +20,7 @@
 </script>
 
 <div
-	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-md flex-col divide-y overflow-hidden border-[1px]"
+	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-md flex-col divide-y overflow-hidden border-[1px] justify-between"
 >
 	<header class="relative h-48">
 		<div>
@@ -36,25 +36,22 @@
 						'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
 				loading="lazy"
 			/>
-			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]"> </div>
+			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]"></div>
 		</div>
 
 		<!--Details overlaid-->
 		<div class="t-0 absolute left-0 flex h-full w-full flex-col justify-between">
 			<!--Top-->
 			<div class="flex w-full justify-end">
-				<button
-					class="btn preset-filled-surface-50-950 mt-1 rounded-md border-1 border-dashed border-gray-500 text-xs text-gray-500 opacity-80"
+				<a
+					href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="btn preset-filled-surface-50-950 mt-1 rounded-md border-1 border-dashed border-gray-500 text-xs text-gray-500 opacity-80 hover:text-gray-700"
 				>
-					<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-					<a
-						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="hover:text-gray-700"
-						>Steam
-					</a>
-				</button>
+					<Icon data={faSteam} class="fa-fw"></Icon>
+					Steam
+				</a>
 			</div>
 			<!--Bottom (Title, author, updated-->
 			<div class="flex w-full flex-col">
@@ -73,7 +70,7 @@
 						rel="noopener noreferrer"
 						class="anchor flex items-center gap-1"
 					>
-						<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+						<Icon data={faSteam} class="fa-fw"></Icon>
 						{item.author.name}</a
 					>
 					<div class="mb-2 flex items-center">
@@ -85,10 +82,10 @@
 			</div>
 		</div>
 	</header>
-	<article class="space-y-4 p-4">
+	<article class="space-y-4 p-4 grow flex justify-between flex-col">
 		<div
-			class="mb-2 max-h-[3lh] overflow-hidden text-sm text-wrap text-ellipsis
-						text-gray-600 transition-[height] duration-150 ease-in-out hover:max-h-[10lh]"
+			class="mb-2 overflow-hidden hover:overflow-scroll text-sm text-wrap text-ellipsis
+						text-gray-600 transition-[height] duration-150 ease-in-out max-h-[4lh] hover:max-h-[10lh]"
 		>
 			{@html item.description}
 		</div>
@@ -100,7 +97,7 @@
 			{/each}
 		</div>
 	</article>
-	<footer class="m-2 flex w-full grow flex-row flex-wrap self-end pl-4">
+	<footer class="m-2 flex w-full flex-row flex-wrap self-end pl-4 grow-0">
 		{#if first_props}
 			{@debug first_props}
 			<div class="flex w-full shrink-0 flex-wrap gap-1">
@@ -142,13 +139,13 @@
 			<a
 				href="/api/login?location={location}"
 				class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
-				><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
+			><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
 				<span class="btn btn-sm preset-filled-primary-500"
-					><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
+				><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
 				></a
 			>
 		{:else}
-			<div class="flex h-fit w-full flex-col justify-end">
+			<div class="flex h-fit w-full flex-col justify-end grow-0">
 				{@render suggestProperty(item.id)}
 			</div>
 		{/if}
@@ -158,11 +155,3 @@
 {#snippet suggestProperty(itemID: string)}
 	<SuggestProperty {itemID} />
 {/snippet}
-
-<style>
-	.preset-glass-surface {
-		background: color-mix(in oklab, var(--color-surface-900) 40%, transparent);
-		box-shadow: 0 0px 30px color-mix(in oklab, var(--color-surface-900) 50%, transparent) inset;
-		backdrop-filter: blur(16px);
-	}
-</style>

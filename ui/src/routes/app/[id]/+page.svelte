@@ -7,21 +7,23 @@
 		fa1,
 		faArrowLeft,
 		faArrowRight,
+		faChevronLeft,
+		faChevronRight,
 		faCross,
 		faEllipsis,
+		faGrip,
 		faLink,
+		faTableList,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { tags, orderBy, language, limit, title, app } from './store.svelte';
+	import { app, language, limit, orderBy, tags, title } from './store.svelte';
 	import ItemCard from './itemCard.svelte';
 
-	import { Pagination } from '@skeletonlabs/skeleton-svelte';
+	import { Pagination, SegmentedControl, Switch } from '@skeletonlabs/skeleton-svelte';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import TimePicker from '$lib/timePicker.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import { invalidate } from '$app/navigation';
-	import Property from '../../item/[item]/Property.svelte';
-	import { Switch } from '@skeletonlabs/skeleton-svelte';
 	import Search from './search.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -35,8 +37,8 @@
 	let showTableImages = $state(false);
 
 	let page = $state(1);
-	let size = $state(15);
-	const slicedSource = $derived((s) => s.slice((page - 1) * size, page * size));
+	let pageSize = $state(15);
+	const slicedSource = $derived((s) => s.slice((page - 1) * pageSize, page * pageSize));
 
 	function runSearch(e) {
 		e.preventDefault();
@@ -65,42 +67,91 @@
 	{:else}
 		<div class="min-h-screen">
 			<div class="mx-auto px-4 py-8">
-				<Search></Search>
-				{@render SearchPanel()}
+				<Search tags={app.v.tags}></Search>
 				<div class="mt-6">
-					<div class="mb-4 flex items-center gap-2">
-						<button
-							class="btn {viewMode === 'table'
-								? 'preset-filled-primary-500'
-								: 'preset-outlined-surface-500'} "
-							onclick={() => (viewMode = 'table')}
-						>
-							Table View
-						</button>
-						<button
-							class="btn {viewMode === 'grid'
-								? 'preset-filled-primary-500'
-								: 'preset-outlined-surface-500'}"
-							onclick={() => (viewMode = 'grid')}
-						>
-							Grid View
-						</button>
-
-						{#if viewMode === 'table'}
-							<div class="flex items-center justify-between gap-1">
-								<Switch
-									name="show_images"
-									checked={showTableImages}
-									onCheckedChange={(e) => (showTableImages = e.checked)}
-								></Switch>
-								<label for="show_images">Show images</label>
+					<div class="mb-4 flex justify-between gap-4 w-full">
+						<!--Left-->
+						<div class="flex items-center gap-4">
+							<div>
+								<span class="text-white font-bold">{value.length}</span>
+								<span class="text-sm opacity-60">results</span>
 							</div>
-						{/if}
-					</div>
 
-					<div class="flex flex-row place-content-stretch">
-						<span>{value.length} Result(s)</span>
-						<div>{@render pagination({ data: value })}</div>
+							<SegmentedControl value={viewMode} onValueChange={(details) => (viewMode = details.value)} class="p-0">
+								<SegmentedControl.Control>
+									<SegmentedControl.Indicator />
+									<SegmentedControl.Item value="grid">
+										<SegmentedControl.ItemText>
+											<Icon data={faGrip} class="fa-fw" />
+											Grid
+										</SegmentedControl.ItemText>
+										<SegmentedControl.ItemHiddenInput />
+									</SegmentedControl.Item>
+									<SegmentedControl.Item value="table">
+										<SegmentedControl.ItemText>
+											<Icon data={faTableList} class="fa-fw" />
+											Table
+										</SegmentedControl.ItemText>
+										<SegmentedControl.ItemHiddenInput />
+									</SegmentedControl.Item>
+								</SegmentedControl.Control>
+							</SegmentedControl>
+
+							<div class="flex items-center gap-2 w-fit">
+								<span class="text-sm opacity-60 shrink-0">Per page</span>
+								<select class="select"
+								        value={pageSize}
+								        onchange={(e) => (pageSize = Number(e.currentTarget.value))}>
+									{#each [5, 10, 15, 30] as v}
+										<option value={v}>Items {v}</option>
+									{/each}
+									<option value={value.length}>Show All</option>
+								</select>
+							</div>
+
+							{#if viewMode === 'table'}
+								<div class="flex items-center justify-between gap-1">
+									<Switch
+										name="show_images"
+										checked={showTableImages}
+										onCheckedChange={(e) => (showTableImages = e.checked)}
+									></Switch>
+									<label for="show_images">Show images</label>
+								</div>
+							{/if}
+						</div>
+						<!--Right-->
+						<div>
+
+							<Pagination {page} count={value.length} {pageSize} onPageChange={(event) => (page = event.page)}>
+								<Pagination.PrevTrigger>
+									<Icon data={faChevronLeft} class="fa-fw"></Icon>
+								</Pagination.PrevTrigger>
+
+								<Pagination.Context>
+									{#snippet children(pagination)}
+										{#each pagination().pages as page, index (page)}
+											{#if page.type === 'page'}
+												<Pagination.Item {...page}>
+													{page.value}
+												</Pagination.Item>
+											{:else}
+												<Pagination.Ellipsis {index}>
+													<Icon data={faEllipsis} class="fa-fw" />
+												</Pagination.Ellipsis>
+											{/if}
+										{/each}
+									{/snippet}
+								</Pagination.Context>
+								<Pagination.NextTrigger>
+									<Icon data={faChevronRight} class="fa-fw" />
+								</Pagination.NextTrigger>
+							</Pagination>
+						</div>
+
+
+						<!--{@debug data}-->
+
 					</div>
 
 					{#if viewMode === 'table'}
@@ -188,108 +239,92 @@
 	<div class="table-wrap overflow-hidden rounded-lg shadow">
 		<table class="table caption-bottom">
 			<thead class="">
-				<tr>
-					{#if showTableImages === true}
-						<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
-					{/if}
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-						Last Updated
-					</th>
-					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
-						Description
-					</th>
-				</tr>
+			<tr>
+				{#if showTableImages === true}
+					<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Image</th>
+				{/if}
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Title</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Author</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+					Last Updated
+				</th>
+				<th class="px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
+					Description
+				</th>
+			</tr>
 			</thead>
 			<tbody class="[&>tr]:hover:preset-tonal-primary divide-y divide-gray-200">
-				{#each slicedSource(data) as item (item.id)}
-					<tr class="group hover:bg-gray-50">
-						{#if showTableImages === true}
-							<td class="w-52 p-0">
-								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
-									<img
-										class="aspect-video object-cover lg:h-32 lg:min-w-48"
-										class:hue-rotate-90={!item.preview_url}
-										class:grayscale={!item.preview_url}
-										src={item.preview_url ||
+			{#each slicedSource(data) as item (item.id)}
+				<tr class="group hover:bg-gray-50">
+					{#if showTableImages === true}
+						<td class="w-52 p-0">
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer">
+								<img
+									class="aspect-video object-cover lg:h-32 lg:min-w-48"
+									class:hue-rotate-90={!item.preview_url}
+									class:grayscale={!item.preview_url}
+									src={item.preview_url ||
 											'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-										alt="banner"
-										loading="lazy"
-									/></a
-								>
-							</td>
-						{/if}
-						<td class="px-6 py-4 text-sm">
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class=""
+									alt="banner"
+									loading="lazy"
+								/></a
 							>
-								{item.title}
+						</td>
+					{/if}
+					<td class="px-6 py-4 text-sm">
+						<a
+							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class=""
+						>
+							{item.title}
+						</a>
+						<br />
+						<span class="text-xs text-gray-500"
+						>Lookup: <a
+							href="/item/{item.id}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
+						></span
+						>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<a
+							href="https://steamcommunity.com/profiles/{item.author}"
+							class="anchor whitespace-nowrap"
+						>
+							<Icon data={faSteamSymbol} class="fa-fw"></Icon>
+							Author
+						</a>
+						<br />
+						<small class="text-gray-500">
+							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
+							>Details
+								<Icon data={faLink} class="fa-fw"></Icon>
 							</a>
-							<br />
-							<span class="text-xs text-gray-500"
-								>Lookup: <a
-									href="/item/{item.id}"
-									target="_self"
-									rel="noopener noreferrer"
-									class="btn text-xs">Details <Icon data={faLink} class="fa-fw"></Icon></a
-								></span
-							>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<a
-								href="https://steamcommunity.com/profiles/{item.author}"
-								class="anchor whitespace-nowrap"
-							>
-								<Icon data={faSteamSymbol} class="fa-fw"></Icon>
-								Author
-							</a>
-							<br />
-							<small class="text-gray-500">
-								<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class=""
-									>Details
-									<Icon data={faLink} class="fa-fw"></Icon>
-								</a>
-							</small>
-						</td>
-						<td class="px-6 py-4 text-sm">
-							<TimeAgo date={item.last_updated}></TimeAgo>
-						</td>
-						<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
-							<div class="relative h-full">
-								<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
-								<div
-									class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--bg-root-bg-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
-								></div>
-							</div>
-						</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
-					</tr>
-				{/each}
+						</small>
+					</td>
+					<td class="px-6 py-4 text-sm">
+						<TimeAgo date={item.last_updated}></TimeAgo>
+					</td>
+					<td class="table-description block h-36 overflow-hidden text-sm wrap-anywhere">
+						<div class="relative h-full">
+							<p class="line-clamp-5 text-sm leading-relaxed">{item.description}</p>
+							<div
+								class="pointer-events-none absolute right-0 bottom-0 left-0 h-10 bg-gradient-to-t from-[var(--bg-root-bg-dark)] to-transparent group-hover:from-[var(--color-primary-50-950)]"
+							></div>
+						</div>
+					</td>
+				</tr>
+			{:else}
+				<tr>
+					<td colspan="4" class="px-6 py-4 text-center text-gray-500">No results found</td>
+				</tr>
+			{/each}
 			</tbody>
 		</table>
-
-		<footer class="flex justify-between">
-			<select
-				name="size"
-				id="size"
-				class="select max-w-[150px]"
-				value={size}
-				onchange={(e) => (size = Number(e.currentTarget.value))}
-			>
-				{#each [5, 10, 15, 30] as v}
-					<option value={v}>Items {v}</option>
-				{/each}
-				<option value={data.length}>Show All</option>
-			</select>
-			{@render pagination({ data: data })}
-		</footer>
 	</div>
 {/snippet}
 
@@ -301,32 +336,17 @@
 			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}
 	</div>
-
-	<footer class="flex justify-between">
-		<select
-			name="size"
-			id="size"
-			class="select max-w-[150px]"
-			value={size}
-			onchange={(e) => (size = Number(e.currentTarget.value))}
-		>
-			{#each [5, 10, 15, 30] as v}
-				<option value={v}>Items {v}</option>
-			{/each}
-			<option value={data.length}>Show All</option>
-		</select>
-		{@render pagination({ data: data })}
-	</footer>
 {/snippet}
 
 {#snippet pagination(obj)}
 	<!-- Pagination -->
+
 	<Pagination
 		data={obj.data}
 		{page}
 		onPageChange={(e) => (page = e.page)}
-		pageSize={size}
-		onPageSizeChange={(e) => (size = e.pageSize)}
+		pageSize={pageSize}
+		onPageSizeChange={(e) => (pageSize = e.pageSize)}
 		siblingCount={4}
 	>
 		{#snippet labelEllipsis()}
