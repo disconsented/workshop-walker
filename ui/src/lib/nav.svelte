@@ -65,7 +65,7 @@
 						aria-label="Sign In Through Steam"
 						class="btn preset-outlined-primary-100-900"
 					>
-						<Icon data={faSteam} class="fa-fw"></Icon>
+						<Icon data={faSteam} class="fa-fw"/>
 						Sign in with Steam
 					</a>
 				{/if}
