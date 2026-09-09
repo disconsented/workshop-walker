@@ -114,7 +114,7 @@
 				<div class="flex flex-row items-center justify-between">
 					Tags
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
-						<SegmentedControl.Control>
+						<SegmentedControl.Control class="gap-0 p-0">
 							<SegmentedControl.Indicator />
 							<SegmentedControl.Item value="and">
 								<SegmentedControl.ItemText>AND</SegmentedControl.ItemText>
@@ -145,7 +145,7 @@
 				<div class="flex flex-row items-center justify-between">
 					Properties
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
-						<SegmentedControl.Control>
+						<SegmentedControl.Control class="gap-0 p-0">
 							<SegmentedControl.Indicator />
 							<SegmentedControl.Item value="and">
 								<SegmentedControl.ItemText>AND</SegmentedControl.ItemText>
