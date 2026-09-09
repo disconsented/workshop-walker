@@ -10,7 +10,7 @@ use crate::{
         model::{Class, InternalSource, Status},
         properties_actor::PropertiesMsg,
     },
-    domain::properties::InternalNewProperty,
+    domain::properties::{InternalNewProperty, PropertiesError},
 };
 
 pub struct MLQueueActor;
@@ -118,10 +118,13 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
                     reply
                 )) {
                     Ok(Ok(..)) => {
-                        debug!(%class, %value, "Inserted new property");
+                        debug!(?workshop_item, %class, %value, "Inserted new property");
+                    }
+                    Ok(Err(PropertiesError::Conflict)) => {
+                        debug!(?workshop_item, %class, %value, "Property conflict");
                     }
                     Ok(Err(error)) => {
-                        error!(?error,%class, %value,  "Inserting new property");
+                        error!(?error, ?workshop_item,  %class, %value,  "Inserting new property");
                     }
                     Err(_) => (),
                 }

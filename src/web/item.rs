@@ -137,8 +137,8 @@ async fn get_item(
     // The current user's own vote score for this property, if any. Looks up the
     // per-user vote record keyed the same way the write side keys it (see
     // `properties_repository::vote`): votes:{ link, user, item }. `.score` on a
-    // record id that doesn't exist yields NONE, so un-voted properties come back
-    // as `None`. Only computable when we know who the caller is.
+    // record id that doesn't exist yields NONE, so un-voted properties come
+    // back as `None`. Only computable when we know who the caller is.
     if let Some(user) = &user {
         prop_fields.push(DestructurePart::Aliased(
             "vote_state".into(),
@@ -325,7 +325,8 @@ async fn get_item(
 #[endpoint]
 #[instrument(skip_all)]
 pub async fn get(id: PathParam<i64>, depot: &mut Depot) -> Result<Json<ExternalFullWorkshopItem>> {
-    // Lazily spawn the actor on first use and keep a global reference like auth.rs
+    // Lazily spawn the actor on first use and keep a global reference like
+    // auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
     let user = auth::get_user_from_depot(depot);

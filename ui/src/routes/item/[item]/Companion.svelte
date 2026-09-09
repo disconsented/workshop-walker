@@ -12,7 +12,7 @@
 </script>
 
 <div
-	class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 border-l-primary-500 flex max-w-md flex-col
+	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 border-l-primary-500 flex max-w-md flex-col
             place-content-between divide-y overflow-hidden border-[1px] border-l-4"
 >
 	<!-- Title with voting -->
@@ -65,7 +65,7 @@
 	</article>
 
 	<!-- Links -->
-	<footer class="input-group w-min-full grid-cols-[auto_auto]">
+	<footer class="field-group w-min-full grid-cols-[auto_auto]">
 		<a
 			href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 			target="_blank"

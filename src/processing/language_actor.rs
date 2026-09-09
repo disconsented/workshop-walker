@@ -167,8 +167,8 @@ mod test {
 
     #[test]
     fn test_lang_encode() {
-        // ensures that language is always encoded into an int, catches a surreal
-        // performance limitation
+        // ensures that language is always encoded into an int, catches a
+        // surreal performance limitation
         assert_eq!(
             serde_json::to_string(&DetectedLanguage::English).unwrap(),
             "1"

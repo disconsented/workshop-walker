@@ -178,10 +178,34 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+### Node template
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-error.log*
+
+### SvelteKit template
+/ui/.svelte-kit/
+/ui/build/
+/ui/.vercel/
+/ui/.output/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
 # Project Specific Ignores
 data_cache
 config/config.toml
-workshopdb
+workshopdb*
 ui/.idea
 ui/project.inlag
 .idea
+
+# Local database dumps, exports and archives
+/*.surql
+/*.zip
+/*.tgz
+/*.tar.gz
+/history.txt
+
+# Local notes and session transcripts
+20??-??-??-*.txt

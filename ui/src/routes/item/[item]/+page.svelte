@@ -25,6 +25,16 @@
 	console.log(data);
 	let item = data.data;
 
+	item.properties.sort((a, b) => {
+		if (a.vote_count > b.vote_count) {
+			return -1;
+		} else if (a.vote_count < b.vote_count) {
+			return 1;
+		} else {
+			return 0;
+		}
+	});
+
 	function whichLang(lang: Number): String {
 		switch (lang) {
 			case 1:
@@ -63,9 +73,14 @@
 
 	function get_languages(data) {
 		const langIds = new Set(
-			[(data.dependants || []).flatMap((e) => e.languages || []), (data.dependencies || []).flatMap((e) => e.languages || [])].flat()
+			[
+				(data.dependants || []).flatMap((e) => e.languages || []),
+				(data.dependencies || []).flatMap((e) => e.languages || [])
+			].flat()
 		);
-		return Array.from(langIds).map((id) => id !== undefined && id !== null ? whichLang(id) : null).filter(Boolean);
+		return Array.from(langIds)
+			.map((id) => (id !== undefined && id !== null ? whichLang(id) : null))
+			.filter(Boolean);
 	}
 
 	const tags = $derived(get_tags(data.data));
@@ -187,7 +202,7 @@
 
 {#snippet linkSet(item)}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 flex max-w-xs flex-col place-content-between
+		class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex max-w-xs flex-col place-content-between
 					divide-y overflow-hidden border-[1px]"
 	>
 		<!--Title-->
@@ -225,7 +240,7 @@
 			{/each}
 		</article>
 		<!--Links-->
-		<footer class="input-group w-min-full grid-cols-[auto_auto]">
+		<footer class="field-group w-min-full grid-cols-[auto_auto]">
 			<a
 				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 				target="_blank"
@@ -275,7 +290,7 @@
 {#snippet titleCard()}
 	{@debug item}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 rounded-lg border-[1px] p-6"
+		class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 rounded-lg border-[1px] p-6"
 	>
 		<!--Title-->
 		<h1 class="mb-4 text-4xl font-bold"><a href="#title">{item.title}</a></h1>
@@ -397,7 +412,7 @@
 
 {#snippet description()}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover rounded-lg border-[1px] p-6"
+		class="card preset-filled-surface-100-900 border-surface-200-800 rounded-lg border-[1px] p-6"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#description">Description</a></h2>
 		<p class="prose prose-invert max-w-none whitespace-pre-wrap">{@html data.data.description}</p>
@@ -406,7 +421,7 @@
 
 {#snippet relations()}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
+		class="card preset-filled-surface-100-900 border-surface-200-800 grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
 	>
 		<!-- Controls -->
 		<Accordion
@@ -460,7 +475,7 @@
 					<div class="flex items-center gap-2">
 						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
 							<Switch.Control
-								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+								class="bg-surface-300-700 data-[state=checked]:bg-primary-500 inline-flex h-6 w-11 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200"
 							>
 								<Switch.Thumb
 									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
@@ -591,7 +606,7 @@
 
 {#snippet companions()}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
+		class="card preset-filled-surface-100-900 border-surface-200-800 grid grid-cols-1 gap-4 rounded-lg border-[1px] p-6 md:grid-cols-4"
 	>
 		<h2 class="mb-4 text-xl font-bold"><a href="#relations">Relations</a></h2>
 		<!-- Controls -->
@@ -646,7 +661,7 @@
 					<div class="flex items-center gap-2">
 						<Switch name="compact" checked={compact} onCheckedChange={(e) => (compact = e.checked)}>
 							<Switch.Control
-								class="inline-flex h-6 w-11 cursor-pointer items-center rounded-full bg-surface-300-700 p-0.5 transition-colors duration-200 data-[state=checked]:bg-primary-500"
+								class="bg-surface-300-700 data-[state=checked]:bg-primary-500 inline-flex h-6 w-11 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200"
 							>
 								<Switch.Thumb
 									class="size-5 rounded-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-5"
@@ -774,7 +789,7 @@
 
 {#snippet companionCard(item)}
 	<div
-		class="card preset-filled-surface-100-900 border-surface-200-800 card-hover divide-surface-200-800 border-l-primary-500 flex max-w-xs flex-col
+		class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 border-l-primary-500 flex max-w-xs flex-col
             place-content-between divide-y overflow-hidden border-[1px] border-l-4"
 	>
 		<!-- Title with voting -->
@@ -827,7 +842,7 @@
 		</article>
 
 		<!-- Links -->
-		<footer class="input-group w-min-full grid-cols-[auto_auto]">
+		<footer class="field-group w-min-full grid-cols-[auto_auto]">
 			<a
 				href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 				target="_blank"

@@ -51,15 +51,16 @@ impl Actor for SteamUserActor {
 
         let user_names_service = UserNamesService::new(UserNamesSilo::new(args.database));
 
-        // Ractor doesn't really give us a good way to model this kind of work, hence
-        // why this is a task instead. It's desirable to batch this work here
-        // because we're trying to minimise calls to Steams API.
+        // Ractor doesn't really give us a good way to model this kind of work,
+        // hence why this is a task instead. It's desirable to batch
+        // this work here because we're trying to minimise calls to
+        // Steams API.
         let handle = tokio::spawn(async move {
             let mut total_processed = 0;
             let mut user_ids: HashSet<IUsernameID> = HashSet::with_capacity(200);
             loop {
-                // Process the first message to ensure that we sleep the task until there is
-                // work
+                // Process the first message to ensure that we sleep the task
+                // until there is work
                 let Some(first): Option<IUsernameID> = rx.recv().await else {
                     break;
                 };
@@ -111,10 +112,10 @@ impl Actor for SteamUserActor {
                                                 users.personaname,
                                             )
                                             .await
-                                        {
-                                            error!(?error, "Failed to update user name");
-                                            break;
-                                        }
+                                    {
+                                        error!(?error, "Failed to update user name");
+                                        break;
+                                    }
                                 }
                                 break;
                             }
