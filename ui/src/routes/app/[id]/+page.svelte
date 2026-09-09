@@ -3,12 +3,8 @@
 
 	import type { PageData } from '../../../../.svelte-kit/types/src/routes';
 	import {
-		fa1,
-		faArrowLeft,
-		faArrowRight,
 		faChevronLeft,
 		faChevronRight,
-		faCross,
 		faEllipsis,
 		faExternalLink,
 		faGrip,
@@ -16,11 +12,10 @@
 		faTableList,
 		faTriangleExclamation
 	} from '@fortawesome/free-solid-svg-icons';
-	import { app, language, limit, orderBy, tags, title } from './store.svelte';
+	import { app, tags } from './store.svelte';
 	import ItemCard from './itemCard.svelte';
 
 	import { Pagination, SegmentedControl, Switch } from '@skeletonlabs/skeleton-svelte';
-	import TimePicker from '$lib/timePicker.svelte';
 	import { Shadow } from 'svelte-loading-spinners';
 	import { invalidate } from '$app/navigation';
 	import Search from './search.svelte';
@@ -34,7 +29,7 @@
 		tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
 	}
 
-	let viewMode = $state('grid');
+	let viewMode = $state('table');
 	let showTableImages = $state(false);
 
 	let page = $state(1);
@@ -100,9 +95,8 @@
 							<SegmentedControl
 								value={viewMode}
 								onValueChange={(details) => (viewMode = details.value ?? 'grid')}
-								class="p-0"
 							>
-								<SegmentedControl.Control>
+								<SegmentedControl.Control class="gap-0 p-0">
 									<SegmentedControl.Indicator />
 									<SegmentedControl.Item value="grid">
 										<SegmentedControl.ItemText>
@@ -182,176 +176,113 @@
 	{@render errorCard(error)}
 {/await}
 
-{#snippet SearchPanel()}
-	<form class="card preset-filled-surface-100-900 rounded-lg p-6 text-center shadow">
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-			<div>
-				<span class="mb-2 block text-sm font-medium">Title:</span>
-				<input
-					type="text"
-					placeholder="Search by title"
-					class="input w-full rounded-lg border px-3 py-2"
-					bind:value={title.v}
-				/>
-			</div>
-
-			<div>
-				<span class="mb-2 block text-sm font-medium">Updated Since:</span>
-				<TimePicker></TimePicker>
-			</div>
-
-			<div>
-				<span class="mb-2 block text-sm font-medium">Language:</span>
-				<select class="select w-full rounded-lg border px-3 py-2" bind:value={language.v}>
-					<option>Any</option>
-					<option value="1">English</option>
-					<option value="2">Russian</option>
-					<option value="3">Chinese</option>
-					<option value="4">Japanese</option>
-					<option value="5">Korean</option>
-					<option value="6">Spanish</option>
-					<option value="7">Portuguese</option>
-				</select>
-			</div>
-
-			<div>
-				<span class="mb-2 block text-sm font-medium">Order By:</span>
-				<select class="select w-full rounded-lg border px-3 py-2" bind:value={orderBy.v}>
-					<option value="LastUpdated">Last Updated</option>
-					<option value="Alphabetical">Alphabetical</option>
-				</select>
-			</div>
-
-			<div class="flex flex-wrap gap-2 md:col-span-4">
-				{#each app.v.tags as tag}
-					<span class="flex items-center space-x-2">
-						<input name="tag" class="checkbox" type="checkbox" value={tag} bind:group={tags.v} />
-						<p>{tag}</p>
-					</span>
-				{/each}
-			</div>
-
-			<div class="flex gap-4 md:col-span-full">
-				<span class="mb-2 block text-sm font-medium">Limit:</span>
-				<input
-					type="number"
-					min="1"
-					max="100"
-					bind:value={limit.v}
-					class="input w-24 rounded-lg border px-3 py-2"
-				/>
-			</div>
-
-			<div class="flex gap-4 md:col-span-full">
-				<button type="submit" class="btn preset-filled" onclick={runSearch}> Search</button>
-				<button type="reset" class="btn preset-filled-warning-500"> Reset</button>
-			</div>
-		</div>
-	</form>
-{/snippet}
-
 {#snippet rTable(data)}
-	<div class="card bg-surface-100-900 table-wrap p-4">
-		<table class="table-zebra table">
-			<caption class="pt-4">
-				<div class="flex flex-row justify-between">
-					<span>{data.length} results</span>
-					<Switch
-						name="showImages"
-						checked={showTableImages}
-						onCheckedChange={(e) => (showTableImages = e.checked)}
-						dir="rtl"
-					>
-						<Switch.Control>
-							<Switch.Thumb />
-						</Switch.Control>
-						<Switch.Label>
-							<Icon data={faImage} class="fa-fw" />
-							Thumbnails
-						</Switch.Label>
-						<Switch.HiddenInput />
-					</Switch>
-				</div>
-			</caption>
-			<thead>
-			<tr>
-				{#if showTableImages}
-					<th>&nbsp;</th>
-				{/if}
-				<th>Item</th>
-				<th>Author</th>
-				<th>Langs</th>
-				<th>Updated</th>
-				<th>Links</th>
-			</tr>
-			</thead>
-			<tbody class="[&>tr]:hover:preset-tonal-brand">
-			{#each slicedSource(data) as item (item.id)}
-				<tr>
-					{#if showTableImages}
-						<td class="w-full h-[2lh]">
-							<img src={item.preview_url} class="rounded-md object-cover" alt="Item Preview" />
-						</td>
-					{/if}
-					<td>
-						<div class="flex flex-col">
-							<span class="font-bold">{item.title}</span>
-							<div class="flex flex-row gap-1 text-ellipsis">
-								{#each item.tags as tag (tag.id)}
-									<span class="badge preset-outlined">{tag.display_name}</span>
-								{:else}
-									<span class="badge preset-outlined">-</span>
-								{/each}
-								<span class="line-clamp-1 max-h-[1lh]">{@html item.description}</span>
-							</div>
+	<div class="card bg-surface-100-900 table-wrap border-surface-300-700 border-1">
+		<div class="flex flex-row items-center justify-between p-2">
+			<div><span class="font-bold text-white">{data.length}</span> results</div>
+
+			<Switch
+				name="showImages"
+				checked={showTableImages}
+				onCheckedChange={(e) => (showTableImages = e.checked)}
+				class="preset-outlined-surface-200-800 data-[state=checked]:preset-outlined-surface-700-300 data-[state=checked]:preset-filled-surface-600-400
+				p-1
+				opacity-60
+				data-[state=checked]:opacity-100"
+			>
+				<Switch.Label>
+					<Icon data={showTableImages ? faImage : faTableList} class="fa-fw" />
+					Thumbnails
+				</Switch.Label>
+				<Switch.Control class="data-[state=checked]:preset-filled-surface-500">
+					<Switch.Thumb />
+				</Switch.Control>
+
+				<Switch.HiddenInput />
+			</Switch>
+		</div>
+		<div
+			class="grid"
+			class:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto]={showTableImages}
+			class:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]={!showTableImages}
+		>
+			<div
+				class="border-surface-300-700 col-span-full grid grid-cols-subgrid justify-between border-1 p-2 text-sm uppercase opacity-60 [&>*]:p-1"
+			>
+				<div class:hidden={!showTableImages}>Preview</div>
+				<div>Item</div>
+				<div>Author</div>
+				<div>Langs</div>
+				<div>Updated</div>
+				<div>Links</div>
+			</div>
+
+			{#each slicedSource(data) as item, i (item.id)}
+				<div
+					role="row"
+					class="even:bg-surface-200-800 hover:preset-tonal-brand border-surface-300-700
+					col-span-full grid grid-cols-subgrid justify-between border-b-1 px-2 [&>*]:p-1"
+				>
+					<div role="cell" class="h-[2lh] w-full grow-0" class:hidden={!showTableImages}>
+						<img
+							src={item.preview_url}
+							class="h-[2lh] w-full rounded-md object-cover"
+							alt="Item Preview"
+						/>
+					</div>
+					<div role="cell" class="flex min-w-0 flex-col">
+						<span class="font-bold">{item.title}</span>
+						<div class="flex flex-row gap-1 text-ellipsis">
+							{#each item.tags as tag (tag.id)}
+								<span class="badge preset-outlined">{tag.display_name}</span>
+							{:else}
+								<span class="badge preset-outlined">-</span>
+							{/each}
+							<span class="line-clamp-1 h-[1lh] min-w-0">{@html item.description}</span>
 						</div>
-					</td>
-					<td
-					><a
-						href="https://steamcommunity.com/id/{item.author.id}"
-						target="_self"
-						rel="noopener noreferrer"
-						class="anchor flex items-center gap-1"
-					>
-						<Icon data={faSteam} class="fa-fw" />
-						{item.author.name}</a
-					></td
-					>
-					<td>
-						<div class="flex flex-row gap-1">
-							{#each item.languages as language, i}
-								{#if i != 0}·{/if}
-								<span class="text-sm opacity-60">
-										{intToLanguage(language)}</span
-								>{/each}
-						</div>
-					</td>
-					<td>
+					</div>
+					<div role="cell" class="flex place-items-center">
+						<a
+							href="https://steamcommunity.com/id/{item.author.id}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="anchor flex place-items-center gap-1"
+						>
+							<Icon data={faSteam} class="fa-fw" />
+							{item.author.name}</a
+						>
+					</div>
+					<div role="cell" class="flex flex-row place-items-center gap-1">
+						{#each item.languages as language, i}
+							{#if i != 0}·{/if}
+							<span class="text-sm opacity-60"> {intToLanguage(language)}</span>{/each}
+					</div>
+					<div role="cell" class="flex place-items-center">
 						<TimeAgo date={item.last_updated} short={true}></TimeAgo>
-					</td>
-					<td>
-						<div class="flex flex-row gap-1 place-items-center">
-							<a href="/item/{item.id}" target="_self" rel="noopener noreferrer"
-							   class="btn preset-outlined-surface-300-700 p-2">
-								<Icon data={faExternalLink} class="fa-fw" />
-							</a>
+					</div>
+					<div role="cell" class="flex flex-row place-items-center gap-1">
+						<a
+							href="/item/{item.id}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="btn preset-outlined-surface-300-700 p-2"
+						>
+							<Icon data={faExternalLink} class="fa-fw" />
+						</a>
 
-							<a
-								href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class="btn preset-outlined-surface-300-700 p-2"
-							>
-								<Icon data={faSteam} class="fa-fw" />
-							</a>
-						</div>
-					</td>
-				</tr>
+						<a
+							href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="btn preset-outlined-surface-300-700 p-2"
+						>
+							<Icon data={faSteam} class="fa-fw" />
+						</a>
+					</div>
+				</div>
 			{/each}
-			</tbody>
-		</table>
+		</div>
 	</div>
-
 {/snippet}
 
 {#snippet rGrid(data)}
