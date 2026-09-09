@@ -469,7 +469,6 @@ impl TryFrom<InternalSource> for ExternalSource {
     Ord,
     PartialOrd,
     Hash,
-    /* SurrealValue, */
 )]
 pub enum Class {
     /// Anything like addon, overhaul, bugfix, patch
