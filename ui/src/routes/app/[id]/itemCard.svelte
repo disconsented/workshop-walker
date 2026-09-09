@@ -49,7 +49,7 @@
 					rel="noopener noreferrer"
 					class="btn preset-filled-surface-50-950 mt-1 rounded-md border-1 border-dashed border-gray-500 text-xs text-gray-500 opacity-80 hover:text-gray-700"
 				>
-					<Icon data={faSteam} class="fa-fw"/>
+					<Icon data={faSteam} class="fa-fw" />
 					Steam
 				</a>
 			</div>
@@ -70,7 +70,7 @@
 						rel="noopener noreferrer"
 						class="anchor flex items-center gap-1"
 					>
-						<Icon data={faSteam} class="fa-fw"/>
+						<Icon data={faSteam} class="fa-fw" />
 						{item.author.name}</a
 					>
 					<div class="mb-2 flex items-center">
