@@ -43,7 +43,7 @@
 				Community Tags
 			</div>
 			<div class="flex place-items-center gap-1">
-				<Icon data={faSteam} class="fa-fw"/>
+				<Icon data={faSteam} class="fa-fw" />
 				Steam Workshop
 			</div>
 		</div>
