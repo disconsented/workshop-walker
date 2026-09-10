@@ -127,7 +127,7 @@
 
 	let location = $state(encodeURI(document.location.pathname));
 	onNavigate((navigation) => {
-		console.log(navigation);
+		console.debug('on navigate (item)', navigation);
 		location = encodeURI(navigation.to.url.pathname);
 	});
 
