@@ -1,12 +1,23 @@
-import { orderBy, language, tags, limit, title, lastUpdated, app } from './store.svelte';
+import {
+	app,
+	language,
+	limit,
+	orderBy,
+	tags,
+	title,
+	updatedAfter,
+	updatedBefore
+} from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
 
 export const prerender = false;
 let firstRun = true;
-export const load: PageLoad = async ({ fetch, params }) => {
+export const load: PageLoad = async ({ fetch, params, url }) => {
+	loadParams(url.searchParams);
+
 	let paramList = [];
 	if (language.v) {
-		paramList.push(['languages', language.v]);
+		paramList.push(['language', language.v]);
 	}
 	if (tags.v) {
 		tags.v.forEach((tag) => {
@@ -25,8 +36,12 @@ export const load: PageLoad = async ({ fetch, params }) => {
 		paramList.push(['title', title.v]);
 	}
 
-	if (lastUpdated.v) {
-		paramList.push(['last_updated', Date.parse(lastUpdated.v) / 1000]);
+	if (updatedBefore.v) {
+		paramList.push(['updated_before', updatedBefore.v / 1000]);
+	}
+
+	if (updatedAfter.v) {
+		paramList.push(['updated_after', updatedAfter.v / 1000]);
 	}
 
 	paramList.push(['app', params.id]);
@@ -67,3 +82,41 @@ export const load: PageLoad = async ({ fetch, params }) => {
 		id: params.id
 	};
 };
+
+function loadParams(params: URLSearchParams) {
+	console.debug('loadingParams', params);
+	const paramLanguage = params.get('language');
+	if (paramLanguage) {
+		language.v = paramLanguage;
+	}
+
+	const paramOrderBy = params.get('order_by');
+	if (paramOrderBy) {
+		orderBy.v = paramOrderBy;
+	}
+
+	const paramLimit = params.get('limit');
+	if (paramLimit) {
+		limit.v = Number(paramLimit);
+	}
+
+	const paramTitle = params.get('title');
+	if (paramTitle) {
+		title.v = paramTitle;
+	}
+
+	const paramUpdatedBefore = params.get('updated_before');
+	if (paramUpdatedBefore) {
+		updatedBefore.v = new Date(Number(paramUpdatedBefore) * 1000);
+	}
+
+	const paramUpdatedAfter = params.get('updated_after');
+	if (paramUpdatedAfter) {
+		updatedAfter.v = new Date(Number(paramUpdatedAfter) * 1000);
+	}
+
+	const paramTags = params.getAll('tags');
+	if (paramTags.length > 0) {
+		tags.v = paramTags;
+	}
+}

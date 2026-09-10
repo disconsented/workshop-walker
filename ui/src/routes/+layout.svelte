@@ -12,7 +12,7 @@
 	// Each page publishes its own trail by returning `breadcrumbs` from `load`.
 	let segments = $derived(page.data.breadcrumbs ?? []);
 	onNavigate((navigation) => {
-		console.log(navigation);
+		console.debug('on navigate (layout)', navigation);
 		location = encodeURI(navigation.to.url.pathname);
 	});
 </script>

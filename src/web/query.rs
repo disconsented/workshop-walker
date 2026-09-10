@@ -41,7 +41,8 @@ pub async fn list(
     language: QueryParam<DetectedLanguage, false>,
     mut tags: QueryParam<Vec<String>, false>,
     mut title: QueryParam<String, false>,
-    last_updated: QueryParam<i64, false>,
+    updated_before: QueryParam<i64, false>,
+    updated_after: QueryParam<i64, false>,
     mut order_by: QueryParam<OrderBy, false>,
 ) -> web::Result<Json<Vec<ExternalWorkshopItem>>> {
     let page = page.unwrap_or(0);
@@ -56,7 +57,8 @@ pub async fn list(
         *language,
         tags.take().unwrap_or_default(),
         title.take(),
-        *last_updated,
+        *updated_before,
+        *updated_after,
         order_by.take(),
         db,
         user,
@@ -75,7 +77,8 @@ async fn query_inner(
     language: Option<DetectedLanguage>,
     tags: Vec<String>,
     title: Option<String>,
-    last_updated: Option<i64>,
+    updated_before: Option<i64>,
+    updated_after: Option<i64>,
     order_by: Option<OrderBy>,
     db: &Surreal<Db>,
     user: Option<IUserID>,
@@ -206,9 +209,11 @@ async fn query_inner(
         });
 
         if let Some(language) = language {
+            // If we got back to supporting multiple languages this needs to go back to ContainAny
+            // Otherwise, it kinda breaks
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("languages".to_string()))),
-                op: BinaryOperator::ContainAny,
+                op: BinaryOperator::Contain,
                 right: Box::new(Expr::Literal(Literal::Integer(language as i64))),
             });
         }
@@ -233,13 +238,22 @@ async fn query_inner(
             });
         }
 
-        if let Some(last_updated) = last_updated {
+        if let Some(last_updated) = updated_before {
+            conditions.push(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
+                op: BinaryOperator::LessThan,
+                right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
+            });
+        }
+
+        if let Some(last_updated) = updated_after {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
                 op: BinaryOperator::MoreThan,
                 right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
             });
         }
+
         let first = conditions
             .pop()
             .expect("Expected at least one condition to be present");
@@ -378,7 +392,7 @@ mod test {
         db: &Surreal<Db>,
         user: Option<IUserID>,
     ) -> Vec<(String, Status)> {
-        let items = query_inner(1, 0, 100, None, vec![], None, None, None, db, user)
+        let items = query_inner(1, 0, 100, None, vec![], None, None, None, None, db, user)
             .await
             .expect("query should succeed");
         let item = items.first().expect("item 100 should be returned");
@@ -438,6 +452,90 @@ mod test {
         );
     }
 
+    /// Adds two more items to the seeded app so the three items have distinct
+    /// `last_updated` stamps: 0, 100 and 200.
+    async fn seed_more_timestamps(db: &Surreal<Db>) {
+        db.query(
+            "
+            CREATE workshop_items:200 SET id = 200, app = apps:1, author = usernames:1, \
+             description = 'item 200', languages = [], last_updated = 100, score = 1.0f, tags = \
+             [], title = 'Item 200';
+            CREATE workshop_items:300 SET id = 300, app = apps:1, author = usernames:1, \
+             description = 'item 300', languages = [], last_updated = 200, score = 1.0f, tags = \
+             [], title = 'Item 300';
+            ",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+    }
+
+    /// The `last_updated` stamps that the list query returns for the given
+    /// bounds, in ascending order.
+    async fn list_last_updated(
+        db: &Surreal<Db>,
+        updated_before: Option<i64>,
+        updated_after: Option<i64>,
+    ) -> Vec<u64> {
+        let items = query_inner(
+            1,
+            0,
+            100,
+            None,
+            vec![],
+            None,
+            updated_before,
+            updated_after,
+            None,
+            db,
+            None,
+        )
+        .await
+        .expect("query should succeed");
+        let mut stamps: Vec<u64> = items.into_iter().map(|item| item.last_updated).collect();
+        stamps.sort_unstable();
+        stamps
+    }
+
+    /// `updated_before` and `updated_after` must bound `last_updated` on the
+    /// side their names say: `before` keeps the older items, `after` keeps the
+    /// newer ones.
+    #[tokio::test]
+    async fn updated_bounds_filter_on_the_correct_side() {
+        let db = seed_db().await;
+        seed_more_timestamps(&db).await;
+
+        assert_eq!(
+            list_last_updated(&db, None, None).await,
+            vec![0, 100, 200],
+            "with no bounds the query returns every item"
+        );
+
+        assert_eq!(
+            list_last_updated(&db, Some(150), None).await,
+            vec![0, 100],
+            "updated_before=150 keeps only the items updated before 150"
+        );
+
+        assert_eq!(
+            list_last_updated(&db, None, Some(150)).await,
+            vec![200],
+            "updated_after=150 keeps only the items updated after 150"
+        );
+
+        assert_eq!(
+            list_last_updated(&db, Some(150), Some(50)).await,
+            vec![100],
+            "both bounds together keep the items inside the window"
+        );
+
+        assert!(
+            list_last_updated(&db, Some(50), Some(150)).await.is_empty(),
+            "an inverted window matches nothing"
+        );
+    }
+
     /// The property `source` must survive the projection so the UI can tell
     /// which entries the caller submitted themselves.
     #[tokio::test]
@@ -450,6 +548,7 @@ mod test {
             100,
             None,
             vec![],
+            None,
             None,
             None,
             None,

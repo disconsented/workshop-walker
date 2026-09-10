@@ -24,13 +24,12 @@
 
 	let { data }: { data: PageData } = $props();
 
-	$inspect(tags.v, app.v);
 	if (tags.v.length === 0 && app.v.tags) {
 		tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
 	}
 
-	let viewMode = $state('table');
-	let showTableImages = $state(false);
+	let viewMode = $state('grid');
+	let showTableImages = $state(true);
 
 	let page = $state(1);
 	let pageSize = $state(15);
