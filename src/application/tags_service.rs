@@ -1,8 +1,7 @@
 use crate::{
-    db::{IAppID, model::InternalTag},
+    db::{IAppID, ITagID, model::InternalTag},
     domain::tags::{TagError, TagsPort},
 };
-use crate::db::ITagID;
 
 pub struct TagsService<R: TagsPort> {
     repo: R,

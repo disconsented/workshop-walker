@@ -89,35 +89,49 @@ function loadParams(params: URLSearchParams) {
 	const paramLanguage = params.get('language');
 	if (paramLanguage) {
 		language.v = paramLanguage;
+	} else {
+		language.v = '';
 	}
 
 	const paramOrderBy = params.get('order_by');
 	if (paramOrderBy) {
 		orderBy.v = paramOrderBy;
+	} else {
+		orderBy.v = '';
 	}
 
 	const paramLimit = params.get('limit');
 	if (paramLimit) {
 		limit.v = Number(paramLimit);
+	} else {
+		limit.v = 100;
 	}
 
 	const paramTitle = params.get('title');
 	if (paramTitle) {
 		title.v = paramTitle;
+	} else {
+		title.v = undefined;
 	}
 
 	const paramUpdatedBefore = params.get('updated_before');
 	if (paramUpdatedBefore) {
 		updatedBefore.v = new Date(Number(paramUpdatedBefore) * 1000);
+	} else {
+		updatedBefore.v = undefined;
 	}
 
 	const paramUpdatedAfter = params.get('updated_after');
 	if (paramUpdatedAfter) {
 		updatedAfter.v = new Date(Number(paramUpdatedAfter) * 1000);
+	} else {
+		updatedAfter.v = undefined;
 	}
 
 	const paramTags = params.getAll('tags');
 	if (paramTags.length > 0) {
 		tags.v = paramTags;
+	} else {
+		tags.v = [];
 	}
 }
