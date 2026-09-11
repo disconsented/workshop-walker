@@ -15,6 +15,7 @@ use surrealdb_core::sql::{
     part::DestructurePart,
     statements::SelectStatement,
 };
+use surrealdb_core::sql::operator::MatchesOperator;
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{Instrument, debug, info_span, instrument, trace};
 
@@ -173,7 +174,6 @@ async fn query_inner(
                 ])),
                 alias: Some(Idiom::field("properties".to_string())),
             }),
-            // Author's are more so considered eventually consistent
             Field::Single(Selector {
                 expr: Expr::Idiom(Idiom(vec![
                     Part::Field("tags".into()),
@@ -192,6 +192,7 @@ async fn query_inner(
                 ])),
                 alias: None,
             }),
+            // Author's are more so considered eventually consistent
             Field::Single(Selector {
                 expr: Expr::Idiom(Idiom(vec![Part::Field("author".into()), Part::All])),
                 alias: None,
@@ -209,8 +210,8 @@ async fn query_inner(
         });
 
         if let Some(language) = language {
-            // If we got back to supporting multiple languages this needs to go back to ContainAny
-            // Otherwise, it kinda breaks
+            // If we got back to supporting multiple languages this needs to go
+            // back to ContainAny Otherwise, it kinda breaks
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("languages".to_string()))),
                 op: BinaryOperator::Contain,
@@ -233,7 +234,7 @@ async fn query_inner(
         if let Some(title) = title {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("title".to_string()))),
-                op: BinaryOperator::Contain,
+                op: BinaryOperator::Matches(MatchesOperator{ rf: None, operator: None }),
                 right: Box::new(Expr::Literal(Literal::String(title.into()))),
             });
         }

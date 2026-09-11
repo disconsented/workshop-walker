@@ -1,0 +1,2 @@
+-- Stupid surrealdb bug that never got fixed https://github.com/surrealdb/surrealdb/issues/7234
+DEFINE INDEX workshop_item_full_text_item ON TABLE workshop_items FIELDS title FULLTEXT ANALYZER title_analyzer;
