@@ -60,7 +60,7 @@
 	$effect(() => {
 		if (tags.v) {
 			params.delete('tags');
-			tags.v.forEach(v => {
+			tags.v.forEach((v) => {
 				params.append('tags', v);
 			});
 		} else {
@@ -240,7 +240,11 @@
 			</div>
 			<div class="flex flex-col gap-2">
 				<div class="flex flex-row items-center justify-between">
-					<div>Tags <span class="text-sm opacity-50 italic">(Steam tag, shown as written. Similar names can be different tags.)</span></div>
+					<div>
+						Tags <span class="text-sm italic opacity-50"
+							>(Steam tag, shown as written. Similar names can be different tags.)</span
+						>
+					</div>
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
 						<SegmentedControl.Control class="gap-0 p-0">
 							<SegmentedControl.Indicator />
@@ -257,27 +261,31 @@
 				</div>
 				<div class="flex flex-row flex-wrap gap-1">
 					{#each appTags as tag}
-						<ToggleGroup value={tags.v} onValueChange={(details) => (tags.v = details.value)} multiple>
+						<ToggleGroup
+							value={tags.v}
+							onValueChange={(details) => (tags.v = details.value)}
+							multiple
+						>
 							<ToggleGroup.Item
 								value={tag}
 								class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
-								>
+							>
 								<Tooltip positioning={{ placement: 'top' }}>
 									<Tooltip.Trigger>{tag}</Tooltip.Trigger>
 									<Portal>
 										<Tooltip.Positioner>
-											<Tooltip.Content class="card p-2 preset-filled-surface-950-50">
+											<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
 												<span>"{tag}"</span>
-												<Tooltip.Arrow class="[--arrow-size:--spacing(2)] [--arrow-background:var(--color-surface-950-50)]">
+												<Tooltip.Arrow
+													class="[--arrow-background:var(--color-surface-950-50)] [--arrow-size:--spacing(2)]"
+												>
 													<Tooltip.ArrowTip />
 												</Tooltip.Arrow>
 											</Tooltip.Content>
 										</Tooltip.Positioner>
 									</Portal>
 								</Tooltip>
-
-							</ToggleGroup.Item
-							>
+							</ToggleGroup.Item>
 						</ToggleGroup>
 					{/each}
 				</div>

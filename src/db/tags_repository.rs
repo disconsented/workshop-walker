@@ -70,7 +70,8 @@ impl TagsPort for TagsSilo {
     }
 
     async fn set_tag_known_members(&self, tag: ITagID, members: i64) -> Result<(), TagError> {
-       let query =  self.db
+        let query = self
+            .db
             .query("UPDATE $tag SET known_members = $known_members;")
             .bind(("tag", tag))
             .bind(("known_members", members));
