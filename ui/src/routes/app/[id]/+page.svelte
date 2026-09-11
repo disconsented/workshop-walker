@@ -81,7 +81,7 @@
 	{:else}
 		<div class="min-h-screen">
 			<div class="mx-auto px-4 py-8">
-				<Search tags={app.v.tags}></Search>
+				<Search appTags={app.v.tags}></Search>
 				<div class="mt-6">
 					<div class="mb-4 flex w-full justify-between gap-4">
 						<!--Left-->
