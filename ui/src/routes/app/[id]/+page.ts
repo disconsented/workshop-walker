@@ -47,14 +47,15 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 	paramList.push(['app', params.id]);
 
 	const appRequest = fetch(`/api/app/${params.id}`).then(async (res) => {
-		firstRun = !!app.v;
 		app.v = await res.json();
-		if (firstRun) {
+		if (firstRun && tags.v.length == 0) {
 			tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
 			app.v.default_tags.forEach((tag) => {
 				paramList.push(['tags', tag]);
 			});
 		}
+
+		firstRun = false;
 	});
 
 	return {

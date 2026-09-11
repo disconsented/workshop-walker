@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SegmentedControl, ToggleGroup } from '@skeletonlabs/skeleton-svelte';
+	import { Portal, SegmentedControl, ToggleGroup, Tooltip } from '@skeletonlabs/skeleton-svelte';
 	import Icon from 'svelte-awesome';
 	import {
 		faArrowDownWideShort,
@@ -11,15 +11,15 @@
 		faRightToBracket,
 		faSliders
 	} from '@fortawesome/free-solid-svg-icons';
-	import { language, orderBy, title, updatedAfter, updatedBefore } from './store.svelte';
+	import { language, orderBy, tags, title, updatedAfter, updatedBefore } from './store.svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 
 	interface Props {
-		tags: string[];
+		appTags: string[];
 	}
 
-	let { tags }: Props = $props();
+	let { appTags }: Props = $props();
 	let value = $state<string | null>('and');
 	let showAdvanced = $state(true);
 	let updatedDate = $state(updatedBefore.v || updatedAfter.v ? 'custom' : 'all');
@@ -54,6 +54,17 @@
 			params.set('updated_after', Math.trunc(updatedAfter.v.getTime() / 1000).toString());
 		} else {
 			params.delete('updated_after');
+		}
+	});
+
+	$effect(() => {
+		if (tags.v) {
+			params.delete('tags');
+			tags.v.forEach(v => {
+				params.append('tags', v);
+			});
+		} else {
+			params.delete('tags');
 		}
 	});
 
@@ -103,6 +114,18 @@
 					updatedAfter.v = date;
 					updatedBefore.v = undefined;
 					break;
+			}
+		}
+	}
+
+	function onTagsChange(event){
+		if (event.value[0]) {
+			const value = event.value[0];
+			let index = tags.v.indexOf(value);
+			if (index > -1){
+				tags.v.splice(index, 1);
+			} else {
+				tags.v.push(value);
 			}
 		}
 	}
@@ -229,7 +252,7 @@
 			</div>
 			<div class="flex flex-col gap-2">
 				<div class="flex flex-row items-center justify-between">
-					Tags
+					<div>Tags <span class="text-sm opacity-50 italic">(Steam tag, shown as written. Similar names can be different tags.)</span></div>
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
 						<SegmentedControl.Control class="gap-0 p-0">
 							<SegmentedControl.Indicator />
@@ -245,12 +268,27 @@
 					</SegmentedControl>
 				</div>
 				<div class="flex flex-row flex-wrap gap-1">
-					{#each tags as tag}
-						<ToggleGroup>
+					{#each appTags as tag}
+						<ToggleGroup value={tags.v} onValueChange={(details) => (tags.v = details.value)} multiple>
 							<ToggleGroup.Item
 								value={tag}
 								class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
-								>{tag}</ToggleGroup.Item
+								>
+								<Tooltip positioning={{ placement: 'top' }}>
+									<Tooltip.Trigger>{tag}</Tooltip.Trigger>
+									<Portal>
+										<Tooltip.Positioner>
+											<Tooltip.Content class="card p-2 preset-filled-surface-950-50">
+												<span>"{tag}"</span>
+												<Tooltip.Arrow class="[--arrow-size:--spacing(2)] [--arrow-background:var(--color-surface-950-50)]">
+													<Tooltip.ArrowTip />
+												</Tooltip.Arrow>
+											</Tooltip.Content>
+										</Tooltip.Positioner>
+									</Portal>
+								</Tooltip>
+
+							</ToggleGroup.Item
 							>
 						</ToggleGroup>
 					{/each}
