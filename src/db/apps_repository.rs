@@ -21,7 +21,7 @@ impl AppsPort for AppsSilo {
         match self
             .db
             .query(
-                "SELECT *, tags.filter(|$tag|$tag.known_members > 1000).*, default_tags.* FROM \
+                "SELECT *, tags.filter(|$tag|$tag.known_members > 100).*, default_tags.* FROM \
                  apps WHERE available = true;",
             )
             .await
@@ -66,7 +66,7 @@ impl AppsPort for AppsSilo {
         match self
             .db
             .query(
-                "SELECT *, tags.filter(|$tag|$tag.known_members > 1000).*, default_tags.* FROM apps",
+                "SELECT *, tags.filter(|$tag|$tag.known_members > 100).*, default_tags.* FROM apps",
             )
             .await
             .map(|mut q| q.take(0))
@@ -83,7 +83,7 @@ impl AppsPort for AppsSilo {
         match self
             .db
             .query(
-                "SELECT *, tags.filter(|$tag|$tag.known_members > 1000).*, default_tags.* FROM $id",
+                "SELECT *, tags.filter(|$tag|$tag.known_members > 100).*, default_tags.* FROM $id",
             )
             .bind(("id", id))
             .await
