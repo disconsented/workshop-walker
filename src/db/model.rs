@@ -553,10 +553,10 @@ impl SurrealValue for Class {
 impl Display for Class {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let txt = match self {
-            Class::Type => "TYPE",
-            Class::Theme => "THEME",
-            Class::Genre => "GENRE",
-            Class::Feature => "FEATURE",
+            Class::Type => "Type",
+            Class::Theme => "Theme",
+            Class::Genre => "Genre",
+            Class::Feature => "Feature",
         };
         f.write_str(txt)
     }
