@@ -150,6 +150,7 @@ mod test {
         InternalTag {
             id: ITagID::from(id.to_string()),
             display_name: display_name.to_string(),
+            known_members: 0,
         }
     }
 
