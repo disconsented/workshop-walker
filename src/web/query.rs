@@ -182,22 +182,33 @@ async fn query_inner(
                         vec![Expr::Closure(Box::new(Closure {
                             args: vec![(Param::new("tag".to_string()), Kind::Any)],
                             returns: None,
-                            body: Expr::Binary {
-                                left: Box::new(Expr::Idiom(Idiom(vec![
-                                    Part::Start(Expr::Param(Param::new("tag".to_string()))),
-                                    Part::Method("exists".into(), vec![]),
-                                ]))),
-                                op: BinaryOperator::And,
-                                right: Box::new(Expr::Binary {
-                                    left: Box::new(Expr::Idiom(Idiom::field(
-                                        "known_members".to_string(),
-                                    ))),
-                                    op: BinaryOperator::MoreThan,
-                                    right: Box::new(Expr::Literal(Literal::Integer(1000))),
-                                }),
-                            },
+                            body: Expr::Idiom(Idiom(vec![
+                                Part::Start(Expr::Param(Param::new("tag".to_string()))),
+                                Part::Method("exists".into(), vec![]),
+                            ])),
                         }))],
                     ),
+                    // Part::Method(
+                    //     "filter".into(),
+                    //     vec![Expr::Closure(Box::new(Closure {
+                    //         args: vec![(Param::new("tag".to_string()), Kind::Any)],
+                    //         returns: None,
+                    //         body: Expr::Binary {
+                    //             left: Box::new(Expr::Idiom(Idiom(vec![
+                    //                 Part::Start(Expr::Param(Param::new("tag".to_string()))),
+                    //                 Part::Method("exists".into(), vec![]),
+                    //             ]))),
+                    //             op: BinaryOperator::And,
+                    //             right: Box::new(Expr::Binary {
+                    //                 left: Box::new(Expr::Idiom(Idiom::field(
+                    //                     "known_members".to_string(),
+                    //                 ))),
+                    //                 op: BinaryOperator::MoreThan,
+                    //                 right: Box::new(Expr::Literal(Literal::Integer(1000))),
+                    //             }),
+                    //         },
+                    //     }))],
+                    // ),
                     Part::All,
                 ])),
                 alias: None,
