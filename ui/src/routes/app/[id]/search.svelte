@@ -118,18 +118,6 @@
 		}
 	}
 
-	function onTagsChange(event){
-		if (event.value[0]) {
-			const value = event.value[0];
-			let index = tags.v.indexOf(value);
-			if (index > -1){
-				tags.v.splice(index, 1);
-			} else {
-				tags.v.push(value);
-			}
-		}
-	}
-
 	function submitForum(event) {
 		event.preventDefault();
 		loadParams();
