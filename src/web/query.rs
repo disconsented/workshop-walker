@@ -11,11 +11,11 @@ use surrealdb_core::sql::{
     field::Selector,
     literal::ObjectEntry,
     lookup::{LookupKind, LookupSubject},
+    operator::MatchesOperator,
     order::{OrderList, Ordering},
     part::DestructurePart,
     statements::SelectStatement,
 };
-use surrealdb_core::sql::operator::MatchesOperator;
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{Instrument, debug, info_span, instrument, trace};
 
@@ -182,10 +182,20 @@ async fn query_inner(
                         vec![Expr::Closure(Box::new(Closure {
                             args: vec![(Param::new("tag".to_string()), Kind::Any)],
                             returns: None,
-                            body: Expr::Idiom(Idiom(vec![
-                                Part::Start(Expr::Param(Param::new("tag".to_string()))),
-                                Part::Method("exists".into(), vec![]),
-                            ])),
+                            body: Expr::Binary {
+                                left: Box::new(Expr::Idiom(Idiom(vec![
+                                    Part::Start(Expr::Param(Param::new("tag".to_string()))),
+                                    Part::Method("exists".into(), vec![]),
+                                ]))),
+                                op: BinaryOperator::And,
+                                right: Box::new(Expr::Binary {
+                                    left: Box::new(Expr::Idiom(Idiom::field(
+                                        "known_members".to_string(),
+                                    ))),
+                                    op: BinaryOperator::MoreThan,
+                                    right: Box::new(Expr::Literal(Literal::Integer(1000))),
+                                }),
+                            },
                         }))],
                     ),
                     Part::All,
@@ -234,7 +244,10 @@ async fn query_inner(
         if let Some(title) = title {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("title".to_string()))),
-                op: BinaryOperator::Matches(MatchesOperator{ rf: None, operator: None }),
+                op: BinaryOperator::Matches(MatchesOperator {
+                    rf: None,
+                    operator: None,
+                }),
                 right: Box::new(Expr::Literal(Literal::String(title.into()))),
             });
         }

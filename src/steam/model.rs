@@ -72,6 +72,39 @@ pub enum EPublishedFileInfoMatchingFileType {
     MatchingFileType_WorkshopShowcase = 19,
     MatchingFileType_GameManagedItems = 20,
 }
+#[expect(dead_code)]
+#[expect(clippy::missing_docs_in_private_items)]
+pub struct GetTagCount {
+    pub tag_id: String,
+    pub app_id: u32,
+}
+
+impl GetTagCount {
+    /// Builds the `GetTagCount` request
+    pub fn into_request(self, client: &Client, access_token: &str) -> reqwest::Result<Request> {
+        client
+            .get("https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/")
+            .query(&[
+                ("key", access_token),
+                ("cursor", "*"),
+                (
+                    "query_type",
+                    &(EPublishedFileInfoMatchingFileType::MatchingFileType_Items as i64)
+                        .to_string(),
+                ),
+                ("requiredtags[0]", &self.tag_id),
+                ("appid", &self.app_id.to_string()),
+                ("totalonly", &true.to_string()),
+                ("numperpage", &1.to_string()),
+            ])
+            .build()
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GetTagCountResponse {
+    pub total: i64,
+}
 
 #[expect(dead_code)]
 #[expect(clippy::missing_docs_in_private_items)]

@@ -133,6 +133,7 @@ impl InternalWorkshopItem {
                 .map(|tag| InternalTag {
                     id: ITagID::from(tag.tag.clone()),
                     display_name: tag.display_name.clone(),
+                    known_members: 0,
                 })
                 .collect::<Vec<_>>(),
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
