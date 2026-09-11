@@ -118,12 +118,12 @@
 	onsubmit={submitForum}
 >
 	<div
-		class="border-surface-200-800 grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center justify-between gap-3 border-b-1 p-4"
+		class="border-surface-200-800 grid grid-cols-[1fr_auto_auto_auto_auto] items-center justify-between gap-3 border-b-1 p-4"
 	>
 		<!--		Funny little hack so pressing enter does a submit-->
 		<!--		See https://stackoverflow.com/questions/27807853/html5-how-to-make-a-form-submit-after-pressing-enter-at-any-of-the-text-inputs-->
 		<input type="submit" class="hidden" />
-		<select class="select">
+		<select class="select hidden">
 			<!--			ToDo: Dynamically load-->
 			<option value="rimworld">Rimworld</option>
 		</select>
