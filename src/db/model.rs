@@ -458,18 +458,7 @@ impl TryFrom<InternalSource> for ExternalSource {
     }
 }
 
-#[derive(
-    Debug,
-    ToSchema,
-    Clone,
-    Serialize,
-    Deserialize,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-)]
+#[derive(Debug, ToSchema, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Class {
     /// Anything like addon, overhaul, bugfix, patch
     Type,
