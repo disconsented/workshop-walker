@@ -568,4 +568,195 @@ mod test {
             "the pending property was submitted by user 2"
         );
     }
+
+    /// Adds a second tag, plus three items, so a tag filter has something to
+    /// discriminate on. Item 100 from `seed_db` already carries `tags:test`.
+    /// Item 600 points at `tags:deleted`, a link with no row behind it.
+    async fn seed_more_tags(db: &Surreal<Db>) {
+        db.query(
+            "
+            CREATE tags:other SET id = 'other', display_name = 'Other Tag';
+
+            CREATE workshop_items:400 SET id = 400, app = apps:1, author = usernames:1, \
+             description = 'item 400', languages = [], last_updated = 0, score = 1.0f, tags = \
+             [tags:test, tags:other], title = 'Item 400';
+            CREATE workshop_items:500 SET id = 500, app = apps:1, author = usernames:1, \
+             description = 'item 500', languages = [], last_updated = 0, score = 1.0f, tags = \
+             [tags:other], title = 'Item 500';
+            CREATE workshop_items:600 SET id = 600, app = apps:1, author = usernames:1, \
+             description = 'item 600', languages = [], last_updated = 0, score = 1.0f, tags = \
+             [tags:test, tags:deleted], title = 'Item 600';
+            ",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+    }
+
+    /// The item ids the list query returns for the given tag filter, ascending.
+    async fn list_ids_for_tags(db: &Surreal<Db>, tags: &[&str]) -> Vec<i64> {
+        let items = query_inner(
+            1,
+            0,
+            100,
+            None,
+            tags.iter().map(|tag| (*tag).to_string()).collect(),
+            None,
+            None,
+            None,
+            None,
+            db,
+            None,
+        )
+        .await
+        .expect("query should succeed");
+        let mut ids: Vec<i64> = items.into_iter().map(|item| item.id.into()).collect();
+        ids.sort_unstable();
+        ids
+    }
+
+    /// `CONTAINSALL` matches on the stored record links, and it keeps only the
+    /// items that carry every tag asked for.
+    #[tokio::test]
+    async fn tag_filter_keeps_the_items_that_carry_every_tag() {
+        let db = seed_db().await;
+        seed_more_tags(&db).await;
+
+        assert_eq!(
+            list_ids_for_tags(&db, &[]).await,
+            vec![100, 400, 500, 600],
+            "no tag filter returns every item"
+        );
+        assert_eq!(
+            list_ids_for_tags(&db, &["test"]).await,
+            vec![100, 400, 600],
+            "one tag keeps every item that carries it"
+        );
+        assert_eq!(list_ids_for_tags(&db, &["other"]).await, vec![400, 500]);
+        assert_eq!(
+            list_ids_for_tags(&db, &["test", "other"]).await,
+            vec![400],
+            "two tags keep only the item that carries both"
+        );
+        assert!(
+            list_ids_for_tags(&db, &["absent"]).await.is_empty(),
+            "a tag no item carries matches nothing"
+        );
+    }
+
+    /// The `tags.filter(|$tag| $tag.exists()).*` projection does not change
+    /// what `CONTAINSALL` matches. SurrealDB checks the WHERE clause against
+    /// the stored document and only then plucks the output, so the expansion
+    /// cannot reach the filter. Each projection shape below matches the same
+    /// item.
+    #[tokio::test]
+    async fn the_tag_projection_does_not_change_what_containsall_matches() {
+        /// Runs the tag filter with the given extra projection fields spliced
+        /// in, and returns the ids that survived, ascending.
+        async fn ids_for_projection(db: &Surreal<Db>, projection: &str) -> Vec<i64> {
+            let sql = format!(
+                "SELECT VALUE record::id(id) FROM (SELECT *{projection} FROM workshop_items WHERE \
+                 app = apps:1 AND tags CONTAINSALL [tags:test, tags:other]);"
+            );
+            let mut response = db.query(sql).await.unwrap().check().unwrap();
+            let mut ids: Vec<i64> = response.take(0).unwrap();
+            ids.sort_unstable();
+            ids
+        }
+
+        let db = seed_db().await;
+        seed_more_tags(&db).await;
+
+        assert_eq!(
+            ids_for_projection(&db, "").await,
+            vec![400],
+            "no expansion at all"
+        );
+        assert_eq!(
+            ids_for_projection(&db, ", tags.filter(|$tag| $tag.exists()).*").await,
+            vec![400],
+            "the expansion the list query uses"
+        );
+        assert_eq!(
+            ids_for_projection(&db, ", tags.*").await,
+            vec![400],
+            "a plain expansion, without the exists() filter"
+        );
+    }
+
+    /// A tag link whose row was deleted still filters, because the WHERE clause
+    /// sees the raw link. The projection drops it, because
+    /// `tags.filter(|$tag| $tag.exists())` cannot expand it.
+    #[tokio::test]
+    async fn a_dangling_tag_link_filters_but_is_not_projected() {
+        let db = seed_db().await;
+        seed_more_tags(&db).await;
+
+        assert_eq!(
+            list_ids_for_tags(&db, &["deleted"]).await,
+            vec![600],
+            "item 600 carries tags:deleted, which has no row"
+        );
+
+        let items = query_inner(
+            1,
+            0,
+            100,
+            None,
+            vec!["deleted".to_string()],
+            None,
+            None,
+            None,
+            None,
+            &db,
+            None,
+        )
+        .await
+        .expect("query should succeed");
+        let item = items.first().expect("item 600 should be returned");
+        assert_eq!(
+            item.tags
+                .iter()
+                .map(|tag| String::from(tag.id.clone()))
+                .collect::<Vec<_>>(),
+            vec!["test".to_string()],
+            "the dangling link is dropped from the projected tags"
+        );
+    }
+
+    /// Steam tag keys are not identifiers: production carries `tags:`1.6``
+    /// and `tags:`Clothing/Armor`` (see `v2_exported_for_v3.surql`). The
+    /// filter builds a record id literal for each one, so the keys must
+    /// survive `to_sql` quoting and still match.
+    #[tokio::test]
+    async fn tag_filter_handles_keys_that_are_not_identifiers() {
+        let db = seed_db().await;
+        db.query(
+            "
+            CREATE tags:⟨1.6⟩ SET id = '1.6', display_name = '1.6';
+            CREATE tags:⟨Clothing/Armor⟩ SET id = 'Clothing/Armor', display_name = \
+             'Clothing/Armor';
+
+            CREATE workshop_items:700 SET id = 700, app = apps:1, author = usernames:1, \
+             description = 'item 700', languages = [], last_updated = 0, score = 1.0f, tags = \
+             [tags:⟨1.6⟩, tags:⟨Clothing/Armor⟩], title = 'Item 700';
+            ",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+
+        assert_eq!(list_ids_for_tags(&db, &["1.6"]).await, vec![700]);
+        assert_eq!(list_ids_for_tags(&db, &["Clothing/Armor"]).await, vec![700]);
+        assert_eq!(
+            list_ids_for_tags(&db, &["1.6", "Clothing/Armor"]).await,
+            vec![700]
+        );
+        assert!(
+            list_ids_for_tags(&db, &["1.6", "test"]).await.is_empty(),
+            "item 700 does not carry tags:test, item 100 does not carry tags:⟨1.6⟩"
+        );
+    }
 }

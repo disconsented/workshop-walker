@@ -37,7 +37,7 @@ impl TagsPort for TagsSilo {
         let mut query = self
             .db
             .query("BEGIN TRANSACTION;")
-            .query("UPDATE $id SET tags = tags.concat($tag_ids);");
+            .query("UPDATE $id SET tags = tags.union($tag_ids);");
 
         for tag in tags {
             debug!(?app_id, ?tag, "upserting tag");
@@ -85,7 +85,8 @@ mod test {
     const APP: i64 = 4;
 
     /// Minimal in-memory copy of the production `apps` + `tags` schema that the
-    /// tag upsert touches. `tags` is SCHEMAFULL and requires `app_id`.
+    /// tag upsert touches, minus the `apps.tags` field, which each test picks.
+    /// `tags` is SCHEMAFULL and requires `app_id`.
     const SCHEMA: &str = "
         DEFINE TABLE tags TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD app_id ON tags TYPE int PERMISSIONS FULL;
@@ -95,14 +96,28 @@ mod test {
 
         DEFINE TABLE apps TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD id ON apps TYPE int PERMISSIONS FULL;
-        DEFINE FIELD tags ON apps TYPE array<record<tags>> DEFAULT [] VALUE $value.distinct() \
-                          PERMISSIONS FULL;
     ";
 
+    /// `apps.tags` as production defines it, in
+    /// `migrations/1781600360034_apps_tags_to_array.surql`.
+    const TAGS_FIELD: &str = "DEFINE FIELD tags ON apps TYPE array<record<tags>> DEFAULT [] VALUE \
+                              $value.distinct() PERMISSIONS FULL;";
+
+    /// The same field without the `distinct()` clause, so a duplicate that
+    /// `upsert_tags` writes stays in the array instead of being removed by the
+    /// schema.
+    const TAGS_FIELD_NO_DISTINCT: &str =
+        "DEFINE FIELD tags ON apps TYPE array<record<tags>> DEFAULT [] PERMISSIONS FULL;";
+
     async fn setup() -> Surreal<Db> {
+        setup_with(TAGS_FIELD).await
+    }
+
+    async fn setup_with(tags_field: &str) -> Surreal<Db> {
         let db = Surreal::new::<Mem>(()).await.unwrap();
         db.use_ns("test").use_db("test").await.unwrap();
         db.query(SCHEMA)
+            .query(tags_field)
             .await
             .unwrap()
             .check()
@@ -176,20 +191,27 @@ mod test {
         );
     }
 
+    /// `upsert_tags` must remove the duplicates itself, not lean on the
+    /// `distinct()` clause in the field definition. This runs without that
+    /// clause: with `tags.concat($tag_ids)` the second upsert leaves
+    /// `tags:mod` in the array twice.
     #[tokio::test]
-    async fn upsert_tags_replaces_the_apps_tag_set() {
-        let db = setup().await;
+    async fn upsert_tags_deduplicates_without_the_schema_clause() {
+        let db = setup_with(TAGS_FIELD_NO_DISTINCT).await;
         let silo = super::TagsSilo::new(db.clone());
 
         silo.upsert_tags(IAppID::from(APP), vec![tag("mod", "Mod")])
             .await
             .unwrap();
-        // A second upsert overwrites the app's tag list with the new set.
-        silo.upsert_tags(IAppID::from(APP), vec![tag("scenario", "Scenario")])
-            .await
-            .unwrap();
+        // The second set repeats a tag the app already has.
+        silo.upsert_tags(
+            IAppID::from(APP),
+            vec![tag("mod", "Mod"), tag("scenario", "Scenario")],
+        )
+        .await
+        .unwrap();
 
-        assert_eq!(app_tag_ids(&db).await, vec!["tags:scenario"]);
+        assert_eq!(app_tag_ids(&db).await, vec!["tags:mod", "tags:scenario"]);
     }
 
     #[tokio::test]
