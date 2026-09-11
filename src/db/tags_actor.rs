@@ -1,15 +1,19 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::OnceLock,
+    sync::{Arc, OnceLock},
+    time::Duration,
 };
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
+use reqwest::Client;
+use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     application::tags_service::TagsService,
-    db::{IAppID, model::InternalTag, tags_repository::TagsSilo},
+    db::{AppID, IAppID, ITagID, TagID, model::InternalTag, tags_repository::TagsSilo},
+    steam::model::{GetTagCount, GetTagCountResponse, IPublishedResponse, SteamRoot},
 };
 
 pub static TAGS_ACTOR: OnceLock<ActorRef<TagsMsg>> = OnceLock::new();
@@ -47,17 +51,23 @@ pub struct TagsActor;
 /// Actor initialization arguments.
 pub struct TagsArgs {
     pub database: Surreal<Db>,
+    pub client: Client,
+    pub steam_token: Arc<String>,
 }
 
 /// Internal state for the actor. Holds the service instance.
 pub struct TagsState {
     service: TagsService<TagsSilo>,
     tags_cache: HashMap<IAppID, HashSet<InternalTag>>,
+    client: Client,
+    steam_token: Arc<String>,
 }
 
 /// Messages handled by `TagsActor`.
 pub enum TagsMsg {
     AddTagToApp(IAppID, Vec<InternalTag>),
+    Clear,
+    UpdateCount(IAppID, ITagID),
 }
 
 /// TagsActor keeps an internal cache of tags, updating the database when it
@@ -77,16 +87,20 @@ impl Actor for TagsActor {
         myself: ActorRef<Self::Msg>,
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
-        TAGS_ACTOR.get_or_init(|| myself);
+        TAGS_ACTOR.get_or_init(|| myself.clone());
+        // Clear the cache daily
+        myself.send_interval(Duration::from_hours(24), || TagsMsg::Clear);
         Ok(TagsState {
             service: TagsService::new(TagsSilo::new(args.database)),
             tags_cache: HashMap::new(),
+            client: args.client,
+            steam_token: args.steam_token,
         })
     }
 
     async fn handle(
         &self,
-        _: ActorRef<Self::Msg>,
+        myself: ActorRef<Self::Msg>,
         message: Self::Msg,
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
@@ -95,7 +109,8 @@ impl Actor for TagsActor {
                 let entry = state.tags_cache.entry(appid.clone()).or_default();
                 let new_tags = tags.into_iter().fold(vec![], |mut acc, tag| {
                     if entry.insert(tag.clone()) {
-                        acc.push(tag);
+                        acc.push(tag.clone());
+                        let _ = myself.send_message(TagsMsg::UpdateCount(appid.clone(), tag.id));
                     }
                     acc
                 });
@@ -103,7 +118,56 @@ impl Actor for TagsActor {
                     error!(?error, ?appid, "Failed to update tags");
                 }
             }
+            TagsMsg::Clear => state.tags_cache.clear(),
+            TagsMsg::UpdateCount(appid, tag) => {
+                if let Err(error) = Self::run_get_count(state, appid, tag).await {
+                    error!(?error, "Failed to update known members count");
+                }
+            }
         }
+        Ok(())
+    }
+}
+
+impl TagsActor {
+    // N.B. there's a possible bug here, because steam does weird things with
+    // totals when you _dont_ specify an app, we may get incorrect tag counts for an app
+    async fn run_get_count(
+        state: &mut TagsState,
+        app: IAppID,
+        tag: ITagID,
+    ) -> Result<(), Whatever> {
+        let tag = TagID::try_from(tag).whatever_context("TagID from ITagID")?;
+        let app = AppID::try_from(app).whatever_context("AppID from IAppID")?;
+        let request = GetTagCount {
+            tag_id: tag.clone().into(),
+            app_id: i64::from(app) as u32,
+        }
+        .into_request(&state.client, &state.steam_token)
+        .whatever_context("into_request")?;
+        let response = state
+            .client
+            .execute(request)
+            .await
+            .whatever_context("Sending get page request")?;
+
+        let json = response
+            .json::<SteamRoot<GetTagCountResponse>>()
+            .await
+            .whatever_context("request body")?;
+
+        if let Err(error) = state
+            .service
+            .set_tag_known_members(tag.clone().into(), json.response.total)
+            .await
+        {
+            error!(?error, ?tag, "Failed to update tag's known member count");
+        }
+        debug!(
+            ?tag,
+            known_members = json.response.total,
+            "updated tag known member count"
+        );
         Ok(())
     }
 }

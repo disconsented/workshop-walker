@@ -97,6 +97,8 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         TagsActor,
         TagsArgs {
             database: db.clone(),
+            steam_token: config.steam.api_token.clone(),
+            client: reqwest_client.clone(),
         },
     )
     .instrument(info_span!("spawn::tags_actor"))

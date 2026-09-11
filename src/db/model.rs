@@ -52,6 +52,8 @@ pub struct Tag {
     #[dual_type(ITagID)]
     pub id: TagID,
     pub display_name: String,
+    // Used to filter tags that aren't used any more or the weird one offs that show up
+    pub known_members: i64,
 }
 
 fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surrealdb_types::Error> {
