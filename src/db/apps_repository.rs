@@ -20,7 +20,10 @@ impl AppsPort for AppsSilo {
     async fn list_available(&self) -> Result<Vec<InternalApp>, AppError> {
         match self
             .db
-            .query("SELECT *, tags.*, default_tags.* FROM apps WHERE available = true;")
+            .query(
+                "SELECT *, tags.filter(|$tag|$tag.known_members > 1000).*, default_tags.* FROM \
+                 apps WHERE available = true;",
+            )
             .await
             .map(|mut q| q.take(0))
         {
@@ -62,7 +65,9 @@ impl AppsPort for AppsSilo {
     async fn list(&self) -> Result<Vec<InternalApp>, AppError> {
         match self
             .db
-            .query("SELECT *, tags.*, default_tags.* FROM apps")
+            .query(
+                "SELECT *, tags.filter(|$tag|$tag.known_members > 1000).*, default_tags.* FROM apps",
+            )
             .await
             .map(|mut q| q.take(0))
         {
@@ -77,7 +82,9 @@ impl AppsPort for AppsSilo {
     async fn get(&self, id: IAppID) -> Result<InternalApp, AppError> {
         match self
             .db
-            .query("SELECT *, tags.*, default_tags.* FROM $id")
+            .query(
+                "SELECT *, tags.filter(|$tag|$tag.known_members > 1000).*, default_tags.* FROM $id",
+            )
             .bind(("id", id))
             .await
             .map(|mut q| q.take(0))
