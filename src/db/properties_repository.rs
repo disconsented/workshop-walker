@@ -37,18 +37,24 @@ impl PropertiesPort for PropertiesSilo {
 
         // Similarity and existence checks
         let prop_exists = {
+            // Each class is its own namespace, so the likeness test only looks
+            // at the values in that class. `normalized_damerau_levenshtein`
+            // returns a similarity from 0.0 to 1.0, where 1.0 is an exact
+            // match; the plain distance is an edit count, which no fraction
+            // can usefully bound.
             let query = self
                 .db
                 .query(
-                    "SELECT id.class as class, id.value as value FROM properties WHERE \
-                     string::distance::damerau_levenshtein(string::join(\":\", class, value), \
-                     string::join(\":\", $class, $value)) < 0.8",
+                    "SELECT id.class as class, id.value as value FROM properties WHERE id.class = \
+                     $class AND string::distance::normalized_damerau_levenshtein(id.value, \
+                     $value) > 0.8",
                 )
                 .query(
                     "SELECT VALUE record::id(out) FROM workshop_item_properties WHERE \
                      in=$workshop_item;",
                 )
                 .bind(("workshop_item", workshop_id.clone()))
+                .bind(("class", test_prop.class.clone()))
                 .bind(("value", test_prop.value.clone()));
             let res = match query.await {
                 Ok(r) => r,
@@ -470,6 +476,56 @@ mod tests {
             .unwrap_err();
         assert!(matches!(err, PropertiesError::Conflict), "got {err:?}");
         assert_eq!(links(&db).await, vec![format!("{ITEM}|Feature:ffff")]);
+    }
+
+    #[tokio::test]
+    async fn a_value_close_to_an_existing_one_in_the_same_class_conflicts() {
+        let (silo, db) = setup().await;
+        silo.create_or_link_property(
+            new_property(ITEM, Class::Feature, "cybernetics"),
+            InternalSource::System,
+            Status::Accepted,
+        )
+        .await
+        .unwrap();
+
+        // One character away from `Feature/cybernetics`.
+        let err = silo
+            .create_or_link_property(
+                new_property(ITEM, Class::Feature, "cybernetic"),
+                InternalSource::System,
+                Status::Accepted,
+            )
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, PropertiesError::Conflict), "got {err:?}");
+        assert_eq!(
+            links(&db).await,
+            vec![
+                format!("{ITEM}|Feature:cybernetics"),
+                format!("{ITEM}|Feature:ffff"),
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn the_same_value_in_another_class_is_not_a_duplicate() {
+        let (silo, db) = setup().await;
+        // Each class is its own namespace: `Genre/ffff` says something
+        // different about the item than the seeded `Feature/ffff`.
+        silo.create_or_link_property(
+            new_property(ITEM, Class::Genre, "ffff"),
+            InternalSource::System,
+            Status::Accepted,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            links(&db).await,
+            vec![format!("{ITEM}|Feature:ffff"), format!("{ITEM}|Genre:ffff")]
+        );
     }
 
     // --- adding a vote to a property (none -> vote) ---
