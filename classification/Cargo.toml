@@ -4,13 +4,17 @@ name = "classification"
 version.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 candle-core.workspace = true
 candle-examples.workspace = true
 candle-nn.workspace = true
 candle-transformers.workspace = true
+clap.workspace = true
 hf-hub.workspace = true
+image.workspace = true
 intel-mkl-src = { optional = true, workspace = true }
 ractor.workspace = true
+reqwest.workspace = true
 serde = { features = ["derive"], workspace = true }
 serde_json.workspace = true
 snafu.workspace = true
@@ -22,5 +26,8 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [features]
-default = ["mkl"]
+# MKL is off by default: on Zen 4 it decodes at roughly half the speed of
+# candle's own gemm backend, and decode dominates this workload. The feature
+# stays available for hardware where it wins.
+default = []
 mkl = ["candle-core/mkl", "dep:intel-mkl-src"]

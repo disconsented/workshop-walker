@@ -21,6 +21,7 @@ migrations-tool = { path = "./migrations-tool", version = "0" }
 proc-macros = { path = "./proc-macros", version = "0" }
 serde-hack = { path = "./serde-hack", version = "0" }
 
+anyhow = "1.0"
 async-stream = "0.3.6"
 bbscope = "0.2"
 biscuit-auth = "6.0.0"
@@ -35,6 +36,11 @@ config = "0.15"
 futures = "0.3"
 hf-hub = "0.5.0"
 humantime = "2.2"
+image = { default-features = false, features = [
+  "jpeg",
+  "png",
+  "webp",
+], version = "0.25" }
 intel-mkl-src = { version = "0.8" }
 itertools = "0.15"
 lingua = { features = [
@@ -149,7 +155,7 @@ veil.workspace = true
 
 [features]
 default = ["ml-classification"]
-ml-classification = ["classification", "classification/mkl"]
+ml-classification = ["classification"]
 
 
 [profile.release]
