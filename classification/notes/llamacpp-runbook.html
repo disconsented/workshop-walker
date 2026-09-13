@@ -173,11 +173,21 @@ sha256sum gemma-4-E4B_q4_0-it.gguf
 <span class="c"># 676c35070db6dbe52f93e9c864ee0fba4eddea94b9c875d9cb10daff453fbaee
 # 5154941280 bytes</span></pre>
   <div class="note">
-    <p class="eyebrow">Distribution</p>
-    <p>4.8 GB is too large for a container layer and too large to pull on every deploy.
-    Put it on a mounted volume, fetch once with the checksum above, and fail startup on a
-    mismatch. Hugging Face will rate-limit a fleet pulling in parallel, so mirror it
-    internally if you run more than one node.</p>
+    <p class="eyebrow">Distribution: your call</p>
+    <p>No size constraint forces this either way. 4.8&nbsp;GB is well under what
+    registries allow: DigitalOcean permits 20&nbsp;GB per layer, Fly.io 8&nbsp;GiB, and
+    the OCI spec sets no layer limit at all.</p>
+    <p><strong>Bake it into the image</strong> when deploys are infrequent and nodes are
+    long-lived. The file never changes, so as its own layer it is pulled once and cached,
+    the deploy stays one artifact, and the model cannot drift out of step with the code.</p>
+    <p><strong>Mount a volume</strong> when you want small CI pushes and cheap registry
+    storage, or expect to swap models without rebuilding. The cost is that you own the
+    fetch, the verification, and the failure mode where the volume is empty or holds the
+    wrong file.</p>
+    <p>For a single long-lived box, baking it in is the simpler answer. Verify the
+    checksum either way; it is cheap insurance on a 4.8&nbsp;GB download however it
+    arrives. If you do fetch at deploy time across several nodes, mirror it internally
+    rather than hitting Hugging Face in parallel.</p>
   </div>
 </section>
 
