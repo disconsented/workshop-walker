@@ -19,6 +19,7 @@ Analyze the game mod title and description to extract:
    - Consolidate similar terms into broad categories
    - Remove adjectives and descriptors unless they fundamentally change the concept
    - Group variants under the main category (e.g., "spacesuits" covers all types of spacesuits)
+   - If three or more features are kinds of one broader thing, list only the broader thing
 
 **Feature Consolidation Examples:**
 - "dress spacesuit", "crew spacesuit", "spacesuit" → "spacesuits"
@@ -26,6 +27,9 @@ Analyze the game mod title and description to extract:
 - "steel sword", "iron sword", "magic sword" → "swords"
 - "leather armor", "plate armor", "armor" → "armor"
 - "red cars", "blue cars", "vehicles" → "vehicles"
+- "machine guns", "autocannons", "missile launchers", "laser cannons" → "weapons"
+- "point-defense systems", "anti-aircraft systems", "shield generators" → "defenses"
+- "wolves", "bears", "raptors" → "animals"
 
 **Output Requirements:**
 - Return valid JSON only
