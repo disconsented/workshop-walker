@@ -1,0 +1,13 @@
+{
+  "item": "3799737423",
+  "title": "Vanilla Gravship Expanded - Chapter 2",
+  "prompt": "features",
+  "variant": "prompt v2 + transcribe then extract",
+  "with_image": false,
+  "prompt_tokens": 7497,
+  "generated_tokens": 268,
+  "extract_wall_secs": 45.5,
+  "transcription_wall_secs": 278.64,
+  "transcription_calls": 25,
+  "answer": "{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"gravship threats\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid orbital clusters\",\n    \"military progression\",\n    \"weaponry\",\n    \"armor\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"pirate stations\",\n    \"destruction system\",\n    \"gravship detection\",\n    \"visibility mechanics\",\n    \"warplatforms\",\n    \"orbital bombardment\",\n    \"hostile warcomputers\",\n    \"salvager attacks\",\n    \"enemy gravjumpers\",\n    \"orbital clusters\",\n    \"space infestation\",\n    \"gravcore quests\",\n    \"exocoids\",\n    \"salvager strongholds\",\n    \"quest rewards\",\n    \"warcomputers\",\n    \"gravcloakers\",\n    \"grav field dilutors\",\n    \"astrofire launchers\",\n    \"emergency gravship generators\",\n    \"launch boons\",\n    \"launch mishaps\",\n    \"starting scenarios\"\n  ]\n}"
+}

@@ -1,0 +1,14 @@
+{
+  "answer": "{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"workbenches\",\n    \"textures\"\n  ]\n}",
+  "finish": "stop",
+  "prompt_tokens": 1893,
+  "generated_tokens": 50,
+  "decode_tokens_per_sec": 19.045908802746965,
+  "wall_secs": 10.79,
+  "item": "3761824516",
+  "title": "Rustic Workbenches",
+  "prompt": "features",
+  "with_image": true,
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "label": "q4_0-promptv2"
+}

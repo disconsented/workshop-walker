@@ -1,0 +1,66 @@
+[
+  {
+    "item": "3666883698",
+    "markers": [
+      "Aelianus",
+      "Xanthus",
+      "Pollux",
+      "Hadrianus",
+      "Antoninus",
+      "Tatius",
+      "Liviana",
+      "Lucia",
+      "Vita",
+      "1.6"
+    ],
+    "image": {
+      "answer": "1.6\nGerrymon's\nGREEKCORE\nSTYLE\nHuma\nLuca\nLivia\nZelatus\nVita\nTitus\nLiviana\nPius\nAntonius\nHadrian",
+      "hits": [
+        "Liviana",
+        "Vita",
+        "1.6"
+      ],
+      "hit_count": 3
+    },
+    "control": {
+      "answer": "NO IMAGE.",
+      "hits": [],
+      "hit_count": 0
+    }
+  },
+  {
+    "item": "3121742525",
+    "markers": [
+      "失能",
+      "機関",
+      "1.5"
+    ],
+    "image": {
+      "answer": "1.5\n失能\nSwitch\nDEAD MAN'S SWITCH",
+      "hits": [
+        "失能",
+        "1.5"
+      ],
+      "hit_count": 2
+    },
+    "control": {
+      "answer": "NO IMAGE.",
+      "hits": [],
+      "hit_count": 0
+    }
+  },
+  {
+    "item": "3754128439",
+    "markers": [],
+    "image": {
+      "answer": "DEFENSIVE\nNETWORK",
+      "hits": [],
+      "hit_count": 0
+    },
+    "control": {
+      "answer": "NO IMAGE.",
+      "hits": [],
+      "hit_count": 0
+    }
+  }
+]

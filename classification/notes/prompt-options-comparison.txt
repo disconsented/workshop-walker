@@ -1,0 +1,76 @@
+==============================================================================
+Gerrymon's Greekcore Style
+==============================================================================
+--- 1 original (as shipped)
+    types      : ['media']
+    features( 3): ['civilian apparel', 'clothing', 'wreaths']
+--- 2 + rollup examples
+    types      : ['media']
+    features( 3): ['apparel', 'civilian clothing', 'wreaths']
+--- 3 + examples + rule (applied)
+    types      : ['media']
+    features( 3): ['civilian apparel', 'clothing', 'wreaths']
+--- 4 two fields
+    types      : ['media']
+    categories : ['apparel']
+    features( 4): ['civilian apparel', 'wreaths', 'chitons', 'himations']
+
+==============================================================================
+The Dead Man's Switch
+==============================================================================
+--- 1 original (as shipped)
+    types      : ['overhaul', 'expansion', 'media']
+    features(11): ['scenario', 'technology tree', 'ideology pack', 'colonization company', 'title system', 'weapons', 'robots', 'bionics', 'clothing', 'mechanoids', 'exo-skeleton suits']
+--- 2 + rollup examples
+    types      : ['overhaul', 'expansion', 'media']
+    features( 9): ['scenario', 'technology tree', 'ideology pack', 'colonization company', 'title system', 'weapons', 'robots', 'bionics', 'clothing']
+--- 3 + examples + rule (applied)
+    types      : ['overhaul', 'expansion']
+    features( 9): ['scenario', 'technology tree', 'ideology pack', 'colonization company', 'title system', 'weapons', 'robots', 'bionics', 'clothing']
+--- 4 two fields
+    types      : ['overhaul', 'expansion', 'media']
+    categories : ['scenario', 'technology', 'ideology', 'colonization', 'title system', 'weapons', 'robots', 'bionics', 'clothing']
+    features(11): ['scenario', 'technology tree', 'ideology pack', 'colonization company', 'title system', 'weapons', 'military-industrial-style killing machines', 'mechanoids', 'weapons', 'bionics', 'clothing']
+
+==============================================================================
+Defensive Network
+==============================================================================
+--- 1 original (as shipped)
+    types      : ['expansion', 'overhaul']
+    features(23): ['turrets', 'combat equipment', 'support systems', 'fire-control systems', 'logistical equipment', 'target-designation devices', 'ammunition support', 'tactical facilities', 'drones', 'weapon platforms', 'machine guns', 'autocannons', 'cannons', 'missile weapons', 'electromagnetic weapons', 'laser weapons', 'tracking weapons', 'anti-aircraft systems', 'point-defense systems', 'enemies', 'boss units', 'research', 'quests']
+--- 2 + rollup examples
+    types      : ['expansion', 'overhaul']
+    features(21): ['turrets', 'combat equipment', 'support systems', 'fire-control systems', 'logistical equipment', 'target-designation devices', 'ammunition support', 'tactical facilities', 'drones', 'weapons', 'cannons', 'missiles', 'electromagnetic weapons', 'laser weapons', 'tracking weapons', 'anti-aircraft systems', 'point-defense systems', 'enemies', 'boss units', 'research', 'quests']
+--- 3 + examples + rule (applied)
+    types      : ['expansion', 'overhaul']
+    features(12): ['turrets', 'combat equipment', 'support systems', 'fire-control systems', 'logistical equipment', 'target-designation devices', 'ammunition support', 'tactical facilities', 'drones', 'weapons', 'enemies', 'boss units']
+--- 4 two fields
+    types      : ['expansion', 'overhaul', 'patch']
+    categories : ['defenses', 'weapons', 'equipment', 'units', 'enemies', 'facilities', 'research']
+    features(45): ['turrets', 'combat equipment', 'support systems', 'fire-control systems', 'logistical equipment', 'target-designation devices', 'ammunition support', 'tactical facilities', 'colonists', 'fire-control console', 'detection equipment', 'large-caliber smoothbore cannons', 'gun-launched missiles', 'target designators', 'automated ammunition systems', 'drones', 'drone models', 'infantry', 'patrol', 'interception', 'assault', 'bombings', 'fire-drawing missions', 'expendable units', 'pursuit', 'high altitude platforms', 'heavy unmanned platforms', 'machine guns', 'autocannons', 'rocket artillery', 'missile weapons', 'electromagnetic weapons', 'laser weapons', 'tracking weapons', 'anti-aircraft systems', 'point-defense systems', 'tactical support weapons', 'enemy types', 'boss enemies', 'landwhale', 'explosives', 'decoy projectiles', 'research', 'quests', 'materials']
+
+==============================================================================
+Vanilla Gravship Expanded - Chapter 2  [+ image transcript]
+==============================================================================
+--- 1 original (as shipped)
+    types      : ['overhaul', 'expansion']
+    features(30): ['orbital combat', 'gravship threats', 'enemy gravships', 'bombardment platforms', 'mechanoid orbital clusters', 'military progression', 'weaponry', 'armored hulls', 'signal jammers', 'artillery', 'hellpods', 'pirate stations', 'destruction system', 'gravship detection', 'visibility mechanics', 'warplatforms', 'orbital clusters', 'enemy gravjumpers', 'orbital events', 'gravcore quests', 'exocoids', 'quest rewards', 'warcomputers', 'gravcloakers', 'grav field dilutors', 'astrofire launchers', 'emergency generators', 'launch boons', 'launch mishaps', 'starting scenarios']
+--- 2 + rollup examples
+    types      : ['overhaul', 'expansion']
+    features(34): ['orbital combat', 'gravship threats', 'enemy gravships', 'bombardment platforms', 'mechanoid orbital clusters', 'military progression', 'weaponry', 'armor', 'signal jammers', 'artillery', 'hellpods', 'pirate stations', 'destruction system', 'gravship detection', 'visibility mechanics', 'warplatforms', 'orbital bombardment', 'hostile warcomputers', 'salvager attacks', 'enemy gravjumpers', 'orbital clusters', 'space infestations', 'gravcore quests', 'exocoids', 'salvager strongholds', 'quest rewards', 'warcomputers', 'gravcloakers', 'grav field dilutors', 'astrofire launchers', 'emergency gravship generators', 'launch boons', 'launch mishaps', 'starting scenarios']
+--- 3 + examples + rule (applied)
+    types      : ['overhaul', 'expansion']
+    features(34): ['orbital combat', 'gravship threats', 'enemy gravships', 'bombardment platforms', 'mechanoid orbital clusters', 'military progression', 'weaponry', 'armor', 'signal jammers', 'artillery', 'hellpods', 'pirate stations', 'destruction system', 'gravship detection', 'visibility mechanics', 'warplatforms', 'orbital bombardment', 'hostile warcomputers', 'salvager attacks', 'enemy gravjumpers', 'orbital clusters', 'space infestation', 'gravcore quests', 'exocoids', 'salvager strongholds', 'quest rewards', 'warcomputers', 'gravcloakers', 'grav field dilutors', 'astrofire launchers', 'emergency gravship generators', 'launch boons', 'launch mishaps', 'starting scenarios']
+Traceback (most recent call last):
+  File "<stdin>", line 60, in <module>
+  File "<stdin>", line 55, in ask
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Unterminated string starting at: line 90 column 5 (char 2074)

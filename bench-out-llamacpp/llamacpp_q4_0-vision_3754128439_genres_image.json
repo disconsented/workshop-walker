@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0-vision",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "prompt": "genres",
+  "with_image": true,
+  "prefill_tokens": 2206,
+  "prefill_secs": 8.213481,
+  "decode_tokens": 54,
+  "decode_secs": 2.800635,
+  "prefill_tokens_per_sec": 268.58283351480327,
+  "decode_tokens_per_sec": 18.924279672288606,
+  "wall_secs": 11.050428773000021,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"War\"\n  ],\n  \"themes\": [\n    \"Defense\",\n    \"Military\",\n    \"Combat\",\n    \"Strategy\"\n  ]\n}",
+  "reasoning_output": ""
+}

@@ -1,0 +1,374 @@
+<title>Gemma 4 Extraction Runbook</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --ground: #f6f4f1;
+  --surface: #ffffff;
+  --sunk: #efebe5;
+  --ink: #1a1714;
+  --ink-mid: #4b443c;
+  --ink-low: #736a5f;
+  --rule: #e0d9cf;
+  --rule-strong: #c4b9aa;
+  --accent: #8a5a12;
+  --accent-soft: #f2e6d2;
+  --ok: #3c6640;
+  --warn: #8a5a12;
+  --crit: #9c3524;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #14110e;
+    --surface: #1d1916;
+    --sunk: #18140f;
+    --ink: #ece6de;
+    --ink-mid: #c0b6a8;
+    --ink-low: #8f8578;
+    --rule: #2e2822;
+    --rule-strong: #43392f;
+    --accent: #d69a4c;
+    --accent-soft: #2a2016;
+    --ok: #82b083;
+    --warn: #d69a4c;
+    --crit: #dd8874;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #14110e;
+  --surface: #1d1916;
+  --sunk: #18140f;
+  --ink: #ece6de;
+  --ink-mid: #c0b6a8;
+  --ink-low: #8f8578;
+  --rule: #2e2822;
+  --rule-strong: #43392f;
+  --accent: #d69a4c;
+  --accent-soft: #2a2016;
+  --ok: #82b083;
+  --warn: #d69a4c;
+  --crit: #dd8874;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px; line-height: 1.62; -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 58rem; margin: 0 auto; padding: 3rem 1.5rem 5rem;
+  display: flex; flex-direction: column; gap: 2.75rem;
+}
+h1, h2, h3 {
+  font-family: "IBM Plex Serif", Georgia, serif; font-weight: 600;
+  text-wrap: balance; margin: 0; letter-spacing: -0.012em;
+}
+h1 { font-size: 2.15rem; line-height: 1.15; }
+h2 { font-size: 1.32rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; max-width: 66ch; }
+ul, ol { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.45rem; max-width: 66ch; }
+li::marker { color: var(--accent); }
+
+header {
+  display: flex; flex-direction: column; gap: 0.8rem;
+  border-bottom: 2px solid var(--rule-strong); padding-bottom: 1.6rem;
+}
+.eyebrow {
+  font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.71rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0;
+}
+.lede { color: var(--ink-mid); font-size: 1.04rem; }
+
+section { display: flex; flex-direction: column; gap: 1rem; }
+.sechead { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+.step {
+  font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.78rem;
+  color: var(--accent); border: 1px solid var(--accent); border-radius: 2px;
+  padding: 0.02rem 0.4rem; flex: none;
+}
+
+pre {
+  margin: 0; padding: 0.85rem 1rem; overflow-x: auto;
+  background: var(--surface); border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.79rem; line-height: 1.55; color: var(--ink);
+}
+pre .c { color: var(--ink-low); }
+code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.87em;
+  background: var(--sunk); padding: 0.08em 0.32em; border-radius: 2px;
+}
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.83rem; }
+caption { text-align: left; padding: 0.7rem 0.85rem; color: var(--ink-low); font-size: 0.79rem; border-bottom: 1px solid var(--rule); }
+th, td { padding: 0.45rem 0.85rem; text-align: left; vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+thead th {
+  font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.69rem;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-low);
+  font-weight: 500; border-bottom: 1px solid var(--rule-strong);
+}
+tbody tr + tr td { border-top: 1px solid var(--rule); }
+tbody td code { background: none; padding: 0; }
+
+.note {
+  border: 1px solid var(--rule); border-left: 3px solid var(--warn);
+  background: var(--sunk); padding: 0.8rem 1rem;
+  display: flex; flex-direction: column; gap: 0.35rem;
+}
+.note .eyebrow { color: var(--warn); }
+.note p { font-size: 0.9rem; }
+
+footer {
+  border-top: 1px solid var(--rule); padding-top: 1.1rem;
+  font-size: 0.8rem; color: var(--ink-low); max-width: 66ch;
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">workshop-walker &middot; classification</p>
+  <h1>Gemma 4 Extraction Runbook</h1>
+  <p class="lede">Replacing the candle pipeline with llama.cpp serving Gemma&nbsp;4 E4B at
+  q4_0, single pass, text only. Every number here was measured on a Ryzen&nbsp;9 7950X3D
+  at 16 threads; the target is a Xeon Gold 6210U.</p>
+</header>
+
+<section>
+  <div class="sechead"><span class="step">1</span><h2>What you are deploying</h2></div>
+  <div class="tablewrap"><table>
+    <caption>One model file. The vision projector is only needed if you later attach images.</caption>
+    <thead><tr><th>File</th><th>Source</th><th class="num">Size</th><th>Needed</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>gemma-4-E4B_q4_0-it.gguf</code></td>
+        <td><code>google/gemma-4-E4B-it-qat-q4_0-gguf</code></td>
+        <td class="num">4.80 GiB</td>
+        <td>yes</td>
+      </tr>
+      <tr>
+        <td><code>gemma-4-E4B-it-mmproj.gguf</code></td>
+        <td>same repo</td>
+        <td class="num">0.92 GiB</td>
+        <td>only for images</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <p>This is Google's quantization-aware-trained release, not a community post-training
+  quant. It is why q4_0 holds up: the model was trained with 4-bit weights in the loop.
+  Do not swap it for a generic <code>Q4_K_M</code> expecting an upgrade.</p>
+<pre><span class="c"># fetch once, verify, keep on a volume — not baked into the image</span>
+curl -L -o gemma-4-E4B_q4_0-it.gguf \
+  https://huggingface.co/google/gemma-4-E4B-it-qat-q4_0-gguf/resolve/main/gemma-4-E4B_q4_0-it.gguf
+
+sha256sum gemma-4-E4B_q4_0-it.gguf
+<span class="c"># 676c35070db6dbe52f93e9c864ee0fba4eddea94b9c875d9cb10daff453fbaee
+# 5154941280 bytes</span></pre>
+  <div class="note">
+    <p class="eyebrow">Distribution</p>
+    <p>4.8 GB is too large for a container layer and too large to pull on every deploy.
+    Put it on a mounted volume, fetch once with the checksum above, and fail startup on a
+    mismatch. Hugging Face will rate-limit a fleet pulling in parallel, so mirror it
+    internally if you run more than one node.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">2</span><h2>Building llama.cpp for Cascade Lake</h2></div>
+  <p>Pinned at <code>56b9eb2</code> (2026-09-12) for these results. Build on the target and
+  let it detect, or set the ISA explicitly when cross-building.</p>
+<pre><span class="c"># on the 6210U itself</span>
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=ON -DLLAMA_CURL=OFF
+cmake --build build -j "$(nproc)" --target llama-server
+
+<span class="c"># cross-building, or pinning the ISA for a reproducible image</span>
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF \
+  -DGGML_AVX512=ON -DGGML_AVX512_VNNI=ON -DGGML_AVX512_VBMI=OFF \
+  -DGGML_AVX512_BF=OFF -DLLAMA_CURL=OFF</pre>
+  <p>Cascade Lake has <code>avx512f/dq/cd/bw/vl</code> and <code>avx512_vnni</code>. It does
+  <em>not</em> have <code>avx512_bf16</code> (Cooper Lake) or AMX (Sapphire Rapids). Enabling
+  either produces an illegal instruction at runtime, not a build error.</p>
+  <p>VNNI is the flag that matters for you. The q4_0 dot product at
+  <code>ggml/src/ggml-cpu/arch/x86/quants.c:106</code> uses
+  <code>_mm256_dpbusd_epi32</code> when <code>__AVX512VNNI__ &amp;&amp; __AVX512VL__</code> are
+  defined, and falls back to a slower two-instruction path otherwise.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">3</span><h2>Running the server</h2></div>
+<pre>llama-server \
+  -m /srv/models/gemma-4-E4B_q4_0-it.gguf \
+  --host 127.0.0.1 --port 8081 \
+  -c 4096 -np 1 \
+  -t 20 -tb 20 \
+  --jinja --reasoning off \
+  --sleep-idle-seconds 120 \
+  --no-warmup</pre>
+  <div class="tablewrap"><table>
+    <caption>Why each flag is there.</caption>
+    <thead><tr><th>Flag</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td><code>-c 4096</code></td><td>Context <em>per slot</em>. Your longest text-only prompt measured 2,440 tokens (Defensive Network). 4096 leaves headroom; going higher costs KV cache for nothing.</td></tr>
+      <tr><td><code>-np 1</code></td><td>Server slots. Default is auto and picked 4, which multiplies KV cache by four. One slot is right for a sequential actor; raise it only if you send concurrent requests.</td></tr>
+      <tr><td><code>-t 20 -tb 20</code></td><td>Physical cores, not threads. The 6210U is 20C/40T — hyperthreads hurt on memory-bound decode. <code>-tb</code> covers prompt processing separately.</td></tr>
+      <tr><td><code>--jinja</code></td><td>Uses the model's own chat template from the GGUF. Gemma 4's turn markers are <code>&lt;|turn&gt;</code> and <code>&lt;turn|&gt;</code>, not Gemma 3's <code>&lt;start_of_turn&gt;</code>.</td></tr>
+      <tr><td><code>--reasoning off</code></td><td>Gemma 4 reasons before answering. Left on it spent 895 tokens reaching a 51-token answer, and a token cap truncates it mid-thought leaving <code>content</code> empty.</td></tr>
+      <tr><td><code>--sleep-idle-seconds</code></td><td>Releases the model after idle. See below — it is the single biggest resource win for a workload that runs in bursts.</td></tr>
+      <tr><td><code>--no-warmup</code></td><td>Skips a dummy decode at boot. Drop it if you would rather pay that cost at startup than on the first request.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Measured at these settings: 7.13 GiB resident after load, 7.24 GiB after a request,
+  273 tok/s prompt and 19.3 tok/s generation on a 2,440 token prompt. Startup to healthy is
+  a few seconds from warm page cache.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">4</span><h2>Idle memory: sleep the model</h2></div>
+  <p>Your classifier runs in bursts and then sits idle, and a resident 7 GiB the rest of the
+  time is pure waste. <code>--sleep-idle-seconds N</code> releases the model after N seconds
+  with no work, and reloads it transparently on the next request.</p>
+  <div class="tablewrap"><table>
+    <caption>Measured with <code>--sleep-idle-seconds 20</code>, same prompt each time, prompt cache disabled.</caption>
+    <thead><tr><th>State</th><th class="num">RSS</th><th class="num">Request wall time</th></tr></thead>
+    <tbody>
+      <tr><td>Loaded, awake</td><td class="num">7.13&ndash;7.27 GiB</td><td class="num">16.05 s</td></tr>
+      <tr><td>Asleep</td><td class="num">0.18 GiB</td><td class="num">&mdash;</td></tr>
+      <tr><td>First request after sleep</td><td class="num">back to 7.27 GiB</td><td class="num">17.38 s</td></tr>
+    </tbody>
+  </table></div>
+  <p>A 1.34 second wake penalty to give back 7 GiB. For anything but a continuously saturated
+  queue that is an easy trade, and it is cheap because the weights are mmapped &mdash; waking
+  is page faults, not a re-read and re-parse of the GGUF.</p>
+  <p>Set the threshold above your natural gap between items so a batch does not sleep
+  mid-run. 120 seconds is a reasonable start; log the wake events and tune from there.
+  The server writes <code>entering sleeping state</code> when it drops the model.</p>
+  <div class="note">
+    <p class="eyebrow">Related</p>
+    <p><code>--models-dir</code> with <code>--models-max</code> runs the server in router mode,
+    loading and evicting several models on demand. Overkill for one model, but the mechanism
+    to reach for if you ever serve extraction and a transcription model from one host.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">5</span><h2>The request</h2></div>
+  <p>Post to <code>/v1/chat/completions</code>. One user message holding the populated
+  prompt, and a schema that constrains decoding.</p>
+<pre>{
+  "messages": [{ "role": "user", "content": "&lt;prompts/features.txt, populated&gt;" }],
+  "temperature": 0.0,
+  "max_tokens": 512,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "features",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "types":    { "type": "array", "items": { "type": "string" } },
+          "features": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["types", "features"],
+        "additionalProperties": false
+      }
+    }
+  }
+}</pre>
+  <p>The schema is compiled to a GBNF grammar and applied during sampling, so a markdown
+  fence is not a reachable token. This is the part that lets you delete
+  <code>sanitise_output</code> rather than fix it: malformed JSON stops being possible,
+  including the truncated-object case that makes it panic at
+  <code>classification/src/lib.rs:245</code>.</p>
+  <div class="note">
+    <p class="eyebrow">Do not do this in the prompt</p>
+    <p>Appending &ldquo;respond with the JSON object only, no markdown&rdquo; also removes the
+    fences, but the model reads it as an instruction to be brief. One item dropped from 16
+    features to 2, and output from 148 tokens to 22. A milder wording cost exactly the same.
+    Use the grammar.</p>
+  </div>
+  <p><code>genres.txt</code> is the same shape with <code>genres</code> and
+  <code>themes</code> as the two array fields.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">6</span><h2>What changes in the crate</h2></div>
+  <div class="tablewrap"><table>
+    <caption>The actor and the prompts survive. Everything under them goes.</caption>
+    <thead><tr><th>Item</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><code>classification/src/runner.rs</code></td><td>Delete. Replaced by an HTTP call.</td></tr>
+      <tr><td><code>TextGeneration</code>, <code>hub.rs</code> in <code>lib.rs</code></td><td>Delete. Sampling, KV cache and weight loading are the server's problem now.</td></tr>
+      <tr><td><code>sanitise_output</code></td><td>Delete once the grammar is in. It also panics on any answer lacking a closing brace.</td></tr>
+      <tr><td><code>candle-core</code>, <code>candle-nn</code>, <code>candle-transformers</code>, <code>candle-examples</code>, <code>intel-mkl-src</code>, <code>tokenizers</code>, <code>hf-hub</code></td><td>Drop from <code>classification/Cargo.toml</code>. Large build-time win.</td></tr>
+      <tr><td><code>ExtractionActor</code>, <code>ExtractionMsg</code>, <code>MLProperties</code></td><td>Unchanged. <code>run_pipeline</code> swaps its two calls for two HTTP requests.</td></tr>
+      <tr><td><code>prompts/*.txt</code></td><td>Unchanged, with the consolidation rule and rollup examples already applied to <code>features.txt</code>.</td></tr>
+      <tr><td><code>ml-classification</code> feature</td><td>Keep the gate, drop <code>classification/mkl</code> from it.</td></tr>
+    </tbody>
+  </table></div>
+  <p><code>reqwest</code> is already a workspace dependency, so the replacement for
+  <code>PipelineRunner</code> is a client, a base URL and a timeout. Keep the actor's
+  serialised mailbox: it now protects the single server slot rather than a single model
+  instance.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">7</span><h2>Tuning, in the order worth trying</h2></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Knob</th><th>Effect</th><th>Measured</th></tr></thead>
+    <tbody>
+      <tr><td><code>-t</code> / <code>-tb</code></td><td>Physical cores first. Test 20 against 40 on the target; decode is memory-bound and hyperthreads often lose.</td><td class="num">—</td></tr>
+      <tr><td><code>-np</code> with <code>-cb</code></td><td>If you batch many items, more slots with continuous batching raises throughput at the cost of KV memory per slot.</td><td class="num">—</td></tr>
+      <tr><td><code>-c</code></td><td>Lower is cheaper. 4096 fits text-only comfortably; images or transcripts need 8192&ndash;16384.</td><td class="num">2,440 tok max</td></tr>
+      <tr><td><code>-ctk</code> / <code>-ctv q8_0</code></td><td>Quantized KV cache. Only worth it if you raise context a long way.</td><td class="num">—</td></tr>
+      <tr><td><code>-fa on</code></td><td>Flash attention. Defaults to auto; pin it if you benchmark a difference.</td><td class="num">—</td></tr>
+      <tr><td>Quantization</td><td>Q8_0 is 7.48 GiB and stays on the VNNI path. Only test it if you suspect q4_0 quality; QAT makes that unlikely.</td><td class="num">4.80 &rarr; 7.48 GiB</td></tr>
+    </tbody>
+  </table></div>
+  <p>Do not port the BF16 numbers from the bench. BF16 was faster at prompt processing here
+  because this Zen 4 chip has <code>avx512_bf16</code>; on Cascade Lake those ops widen to
+  F32 and the advantage disappears. The q4_0 figures are the ones that transfer, because the
+  integer path is identical on both chips. Absolute throughput still will not match: the
+  6210U has six memory channels against this desktop's two, and on a bandwidth-bound decode
+  that may well favour the Xeon.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="step">8</span><h2>Things that will bite</h2></div>
+  <ul>
+    <li><strong>Gemma 4's stop token is <code>&lt;turn|&gt;</code></strong> (id 106), not
+    <code>&lt;end_of_turn&gt;</code>, which is not in its vocabulary at all. Only relevant if
+    you bypass the server; <code>--jinja</code> handles it.</li>
+    <li><strong>An empty <code>content</code> with <code>finish_reason: length</code></strong>
+    means reasoning ate the budget. Check <code>--reasoning off</code> is set.</li>
+    <li><strong>The old 100,000 token cap</strong> at <code>runner.rs:80</code> should not
+    come back. 256 covers every observed answer; Defensive Network's 186 is the high-water
+    mark, and a cap that large turns one bad generation into an overnight hang.</li>
+    <li><strong>Keep raw responses.</strong> Log the model's answer before parsing. Every
+    useful diagnosis in the benchmark came from having the unmodified text.</li>
+    <li><strong>Attaching the preview image is not worth it.</strong> It costs roughly 280
+    prompt tokens and made extractions shorter and more generic across every item tested.
+    The vision path works — it read version tags, CJK glyphs and 8-pixel name labels — but
+    the picture dilutes a description that already carries the content.</li>
+    <li><strong>If you revisit images later</strong>, transcribe them in a separate call and
+    append the text to the description. Attaching them to the extraction prompt does nothing
+    at all: 0 of 15 marker terms whether six images were attached or none.</li>
+  </ul>
+</section>
+
+<footer>
+  Measured on llama.cpp <code>56b9eb2</code> with
+  <code>google/gemma-4-E4B-it-qat-q4_0-gguf</code>, Ryzen&nbsp;9 7950X3D at 16 threads,
+  five RimWorld workshop items across two extraction prompts. Raw runs are in
+  <code>bench-out-llamacpp/</code> and <code>bench-out-promptv2/</code>.
+</footer>
+
+</div>

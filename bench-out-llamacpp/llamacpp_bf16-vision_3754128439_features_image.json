@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "bf16-vision",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "prompt": "features",
+  "with_image": true,
+  "prefill_tokens": 2461,
+  "prefill_secs": 8.134449,
+  "decode_tokens": 123,
+  "decode_secs": 18.32109,
+  "prefill_tokens_per_sec": 302.54046709248536,
+  "decode_tokens_per_sec": 6.658992450776673,
+  "wall_secs": 26.4911613209988,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"turrets\",\n    \"combat equipment\",\n    \"support systems\",\n    \"fire-control systems\",\n    \"logistical equipment\",\n    \"target-designation devices\",\n    \"ammunition support\",\n    \"tactical facilities\",\n    \"colonists\",\n    \"drones\",\n    \"weapons\",\n    \"enemies\",\n    \"boss units\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

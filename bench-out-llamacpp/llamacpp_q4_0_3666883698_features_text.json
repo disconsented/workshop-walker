@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3666883698",
+  "title": "Gerrymon's Greekcore Style",
+  "prompt": "features",
+  "with_image": false,
+  "prefill_tokens": 1265,
+  "prefill_secs": 4.568435999999999,
+  "decode_tokens": 65,
+  "decode_secs": 3.3080920000000003,
+  "prefill_tokens_per_sec": 276.9000156727598,
+  "decode_tokens_per_sec": 19.346499432301158,
+  "wall_secs": 7.885727893000876,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"civilian apparel\",\n    \"roleplay variations\",\n    \"wreaths\",\n    \"clothing styles\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

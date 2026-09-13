@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "bf16-vision",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "prompt": "genres",
+  "with_image": true,
+  "prefill_tokens": 2206,
+  "prefill_secs": 7.254081,
+  "decode_tokens": 59,
+  "decode_secs": 8.645202999999999,
+  "prefill_tokens_per_sec": 304.10468259177145,
+  "decode_tokens_per_sec": 6.708922855831148,
+  "wall_secs": 15.934620339998219,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"War\"\n  ],\n  \"themes\": [\n    \"Defense\",\n    \"Military\",\n    \"Combat\",\n    \"Strategy\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

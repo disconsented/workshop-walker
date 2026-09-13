@@ -1,0 +1,7 @@
+{
+  "label": "bf16-vision",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "weight_bytes": 15053097408,
+  "peak_rss_bytes": 11598376960,
+  "final_rss_bytes": 11598376960
+}

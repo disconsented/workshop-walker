@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3799737423",
+  "title": "Vanilla Gravship Expanded - Chapter 2",
+  "prompt": "features",
+  "with_image": false,
+  "prefill_tokens": 2484,
+  "prefill_secs": 9.060443,
+  "decode_tokens": 128,
+  "decode_secs": 6.779823,
+  "prefill_tokens_per_sec": 274.1587800949689,
+  "decode_tokens_per_sec": 18.73205244443697,
+  "wall_secs": 15.851926636001735,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"threat detection mechanic\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid orbital clusters\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery pieces\",\n    \"hellpods\",\n    \"ancient wrecks\",\n    \"pirate stations\",\n    \"static artillery exchanges\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

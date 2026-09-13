@@ -1,0 +1,7 @@
+{
+  "label": "bf16",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "weight_bytes": 15053097408,
+  "peak_rss_bytes": 10113318912,
+  "final_rss_bytes": 10113318912
+}

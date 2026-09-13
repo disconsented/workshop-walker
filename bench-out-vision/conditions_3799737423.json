@@ -1,0 +1,235 @@
+{
+  "item": "3799737423",
+  "title": "Vanilla Gravship Expanded - Chapter 2",
+  "prose_chars": 2655,
+  "n_images": 18,
+  "markers": [
+    "basic gravtech",
+    "gravship power",
+    "oxygen network",
+    "orbital tech",
+    "gravship living",
+    "standard gravtech",
+    "gravship weaponry",
+    "compact workspaces",
+    "astrofuel refining",
+    "heat dissipation",
+    "advanced gravtech",
+    "gravship defenses",
+    "gravdata"
+  ],
+  "conditions": {
+    "A_text_only": {
+      "answer": "```json\n{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"threat detection\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid clusters\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"wrecks\",\n    \"pirate stations\"\n  ]\n}\n```",
+      "finish": "stop",
+      "prompt_tokens": 5,
+      "generated_tokens": 118,
+      "decode_tokens_per_sec": 19.251406586745357,
+      "hits": []
+    },
+    "B_text_plus_images": {
+      "answer": "```json\n{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"threat detection\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid orbital clusters\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"salvaging\",\n    \"pirate stations\"\n  ]\n}\n```",
+      "finish": "stop",
+      "prompt_tokens": 5,
+      "generated_tokens": 119,
+      "decode_tokens_per_sec": 17.46426301180096,
+      "hits": []
+    },
+    "C_transcribe": [
+      {
+        "answer": "VANILLA\nGRAVSHIP\nEXTENDED\nCHAPTER II\nTHE BATTLE\nThe aim of Chapter 2 is to take the living foundations you built in\nthe first chapter and put them to the ultimate test. Now your gravship is\na\nfully functional\ncombat-ready\nthreat\ncapable of challenging\na\nwealth\nof\nnew\nenemies\nand\nnew\nchallenges.\nTo\nsurvive\nyou\nmust\nadapt\nto\nthe\nnew\nthreat\nand\nlaunch\nnew\noffense\nand\nnew\ndefensive\nstrategies.\nTo\nsupport\nthis\nescalating\nprogression\ncontinues\nall\nthe\nship's\nnew\nmechanics\nand\nnew\nsystems\nand\nnew\ncombat\nmodes\nand\nnew\nevents.\nThe\nplanet\nand\nitself\nbecome\na\nvariety\nof\nnew\norbital\nlocations\nand\nnew\nchallenges.\nChapter\n2\nis\nsurvival.\nIt\nensures\nthat\nyour\nlate\ngravship\nhome\nis\nan\nadversary\nthat\ncan\nkill\nif\nyou're\nunprepared.",
+        "finish": "stop",
+        "prompt_tokens": 263,
+        "generated_tokens": 246,
+        "decode_tokens_per_sec": 20.233267273780303,
+        "image": "InfographicsBattle_1.png",
+        "hits": []
+      },
+      {
+        "answer": "Gravship defenses\nGravship defenses\nSubmar\nGravship armor\nGravship shield generator\nGravship shield generator\nGravship shield generator\nGravship shield generator\nGravship shield generator\nGravship shield generator\nGravship shield generator\nGravship shield generator",
+        "finish": "stop",
+        "prompt_tokens": 368,
+        "generated_tokens": 55,
+        "decode_tokens_per_sec": 20.107223631796522,
+        "image": "InfographicsBattle_2.png",
+        "hits": [
+          "gravship defenses"
+        ]
+      },
+      {
+        "answer": "Gravship weaponry\nGravship weaponry is also greatly expanded, offering solutions for long range and close range. We have also ensured that you are able to destroy grapship. We have also ensured that you are able to destroy grapship.\nTargeting console\nA large targeting capable of managing up to three grapship. Requires a crew member to man and fire the weapons.\nTargeting console is a 3x3 structure. It can link to up to three pieces of artillery which can be controlled by the targeting console.\nGravship bombardment target\nA compact targeting apparatus tuned to interface with gravship artillery. It can be linked to a gravship and transmit coordinates to a linked gravship.\nGravship turret\nA compact gravship mounted heavy automatic cannon. It can be linked to a gravship and fire at a target.\nGravship turret is a 1x1 structure. It can be linked to a gravship and fire at a target.\nGravship auto cannon turret\nA compact gravship mounted heavy automatic cannon. It can be linked to a gravship and fire at a target.\nGravship auto cannon turret is a 1x1 structure. It can be linked to a gravship and fire at a target.\nGravship uranium slug turret\nA compact gravship mounted heavy automatic cannon. It can be linked to a gravship and fire at a target.\nGravship uranium slug turret is a 1x1 structure. It can be linked to a gravship and fire at a target.\nGauss howitzer\nA triple barrel electromagnetic artillery. It is designed for both long range and close range. It requires a linked targeting terminal.\nGauss howitzer requires a linked targeting terminal.\nGauss howitzer has a world map of 36 tiles.\nGauss howitzer has a burst shot of 3 shots.\nGauss howitzer has a blast radius of 5 cells.\nGauss howitzer has a cooldown of 30 seconds.\nJavelin launcher\nA heavy missile launcher. It is designed for saturation and overwhelming enemy defenses. It requires a linked targeting terminal.\nJavelin launcher requires a linked targeting terminal.\nJavelin launcher has a world map of 36 tiles.\nJavelin launcher has a burst shot of 10 shots.\nJavelin launcher has a blast radius of 10 cells.\nJavelin launcher has a cooldown of ",
+        "finish": "length",
+        "prompt_tokens": 914,
+        "generated_tokens": 500,
+        "decode_tokens_per_sec": 19.51665192813961,
+        "image": "InfographicsBattle_3.png",
+        "hits": [
+          "gravship weaponry"
+        ]
+      },
+      {
+        "answer": "Orbital technology\nCombat vacuit\nAstrig\nAstrof pod launcher\nAir lock door\nVacuum warning light\nEscape pod\nAuxiliary astrofl tank\nAuxiliary oxygen tank",
+        "finish": "stop",
+        "prompt_tokens": 433,
+        "generated_tokens": 38,
+        "decode_tokens_per_sec": 19.594344119048877,
+        "image": "InfographicsBattle_4.png",
+        "hits": [
+          "orbital tech"
+        ]
+      },
+      {
+        "answer": "Gravship Research\nGravship\nGravship related research has expanded from new\nto unlock progress and satisfaction from new\ndevices. The focus of this mod is combat, the new\nresearch projects primarily unlock defensive and\noffensive capabilities of your gravship.\nAdditionally, some new content has been added\nto existing research.\nBasic Gravtech\nGravdata cost: 50\nGravship Power\nGravdata cost: 100\nOxygen Network\nGravdata cost: 100\nOrbital Tech\nGravdata cost: 100\nGravship Living\nGravdata cost: 100\nStandard Gravtech\nGravdata cost: 200\nGravship Weaponry\nGravdata cost: 400\nCompact Workspaces\nGravdata cost: 400\nAsteful Refining\nGravdata cost: 400\nHeat Dissipation\nGravdata cost: 400\nAdvanced Gravtech\nGravdata cost: 800\nGravship Defenses\nGravdata cost: 1600\nAdvanced Gravship Weaponry\nGravdata cost: 1600\nAdvanced Orbital Tech\nGravdata cost: 1600",
+        "finish": "stop",
+        "prompt_tokens": 250,
+        "generated_tokens": 253,
+        "decode_tokens_per_sec": 19.822252602358926,
+        "image": "InfographicsBattle_5.png",
+        "hits": [
+          "basic gravtech",
+          "gravship power",
+          "oxygen network",
+          "orbital tech",
+          "gravship living",
+          "standard gravtech",
+          "gravship weaponry",
+          "compact workspaces",
+          "heat dissipation",
+          "advanced gravtech",
+          "gravship defenses",
+          "gravdata"
+        ]
+      },
+      {
+        "answer": "Destruction system\nIt wouldn't be a combat module without an expanded\nsystem. We've added a new system to the game.\nWe know what a destroyed ship looks like.\nWe've added a new system.\nDestruction\nDuring combat, you likely take a few hits.\nA destroyed grav component has 80% chance to turn into\na destroyed grav component.\nDestroyed grav pieces can be repaired, but they can\nstill be deconstructed to yield components.\nDeconstructing a working thruster yields 90 steel and\n2 components.\nDestroying a small astrof thruster yields 45 steel and\n1 component.\nDeconstructing a destroyed small astrof thruster yields 90 steel and\n2 components.\nMajority of grav components have a destroyed variant.\nThese destroyed variants appear in new locations such as\nderelict gravships.\n...and more.",
+        "finish": "stop",
+        "prompt_tokens": 185,
+        "generated_tokens": 192,
+        "decode_tokens_per_sec": 20.121120719034042,
+        "image": "InfographicsBattle_6.png",
+        "hits": []
+      },
+      {
+        "answer": "Gravship threats\nGravship detection\nWe need system in place to ensure that the\ngravship threat is not a random event.\nWe have an internal visibility counter to determine\nthe threat level.\nVisibility counter\nVisibility counter drops over time at the rate of 2700\nper day.\nThis means that the lower your visibility, the\nless likely you are to be detected.\nVarious actions and\nactions you take with your gravship will\naffect your visibility.\nPerforming gravship launches\ngenerates visibility.\nUsing gravship scanner\nor gravship cluster increases\nvisibility.\nFiring gravship artillery\nor gravship\nLaunching warp\nfrom your gravship increases\nvisibility.\nWhile there is no way to\nvisibility drop, it is possible\nto lower the amount of visibility.\nSignal jammer\nreduces visibility\nby 25%.\nGravship cloaker\nreduces visibility\nby 15%\n(up to 30%).\nSmall electric thruster\nreduces visibility\nby 1.5%\n(up to 15%).\nLarge electric thruster\nreduces visibility\nby 2.5%\n(up to 20%).\nIn total, it's possible to earn 100%\nvisibility reduction\npreventing gravship threats.\nSignal jammer\nA signal jammer that disguises\nthe electromagnetic signature of\na gravship.\nWhile it efficiently masks\nthe gravship, it is not\nundetectable.\nIt can be used to delay\ngravship detection\nevents.\nSignal jammer\nis unlocked with\nGravship\nand\nSalvager\norbital bases.\nGravship threat\nWhen\na gravship threat\nis detected,\nsignal jammer\nextends the time\nuntil\ngravship\nartillery\nis\nable\nto\nfire.\nSmall electric thruster\nAn electric thruster\nthat increases\nthe gravship's\nmaximum\nsubstructure.\nIt does not\nincrease\nthe gravship's\nvisibility.\nIt can be used to\nsupport\nsmall\ngravships.\nSmall electric thruster\nGravship\nrange\n1x2\nGravship\nvisibility\n1.5%\nMax\n10\nLarge electric thruster\nAn advanced\nelectric thruster\nthat increases\nthe gravship's\nmaximum\nsubstructure.",
+        "finish": "length",
+        "prompt_tokens": 549,
+        "generated_tokens": 500,
+        "decode_tokens_per_sec": 19.65829239168931,
+        "image": "InfographicsBattle_7.png",
+        "hits": []
+      },
+      {
+        "answer": "Incoming warplatform\nWarplatform\nAn enemy warplatform is a grav platform that will fight off a war platform.\nRegular barrages of artillery and scattered bombs on the platform will ensure you cannot take it down with a single well-placed shot.\nUpon detection\nAn orbital bombardment platform has activated a grav platform.\nThe platform will continue to fire on you until you are out of range or it is destroyed.\nYou must destroy the platform or escape.\nPoint defense turrets, gravtor, and grav generators protect the platform.\nYou can also use a shuttle or drop pods to attack the enemy.\nYou are given 48 hours to prepare.\nIf you have a signal jammer, this time is extended to 24 hours.\nEscaping\nEscaping a grav platform will slightly reduce your visibility and temporarily reduce the encounter.\nWarplatform\nUpon arrival\nAn orbital warplatform has arrived and is actively engaging your grav.\nYou must neutralize the platform by destroying its defenses.\nYou can fight back with your grav.\nYou can also use a shuttle or drop pods to attack the enemy.\nThe game generates a warplatform orbital location near your grav.\nYou must destroy the platform or escape.\nGauss bombard\nA heavy, slow-firing electromagnetic cannon that fires a beam of kinetic projectiles.\nDesigned to bombard locations designated by an orbital bombardment target.\nWorld map\n16 tiles\nBurst shot\n2 shots\nCooldown\n1 minute\nAmmunition per shot\nDoes not use ammo\nHostile warcomputer\nThe tactical core of an orbital warplatform.\nIt manages the platform's long-range defenses and controls the grav platform.\nYou can hack the warcomputer to disable gauss bombard.\nHacking the warcomputer will allow you to disable gauss bombard.\nEscaping\nEscaping by performing a grav launch will greatly reduce your visibility and end the encounter.\nWarplatform defeated\nUpon destroying the hostile warcomputer, the warplatform threat is defeated.\nThe area will be safe for 3 days.\nThe location will be safe for 3 days.\nThe location will be safe for 3 days.\nThe location will be safe for 3 days.\nThe location will be safe for 3 days.\nThe location will be safe for 3 days.\nThe location will be safe for 3 days.\nThe location will be safe for 3 days.",
+        "finish": "length",
+        "prompt_tokens": 406,
+        "generated_tokens": 500,
+        "decode_tokens_per_sec": 19.79468272773108,
+        "image": "InfographicsBattle_8.png",
+        "hits": []
+      },
+      {
+        "answer": "Tribute demand\nUpon detection\nPay the tribute\nPostpone\nRefuse to pay\nSalvager attack\nWhen salvager is defeated\nEnemy gravtether\nSalvager station defeated",
+        "finish": "stop",
+        "prompt_tokens": 420,
+        "generated_tokens": 39,
+        "decode_tokens_per_sec": 20.229681414459325,
+        "image": "InfographicsBattle_9.png",
+        "hits": []
+      },
+      {
+        "answer": "Enemy Gravjumper\nUpon detection\nUpon arrival\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper\nEnemy gravjumper",
+        "finish": "length",
+        "prompt_tokens": 407,
+        "generated_tokens": 500,
+        "decode_tokens_per_sec": 19.997911240212748,
+        "image": "InfographicsBattle_10.png",
+        "hits": []
+      },
+      {
+        "answer": "Enemy Gravship\nEnemy Gravship\nUpon\nEnemy Gravship\nUpon\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship\nEnemy Gravship",
+        "finish": "stop",
+        "prompt_tokens": 368,
+        "generated_tokens": 96,
+        "decode_tokens_per_sec": 20.27114253493838,
+        "image": "InfographicsBattle_11.png",
+        "hits": []
+      },
+      {
+        "answer": "Incoming orbital cluster\nOrbital Cluster\nWhen orbital cluster\nMechano grav\nMechano grav tether\nMass driver\nCharge battery\nInferno artillery\nOrbital cluster defeated",
+        "finish": "stop",
+        "prompt_tokens": 511,
+        "generated_tokens": 36,
+        "decode_tokens_per_sec": 20.099994601715736,
+        "image": "InfographicsBattle_12.png",
+        "hits": []
+      },
+      {
+        "answer": "Orbital Events\nSpace infestation\nSpace break\nDrop\nGravship husk\nInfected asteroid\nDerelict\nDormant warplatform\nAttacking Trading Guild\nOrbital bases of Trading Guild\nDestroying Trading Containers",
+        "finish": "stop",
+        "prompt_tokens": 433,
+        "generated_tokens": 47,
+        "decode_tokens_per_sec": 20.127018991592593,
+        "image": "InfographicsBattle_13.png",
+        "hits": []
+      },
+      {
+        "answer": "Insects in Space\nExothe\nExothe\nGiant wasp\nExworm\nExode\nExolex\nExworm knot\nNullide\nNullide thumper\nExo phere\nArtificial exi\nSubcre",
+        "finish": "stop",
+        "prompt_tokens": 615,
+        "generated_tokens": 48,
+        "decode_tokens_per_sec": 20.060660021324054,
+        "image": "InfographicsBattle_14.png",
+        "hits": []
+      },
+      {
+        "answer": "Gravcore Quests\nBase offers a gravcore quests\nWe want to push\nnew gravcore quests\nThese quests\nwill require you\nto do a bit\nof extra\nwork\nbecause\nthese\nnew gravcore quests\nonly show up\nafter\nyou complete\nthe base\ngame.\nGravsh\ngraveyard\nYou have detected\nthe distinct\nsignature of\na gravcore\nsignature\na gravsh\ngraveyard\nYou know\nthat when\nyou arrive\na gravsh\ngraveyard\nis\nactive\nan\nancient\njammer\nis\nactive\npreventing\nthe\ngravcore\nfrom\ninitiating\nthe\njamming\nand\nyou\nmust\nneutralize\nthe\nsource\nof\nthe\njamming.\nBe\ncareful\norbital\nlocations\nare\ndangerous\nplan\nyour\nreturn\ntrip\nliving\nin\norbit\nfor\nlong\nperiods\nis\ndifficult.\nGravcore\nis\nobtained\nby\ndestroy\nthe\nancient\njammer\nwhich\nwill\nprevent\nyou\nfrom\nleaving\nthe\narea\nuntil\nit's\ndone.\nInfected\ninstallation\nYou\nhave\ndetected\nthe\nsignature\nof\na\ngravcore\nfrom\nan\nabandoned\norbital\ninfected\ninstallation\nScans\nreveal\nthat\nthe\ninfected\nrun\nis\ninfested\nwith\nexocoids\nYou\nmust\nnavigate\nthe\ninfected\nrun\nand\ndestroy\nthe\ninfected\ngravcore\nwhich\nwill\nallow\nyou\nto\ncontinue\nto\nthe\ngravcore.\nBe\ncareful\norbital\nlocations\nare\nextremely\ndangerous\nequip\nyour\ncolonists\nwith\ngravcore\nwhich\nwill\ncontinue\nto\nspawn\nexocoids\nfrom\nvarious\ninfected\nvents.\nGravcore\nis\nobtained\nby\ndestroy\nthe\ninfected\ninstallation\nwhich\nwill\ncontinue\nto\nspawn\nexocoids\nfrom\nvarious\ninfected\nvents.\nSalvager\nstronghold\nYou\nhave\ndetected\nthe\ndistinct\nenergy\nsignature\nof\na\ngravcore\nfrom\na\nlarge\nwell\ndefended\nstronghold\non\nit\nScans\nreveal\nthat\na\nheavy\nenemy\nsignal\njammer\nis\nactive\npreventing",
+        "finish": "length",
+        "prompt_tokens": 316,
+        "generated_tokens": 500,
+        "decode_tokens_per_sec": 19.988640523687963,
+        "image": "InfographicsBattle_15.png",
+        "hits": []
+      },
+      {
+        "answer": "Quest Rewards\nNew Quest rewards have been added in this module, pushing the capabilities of the gravship.\nRewards can be found in sealed containers across the world.\nWe focus on improving your gravship, you guessed it, also new!\nWarcomputer\nThe tactical supercomputer core of a gravship.\nIt enhances the gravship's defenses and weapons.\nIt can improve the gravship's combat capabilities.\nIt draws power directly from the gravship.\nWarcomputer improves combat capabilities of the gravship.\nAccuracy of Gauss increased by 15%\nAccuracy of Gauss increased by 22%\nRate of fire of Javelin increased by 33%\nRate of fire of Javelin increased by 33%\nBurst of Anti-aircraft increased by 50%\nPoint defense turret projectile intercept radius increased by 33%\nGravcloaker\nA specialized device that masks a gravship.\nIt reduces the impact of the gravship on the planet, making it less likely the gravship is detected.\nGravcloaker reduces visibility gained from gravship by 15%\nGrav field dilutor\nAn advanced utility that slightly reduces the gravity around a gravship.\nIt allows the gravship to support one grav field dilutor.\nGrav field dilutor reduces gravship's maximum size by 250\nAstrofire launcher\nA compact multi-missile platform that can be mounted on a gravship.\nIt fires a volley of astrofire at a target.\nIt requires a linked targeting terminal.\nAstrofire launcher requires a linked targeting terminal.\nAstrofire launcher stats:\nWorld map: 16\nBurst shot: 4\nWarm up: 6 seconds\nBlast: 5\nAmmunition shot: 30 astrofire\nAstrofire launcher connects to astrofire network for automatic reloading.\nEmergency gravship generator\nAn emergency power source.\nIt can provide power to the gravship in emergencies.\nIt can generate power up to 50,000 W.\nEmergency gravship generator is a unique building that can be placed on a gravship.\nWhen activated, it generates power to cover the power deficit of the gravship.",
+        "finish": "stop",
+        "prompt_tokens": 368,
+        "generated_tokens": 467,
+        "decode_tokens_per_sec": 20.032348373715067,
+        "image": "InfographicsBattle_16.png",
+        "hits": []
+      },
+      {
+        "answer": "Boons and Mishaps\nSince the add a new visibility mechanic, it's only proper new\nlaunch boons and mishaps\nMishaps are grav-related incidents that occur due to\nsuccess of a grav launch ritual. This new mishap\nmishap\nBlazing reentry A caliron error the thruster caused to vent excess energy\nduring <Grav Name> descent. It streaked the sky a brilliant, roaring\nmiss.\nThis mishap makes it so the launch greatly increases visibility.\nBoons\nBoons are grav-related incidents that occur due to\nsuccess of a grav launch ritual. This boon is added to\ncompletely hidden Through thick, cloud cover, and the fact that anyone\nhappened to be the other. <Grav Name> descended completely unobserved.\nThis boon is the launch a visibility.",
+        "finish": "stop",
+        "prompt_tokens": 147,
+        "generated_tokens": 171,
+        "decode_tokens_per_sec": 20.2124374737164,
+        "image": "InfographicsBattle_17.png",
+        "hits": []
+      },
+      {
+        "answer": "Starting Scenario\nThere is a new Starting scenario which allows you to dive straight into gravship combat giving you a jump start to gravship progression. You will start with a gravship already built, a gravship already built, a gravship already built. Whether you survive long enough to see it, it remains to be seen.\nThe Gravship\nYour gravship engine is burning. You managed to drift into an empty patch of orbit to bleed off the heat. The cool down is excruciatingly slow. You know your pursuers are right behind you. It's a matter of time before they find you. You must patch your ship, patch your crew, and prepare for boarding.\nNote: This is a difficult scenario and is not recommended for new players.\nIn this scenario, the gravship engine will be on cooldown for several hours.\nGravship\nYou start with a gravship that is somewhat equipped.\nYou start with 6 crew members with a chance to be lost.\nThe gravship engine will be on cooldown for 9 hours.\nYou start with a gravship with a local visibility of 460.\nYou start with basic gravship, gravship living, oxygen, and a basic gravship network.\nIt is recommended that you escape as soon as you can. Your starting gravship is not equipped to take an enemy gravship.\nChoose a starting gravship\nChoose from several different starting layouts.",
+        "finish": "stop",
+        "prompt_tokens": 303,
+        "generated_tokens": 296,
+        "decode_tokens_per_sec": 20.054496564834693,
+        "image": "InfographicsBattle_18.png",
+        "hits": [
+          "gravship living"
+        ]
+      }
+    ],
+    "D_transcribe_then_extract": {
+      "answer": "```json\n{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"gravship threats\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid orbital clusters\",\n    \"military progression\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"pirate stations\",\n    \"static artillery exchanges\",\n    \"gravship defenses\",\n    \"gravship armor\",\n    \"gravship shields\",\n    \"targeting consoles\",\n    \"turrets\",\n    \"missile launchers\",\n    \"orbital technology\",\n    \"combat systems\",\n    \"destruction system\",\n    \"grav components\",\n    \"visibility mechanics\",\n    \"enemy gravjumper\",\n    \"orbital clusters\",\n    \"quest progression\",\n    \"quest rewards\",\n    \"gravship enhancements\",\n    \"starting scenarios\"\n  ]\n}\n```",
+      "finish": "stop",
+      "prompt_tokens": 5205,
+      "generated_tokens": 235,
+      "decode_tokens_per_sec": 17.41735724503259,
+      "hits": [
+        "orbital tech",
+        "gravship defenses"
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "label": "q4_0-vision",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "weight_bytes": 5154941280,
+  "peak_rss_bytes": 9036574720,
+  "final_rss_bytes": 9036574720
+}

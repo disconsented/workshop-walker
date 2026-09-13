@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3799737423",
+  "title": "Vanilla Gravship Expanded - Chapter 2",
+  "prompt": "genres",
+  "with_image": false,
+  "prefill_tokens": 2229,
+  "prefill_secs": 8.088771,
+  "decode_tokens": 61,
+  "decode_secs": 3.180264,
+  "prefill_tokens_per_sec": 275.5672029780544,
+  "decode_tokens_per_sec": 18.8663582645969,
+  "wall_secs": 11.28932114199415,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"Military\"\n  ],\n  \"themes\": [\n    \"Orbital Combat\",\n    \"Defense\",\n    \"War\",\n    \"Survival\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

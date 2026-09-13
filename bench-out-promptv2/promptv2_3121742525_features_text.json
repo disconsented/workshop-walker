@@ -1,0 +1,14 @@
+{
+  "answer": "{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"scenario\",\n    \"technology tree\",\n    \"ideology pack\",\n    \"colonization company\",\n    \"title system\",\n    \"weapons\",\n    \"robots\",\n    \"bionics\",\n    \"clothing\"\n  ]\n}",
+  "finish": "stop",
+  "prompt_tokens": 2009,
+  "generated_tokens": 91,
+  "decode_tokens_per_sec": 18.78169018934239,
+  "wall_secs": 12.56,
+  "item": "3121742525",
+  "title": "The Dead Man's Switch",
+  "prompt": "features",
+  "with_image": false,
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "label": "q4_0-promptv2"
+}

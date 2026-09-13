@@ -1,0 +1,129 @@
+{
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "n_images": 1,
+  "runs": {
+    "features": {
+      "one_go": {
+        "answer": "{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"turrets\",\n    \"combat equipment\",\n    \"support systems\",\n    \"fire-control systems\",\n    \"logistical equipment\",\n    \"target-designation devices\",\n    \"ammunition support\",\n    \"tactical facilities\",\n    \"drones\",\n    \"weapons\",\n    \"enemies\",\n    \"boss units\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 2546,
+        "generated_tokens": 117,
+        "wall_secs": 15.84,
+        "object": {
+          "types": [
+            "expansion",
+            "overhaul"
+          ],
+          "features": [
+            "turrets",
+            "combat equipment",
+            "support systems",
+            "fire-control systems",
+            "logistical equipment",
+            "target-designation devices",
+            "ammunition support",
+            "tactical facilities",
+            "drones",
+            "weapons",
+            "enemies",
+            "boss units"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"turrets\",\n    \"combat equipment\",\n    \"support systems\",\n    \"fire-control systems\",\n    \"logistical equipment\",\n    \"target-designation devices\",\n    \"ammunition support\",\n    \"tactical facilities\",\n    \"drones\",\n    \"weapons\",\n    \"enemies\",\n    \"boss units\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 2472,
+        "generated_tokens": 117,
+        "wall_secs": 15.31,
+        "object": {
+          "types": [
+            "expansion",
+            "overhaul"
+          ],
+          "features": [
+            "turrets",
+            "combat equipment",
+            "support systems",
+            "fire-control systems",
+            "logistical equipment",
+            "target-designation devices",
+            "ammunition support",
+            "tactical facilities",
+            "drones",
+            "weapons",
+            "enemies",
+            "boss units"
+          ]
+        },
+        "total_prompt_tokens": 2606,
+        "total_generated_tokens": 122,
+        "total_wall_secs": 16.36
+      }
+    },
+    "genres": {
+      "one_go": {
+        "answer": "{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"War\"\n  ],\n  \"themes\": [\n    \"Defense\",\n    \"Military\",\n    \"Combat\",\n    \"Strategy\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 2206,
+        "generated_tokens": 59,
+        "wall_secs": 11.43,
+        "object": {
+          "genres": [
+            "Sci-Fi",
+            "War"
+          ],
+          "themes": [
+            "Defense",
+            "Military",
+            "Combat",
+            "Strategy"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"Military\"\n  ],\n  \"themes\": [\n    \"Defense\",\n    \"War\",\n    \"Strategy\",\n    \"Technology\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 2132,
+        "generated_tokens": 59,
+        "wall_secs": 10.97,
+        "object": {
+          "genres": [
+            "Sci-Fi",
+            "Military"
+          ],
+          "themes": [
+            "Defense",
+            "War",
+            "Strategy",
+            "Technology"
+          ]
+        },
+        "total_prompt_tokens": 2266,
+        "total_generated_tokens": 64,
+        "total_wall_secs": 12.02
+      }
+    }
+  },
+  "transcription": {
+    "n_calls": 1,
+    "prompt_tokens": 134,
+    "generated_tokens": 5,
+    "wall_secs": 1.05,
+    "text": "[3754128439_0.png]\nDEFENSIVE\nNETWORK"
+  },
+  "per_item": {
+    "one_go": {
+      "calls": 2,
+      "wall_secs": 27.27,
+      "prompt_tokens": 4752
+    },
+    "transcribe_extract": {
+      "calls": 3,
+      "wall_secs": 27.33,
+      "prompt_tokens": 4738,
+      "transcription_wall_secs": 1.05
+    }
+  }
+}

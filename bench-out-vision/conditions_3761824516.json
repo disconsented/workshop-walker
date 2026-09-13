@@ -1,0 +1,131 @@
+{
+  "item": "3761824516",
+  "title": "Rustic Workbenches",
+  "prose_chars": 1637,
+  "n_images": 6,
+  "markers": [
+    "crafting spot",
+    "butchering spot",
+    "fueled smithy",
+    "fueled stove",
+    "stonecutter",
+    "hand tailor",
+    "butcher table",
+    "brewery",
+    "drug lab",
+    "simple research bench",
+    "art bench",
+    "styling station",
+    "caravan hitching",
+    "fermenting barrel",
+    "industrial module"
+  ],
+  "conditions": {
+    "A_text_only": {
+      "answer": "```json\n{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"workbenches\",\n    \"textures\",\n    \"definitions\"\n  ]\n}\n```",
+      "finish": "stop",
+      "prompt_tokens": 5,
+      "generated_tokens": 55,
+      "decode_tokens_per_sec": 19.77361408935916,
+      "hits": []
+    },
+    "B_text_plus_images": {
+      "answer": "```json\n{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"workbenches\",\n    \"textures\"\n  ]\n}\n```",
+      "finish": "stop",
+      "prompt_tokens": 3331,
+      "generated_tokens": 50,
+      "decode_tokens_per_sec": 18.796206541923787,
+      "hits": []
+    },
+    "C_transcribe": [
+      {
+        "answer": "SPECIAL THANKS",
+        "finish": "stop",
+        "prompt_tokens": 149,
+        "generated_tokens": 4,
+        "decode_tokens_per_sec": 20.343534485681538,
+        "image": "ST.png",
+        "hits": []
+      },
+      {
+        "answer": "DESCRIPTION",
+        "finish": "stop",
+        "prompt_tokens": 150,
+        "generated_tokens": 2,
+        "decode_tokens_per_sec": 20.173899009461557,
+        "image": "Desc.png",
+        "hits": []
+      },
+      {
+        "answer": "CONTENT",
+        "finish": "stop",
+        "prompt_tokens": 150,
+        "generated_tokens": 2,
+        "decode_tokens_per_sec": 19.917541378692214,
+        "image": "Content.png",
+        "hits": []
+      },
+      {
+        "answer": "SUPPORT MY WORK\nHelp me continue my passion for\nmodding RimWorld by tipping me on\nKo-Fi.",
+        "finish": "stop",
+        "prompt_tokens": 390,
+        "generated_tokens": 25,
+        "decode_tokens_per_sec": 19.915227514878335,
+        "image": "Support.png",
+        "hits": []
+      },
+      {
+        "answer": "NEW TEXTURES\nCrafting Spot\nButchering Spot\nFueled Smithy\nFueled Stove\nStonecutter's Table\nHand Tailor Bench\nButcher Table\nBrewery\nDrug Lab\nSimple Research Bench\nArt Bench\nStyling Station\nCaravan Hitching Spot\nFermenting Barrel\nINDUSTRIAL MODULE\nCOMING SOON!",
+        "finish": "stop",
+        "prompt_tokens": 2,
+        "generated_tokens": 73,
+        "decode_tokens_per_sec": 19.67644813875831,
+        "image": "Content1.png",
+        "hits": [
+          "crafting spot",
+          "butchering spot",
+          "fueled smithy",
+          "fueled stove",
+          "stonecutter",
+          "hand tailor",
+          "butcher table",
+          "brewery",
+          "drug lab",
+          "simple research bench",
+          "art bench",
+          "styling station",
+          "caravan hitching",
+          "fermenting barrel",
+          "industrial module"
+        ]
+      },
+      {
+        "answer": "QUESTIONS",
+        "finish": "stop",
+        "prompt_tokens": 150,
+        "generated_tokens": 2,
+        "decode_tokens_per_sec": 19.62939698492462,
+        "image": "Questions.png",
+        "hits": []
+      }
+    ],
+    "D_transcribe_then_extract": {
+      "answer": "```json\n{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"workbenches\",\n    \"textures\",\n    \"crafting spots\",\n    \"butchering spots\",\n    \"smithy\",\n    \"stove\",\n    \"stonecutter's tables\",\n    \"tailor benches\",\n    \"brewery\",\n    \"drug labs\",\n    \"research benches\",\n    \"art benches\",\n    \"styling stations\",\n    \"caravan hitching spots\",\n    \"fermenting barrels\"\n  ]\n}\n```",
+      "finish": "stop",
+      "prompt_tokens": 672,
+      "generated_tokens": 138,
+      "decode_tokens_per_sec": 19.299090829691863,
+      "hits": [
+        "crafting spot",
+        "butchering spot",
+        "stonecutter",
+        "brewery",
+        "drug lab",
+        "art bench",
+        "styling station",
+        "caravan hitching",
+        "fermenting barrel"
+      ]
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "item": "3121742525",
+  "title": "The Dead Man's Switch",
+  "n_images": 2,
+  "runs": {
+    "features": {
+      "one_go": {
+        "answer": "{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\",\n    \"media\"\n  ],\n  \"features\": [\n    \"scenario\",\n    \"technology tree\",\n    \"ideology pack\",\n    \"colonization company\",\n    \"title system\",\n    \"weapons\",\n    \"robots\",\n    \"bionics\",\n    \"clothing\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 2317,
+        "generated_tokens": 96,
+        "wall_secs": 15.21,
+        "object": {
+          "types": [
+            "overhaul",
+            "expansion",
+            "media"
+          ],
+          "features": [
+            "scenario",
+            "technology tree",
+            "ideology pack",
+            "colonization company",
+            "title system",
+            "weapons",
+            "robots",
+            "bionics",
+            "clothing"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\",\n    \"media\"\n  ],\n  \"features\": [\n    \"scenario\",\n    \"technology tree\",\n    \"ideology pack\",\n    \"colonization company\",\n    \"title system\",\n    \"weapons\",\n    \"robots\",\n    \"bionics\",\n    \"clothing\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 2077,
+        "generated_tokens": 96,
+        "wall_secs": 12.88,
+        "object": {
+          "types": [
+            "overhaul",
+            "expansion",
+            "media"
+          ],
+          "features": [
+            "scenario",
+            "technology tree",
+            "ideology pack",
+            "colonization company",
+            "title system",
+            "weapons",
+            "robots",
+            "bionics",
+            "clothing"
+          ]
+        },
+        "total_prompt_tokens": 2441,
+        "total_generated_tokens": 120,
+        "total_wall_secs": 16.19
+      }
+    },
+    "genres": {
+      "one_go": {
+        "answer": "{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"Cyberpunk\"\n  ],\n  \"themes\": [\n    \"War\",\n    \"Industrial\",\n    \"Post-Apocalyptic\",\n    \"Mecha\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1977,
+        "generated_tokens": 64,
+        "wall_secs": 11.64,
+        "object": {
+          "genres": [
+            "Sci-Fi",
+            "Cyberpunk"
+          ],
+          "themes": [
+            "War",
+            "Industrial",
+            "Post-Apocalyptic",
+            "Mecha"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"Cyberpunk\",\n    \"Military\"\n  ],\n  \"themes\": [\n    \"War\",\n    \"Industrial\",\n    \"Technological Conflict\",\n    \"Colonization\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1737,
+        "generated_tokens": 68,
+        "wall_secs": 9.92,
+        "object": {
+          "genres": [
+            "Sci-Fi",
+            "Cyberpunk",
+            "Military"
+          ],
+          "themes": [
+            "War",
+            "Industrial",
+            "Technological Conflict",
+            "Colonization"
+          ]
+        },
+        "total_prompt_tokens": 2101,
+        "total_generated_tokens": 92,
+        "total_wall_secs": 13.23
+      }
+    }
+  },
+  "transcription": {
+    "n_calls": 2,
+    "prompt_tokens": 364,
+    "generated_tokens": 24,
+    "wall_secs": 3.31,
+    "text": "[3121742525_0.png]\n1.5\n失能\nSWITCH\nDEAD MAN\n\n[3121742525_3.png]\nSUPPORT ME ON PAYPAL\nIF YOU LIKE MY WORKS"
+  },
+  "per_item": {
+    "one_go": {
+      "calls": 2,
+      "wall_secs": 26.85,
+      "prompt_tokens": 4294
+    },
+    "transcribe_extract": {
+      "calls": 4,
+      "wall_secs": 26.11,
+      "prompt_tokens": 4178,
+      "transcription_wall_secs": 3.31
+    }
+  }
+}

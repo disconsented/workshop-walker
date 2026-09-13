@@ -209,3 +209,6 @@ ui/project.inlag
 
 # Local notes and session transcripts
 20??-??-??-*.txt
+
+# Benchmark image and item cache, re-fetchable from the API
+bench-cache/

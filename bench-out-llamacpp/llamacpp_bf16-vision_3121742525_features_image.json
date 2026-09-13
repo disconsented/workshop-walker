@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "bf16-vision",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "item": "3121742525",
+  "title": "The Dead Man's Switch",
+  "prompt": "features",
+  "with_image": true,
+  "prefill_tokens": 2146,
+  "prefill_secs": 7.345917,
+  "decode_tokens": 96,
+  "decode_secs": 14.229099,
+  "prefill_tokens_per_sec": 292.1350731297399,
+  "decode_tokens_per_sec": 6.6764592754608,
+  "wall_secs": 21.61219128400262,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\",\n    \"media\"\n  ],\n  \"features\": [\n    \"scenario\",\n    \"technology tree\",\n    \"ideology pack\",\n    \"colonization company\",\n    \"title system\",\n    \"weapons\",\n    \"robots\",\n    \"bionics\",\n    \"clothing\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

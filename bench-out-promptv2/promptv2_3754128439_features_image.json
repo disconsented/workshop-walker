@@ -1,0 +1,14 @@
+{
+  "answer": "{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"turrets\",\n    \"combat equipment\",\n    \"support systems\",\n    \"fire-control systems\",\n    \"logistical equipment\",\n    \"target-designation devices\",\n    \"ammunition support\",\n    \"tactical facilities\",\n    \"drones\",\n    \"weapons\",\n    \"enemies\",\n    \"boss units\"\n  ]\n}",
+  "finish": "stop",
+  "prompt_tokens": 2546,
+  "generated_tokens": 117,
+  "decode_tokens_per_sec": 18.67333068472528,
+  "wall_secs": 15.96,
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "prompt": "features",
+  "with_image": true,
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "label": "q4_0-promptv2"
+}

@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0-vision",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3121742525",
+  "title": "The Dead Man's Switch",
+  "prompt": "genres",
+  "with_image": true,
+  "prefill_tokens": 1891,
+  "prefill_secs": 7.4632060000000005,
+  "decode_tokens": 64,
+  "decode_secs": 3.320577,
+  "prefill_tokens_per_sec": 253.37636399156074,
+  "decode_tokens_per_sec": 18.972606266922885,
+  "wall_secs": 10.822233724000398,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"Cyberpunk\"\n  ],\n  \"themes\": [\n    \"War\",\n    \"Industrial\",\n    \"Post-Apocalyptic\",\n    \"Colonization\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

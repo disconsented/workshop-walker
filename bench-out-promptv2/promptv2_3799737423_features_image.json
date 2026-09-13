@@ -1,0 +1,14 @@
+{
+  "answer": "{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"threat detection\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid clusters\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"wreck salvaging\",\n    \"pirate stations\"\n  ]\n}",
+  "finish": "stop",
+  "prompt_tokens": 2662,
+  "generated_tokens": 118,
+  "decode_tokens_per_sec": 18.757493979565876,
+  "wall_secs": 16.37,
+  "item": "3799737423",
+  "title": "Vanilla Gravship Expanded - Chapter 2",
+  "prompt": "features",
+  "with_image": true,
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "label": "q4_0-promptv2"
+}

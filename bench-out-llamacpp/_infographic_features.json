@@ -1,0 +1,55 @@
+{
+  "item": "3799737423",
+  "title": "Vanilla Gravship Expanded - Chapter 2",
+  "prompt": "features",
+  "n_images": 18,
+  "markers": [
+    "basic gravtech",
+    "gravship power",
+    "oxygen network",
+    "orbital tech",
+    "gravship living",
+    "standard gravtech",
+    "gravship weaponry",
+    "compact workspaces",
+    "astrofuel refining",
+    "heat dissipation",
+    "advanced gravtech",
+    "gravship defenses",
+    "gravdata"
+  ],
+  "text_only": {
+    "answer": "```json\n{\n  \"types\": [\n    \"overhaul\",\n    \"expansion\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"threat detection\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid clusters\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"wrecks\",\n    \"pirate stations\"\n  ]\n}\n```",
+    "finish": "stop",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 2484,
+      "prompt_ms": 9091.467,
+      "prompt_per_token_ms": 3.660010869565218,
+      "prompt_per_second": 273.2232322902343,
+      "predicted_n": 118,
+      "predicted_ms": 6138.759,
+      "predicted_per_token_ms": 52.46802564102564,
+      "predicted_per_second": 19.059226791603972
+    },
+    "hits": [],
+    "hit_count": 0
+  },
+  "with_infographics": {
+    "answer": "```json\n{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"orbital combat\",\n    \"threat detection\",\n    \"enemy gravships\",\n    \"bombardment platforms\",\n    \"mechanoid orbital clusters\",\n    \"weaponry\",\n    \"armored hulls\",\n    \"signal jammers\",\n    \"artillery\",\n    \"hellpods\",\n    \"salvaging\",\n    \"pirate stations\"\n  ]\n}\n```",
+    "finish": "stop",
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 9241,
+      "prompt_ms": 61448.052,
+      "prompt_per_token_ms": 6.649502434801429,
+      "prompt_per_second": 150.38719209520264,
+      "predicted_n": 119,
+      "predicted_ms": 6892.323,
+      "predicted_per_token_ms": 58.40951694915255,
+      "predicted_per_second": 17.12049768996607
+    },
+    "hits": [],
+    "hit_count": 0
+  }
+}

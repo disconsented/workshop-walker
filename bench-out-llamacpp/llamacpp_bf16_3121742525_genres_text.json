@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "bf16",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "item": "3121742525",
+  "title": "The Dead Man's Switch",
+  "prompt": "genres",
+  "with_image": false,
+  "prefill_tokens": 1669,
+  "prefill_secs": 5.332102,
+  "decode_tokens": 61,
+  "decode_secs": 8.940178,
+  "prefill_tokens_per_sec": 313.00976612975523,
+  "decode_tokens_per_sec": 6.7112757710193245,
+  "wall_secs": 14.29285755699675,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"genres\": [\n    \"Sci-Fi\",\n    \"Cyberpunk\"\n  ],\n  \"themes\": [\n    \"War\",\n    \"Colonization\",\n    \"Industrial\",\n    \"Military\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

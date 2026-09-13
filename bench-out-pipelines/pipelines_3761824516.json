@@ -1,0 +1,103 @@
+{
+  "item": "3761824516",
+  "title": "Rustic Workbenches",
+  "n_images": 7,
+  "runs": {
+    "features": {
+      "one_go": {
+        "answer": "{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"workbenches\",\n    \"textures\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 3823,
+        "generated_tokens": 50,
+        "wall_secs": 26.74,
+        "object": {
+          "types": [
+            "media",
+            "overhaul"
+          ],
+          "features": [
+            "workbenches",
+            "textures"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"types\": [\n    \"media\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"workbenches\",\n    \"textures\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1731,
+        "generated_tokens": 50,
+        "wall_secs": 9.12,
+        "object": {
+          "types": [
+            "media",
+            "overhaul"
+          ],
+          "features": [
+            "workbenches",
+            "textures"
+          ]
+        },
+        "total_prompt_tokens": 4264,
+        "total_generated_tokens": 166,
+        "total_wall_secs": 53.28
+      }
+    },
+    "genres": {
+      "one_go": {
+        "answer": "{\n  \"genres\": [\n    \"Medieval\"\n  ],\n  \"themes\": [\n    \"Crafting\",\n    \"Historical\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 3483,
+        "generated_tokens": 43,
+        "wall_secs": 25.24,
+        "object": {
+          "genres": [
+            "Medieval"
+          ],
+          "themes": [
+            "Crafting",
+            "Historical"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"genres\": [\n    \"Medieval\"\n  ],\n  \"themes\": [\n    \"Crafting\",\n    \"Historical\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1391,
+        "generated_tokens": 43,
+        "wall_secs": 7.25,
+        "object": {
+          "genres": [
+            "Medieval"
+          ],
+          "themes": [
+            "Crafting",
+            "Historical"
+          ]
+        },
+        "total_prompt_tokens": 3924,
+        "total_generated_tokens": 159,
+        "total_wall_secs": 51.41
+      }
+    }
+  },
+  "transcription": {
+    "n_calls": 7,
+    "prompt_tokens": 2533,
+    "generated_tokens": 116,
+    "wall_secs": 44.16,
+    "text": "[3761824516_0.png]\nRUSTIC\nWORKBENCHES\n\n[3761824516_1.png]\nDESCRIPTION\n\n[3761824516_2.png]\nCONTENT\n\n[3761824516_3.png]\nNEW TEXTURES\nCrafting Spot\nButchering Spot\nFueled Smithy\nFueled Stove\nStonecutter's Table\nHand Tailor Bench\nButcher Table\nBrewery\nDrug Lab\nSimple Research Bench\nArt Bench\nStyling Station\nCaravan Hitching Spot\nFermenting Barrel\nINDUSTRIAL MODULE\nCOMING SOON!\n\n[3761824516_4.png]\nQUESTIONS\n\n[3761824516_5.png]\nSPECIAL THANKS\n\n[3761824516_6.png]\nSUPPORT MY WORK\nHelp me continue my passion for\nmodding RimWorld by tipping me on\nKo-Fi."
+  },
+  "per_item": {
+    "one_go": {
+      "calls": 2,
+      "wall_secs": 51.98,
+      "prompt_tokens": 7306
+    },
+    "transcribe_extract": {
+      "calls": 9,
+      "wall_secs": 60.53,
+      "prompt_tokens": 5655,
+      "transcription_wall_secs": 44.16
+    }
+  }
+}

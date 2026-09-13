@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "bf16-vision",
+  "model_file": "gemma-4-E4B-it-BF16.gguf",
+  "item": "3666883698",
+  "title": "Gerrymon's Greekcore Style",
+  "prompt": "genres",
+  "with_image": true,
+  "prefill_tokens": 1172,
+  "prefill_secs": 4.171929,
+  "decode_tokens": 49,
+  "decode_secs": 7.108826,
+  "prefill_tokens_per_sec": 280.92520270599044,
+  "decode_tokens_per_sec": 6.752169767553743,
+  "wall_secs": 11.318696437003382,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"genres\": [\n    \"Historical\",\n    \"Fantasy\"\n  ],\n  \"themes\": [\n    \"Ancient Greece\",\n    \"Roleplay\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

@@ -1,0 +1,104 @@
+{
+  "item": "3666883698",
+  "title": "Gerrymon's Greekcore Style",
+  "n_images": 1,
+  "runs": {
+    "features": {
+      "one_go": {
+        "answer": "{\n  \"types\": [\n    \"media\"\n  ],\n  \"features\": [\n    \"apparel\",\n    \"visual variations\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1512,
+        "generated_tokens": 44,
+        "wall_secs": 8.36,
+        "object": {
+          "types": [
+            "media"
+          ],
+          "features": [
+            "apparel",
+            "visual variations"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"types\": [\n    \"media\"\n  ],\n  \"features\": [\n    \"civilian apparel\",\n    \"clothing\",\n    \"wreaths\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1419,
+        "generated_tokens": 51,
+        "wall_secs": 7.99,
+        "object": {
+          "types": [
+            "media"
+          ],
+          "features": [
+            "civilian apparel",
+            "clothing",
+            "wreaths"
+          ]
+        },
+        "total_prompt_tokens": 1609,
+        "total_generated_tokens": 93,
+        "total_wall_secs": 11.28
+      }
+    },
+    "genres": {
+      "one_go": {
+        "answer": "{\n  \"genres\": [\n    \"Historical\",\n    \"Fantasy\"\n  ],\n  \"themes\": [\n    \"Ancient Greece\",\n    \"Roleplay\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1172,
+        "generated_tokens": 49,
+        "wall_secs": 7.22,
+        "object": {
+          "genres": [
+            "Historical",
+            "Fantasy"
+          ],
+          "themes": [
+            "Ancient Greece",
+            "Roleplay"
+          ]
+        }
+      },
+      "transcribe_extract": {
+        "answer": "{\n  \"genres\": [\n    \"Historical\",\n    \"Fantasy\"\n  ],\n  \"themes\": [\n    \"Classical Antiquity\",\n    \"Roleplay\"\n  ]\n}",
+        "finish": "stop",
+        "prompt_tokens": 1079,
+        "generated_tokens": 50,
+        "wall_secs": 6.57,
+        "object": {
+          "genres": [
+            "Historical",
+            "Fantasy"
+          ],
+          "themes": [
+            "Classical Antiquity",
+            "Roleplay"
+          ]
+        },
+        "total_prompt_tokens": 1269,
+        "total_generated_tokens": 92,
+        "total_wall_secs": 9.86
+      }
+    }
+  },
+  "transcription": {
+    "n_calls": 1,
+    "prompt_tokens": 190,
+    "generated_tokens": 42,
+    "wall_secs": 3.29,
+    "text": "[3666883698_0.png]\n1.6\nHuma\nLuca\nLivia\nZelatus\nVita\nTitus\nLiviana\nAntonius\nHadrian\nBerrymon's\nGREEKCORE\nSTYLE"
+  },
+  "per_item": {
+    "one_go": {
+      "calls": 2,
+      "wall_secs": 15.58,
+      "prompt_tokens": 2684
+    },
+    "transcribe_extract": {
+      "calls": 3,
+      "wall_secs": 17.85,
+      "prompt_tokens": 2688,
+      "transcription_wall_secs": 3.29
+    }
+  }
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "item": "3799737423",
+    "markers": [
+      "ADD-ON",
+      "1.6"
+    ],
+    "image": {
+      "answer": "1. 1.6\n2. ADD-ON\n3. VANILLA\n4. GRAVSHIP\n5. EXPANDED\n6. CHAPTER 2: THE BATTLE",
+      "hits": [
+        "ADD-ON",
+        "1.6"
+      ],
+      "hit_count": 2
+    },
+    "control": {
+      "answer": "NO IMAGE.",
+      "hits": [],
+      "hit_count": 0
+    }
+  }
+]

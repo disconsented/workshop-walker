@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0-vision",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "prompt": "features",
+  "with_image": true,
+  "prefill_tokens": 2461,
+  "prefill_secs": 9.248961,
+  "decode_tokens": 118,
+  "decode_secs": 6.191911,
+  "prefill_tokens_per_sec": 266.08394175302504,
+  "decode_tokens_per_sec": 18.895620431236818,
+  "wall_secs": 15.47498836700106,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"turrets\",\n    \"combat equipment\",\n    \"support systems\",\n    \"fire-control systems\",\n    \"logistical equipment\",\n    \"target-designation devices\",\n    \"ammunition support\",\n    \"tactical facilities\",\n    \"drones\",\n    \"weapons\",\n    \"enemy types\",\n    \"boss units\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

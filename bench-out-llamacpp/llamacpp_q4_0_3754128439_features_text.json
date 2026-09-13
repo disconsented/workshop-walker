@@ -1,0 +1,20 @@
+{
+  "runtime": "llama.cpp",
+  "label": "q4_0",
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "item": "3754128439",
+  "title": "Defensive Network",
+  "prompt": "features",
+  "with_image": false,
+  "prefill_tokens": 2355,
+  "prefill_secs": 8.599832000000001,
+  "decode_tokens": 190,
+  "decode_secs": 9.953251,
+  "prefill_tokens_per_sec": 273.8425587848693,
+  "decode_tokens_per_sec": 18.988770603695215,
+  "wall_secs": 18.57810282799619,
+  "finish_reason": "stop",
+  "parses_as_json": true,
+  "raw_output": "```json\n{\n  \"types\": [\n    \"expansion\",\n    \"overhaul\"\n  ],\n  \"features\": [\n    \"turrets\",\n    \"combat equipment\",\n    \"support systems\",\n    \"fire-control systems\",\n    \"logistical equipment\",\n    \"target-designation devices\",\n    \"ammunition support\",\n    \"tactical facilities\",\n    \"drones\",\n    \"weapon platforms\",\n    \"machine guns\",\n    \"autocannons\",\n    \"cannons\",\n    \"missile weapons\",\n    \"electromagnetic weapons\",\n    \"laser weapons\",\n    \"tracking weapons\",\n    \"anti-aircraft systems\",\n    \"point-defense systems\",\n    \"enemies\",\n    \"boss units\",\n    \"research\",\n    \"quests\"\n  ]\n}\n```",
+  "reasoning_output": ""
+}

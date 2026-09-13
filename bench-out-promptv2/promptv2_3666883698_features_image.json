@@ -1,0 +1,14 @@
+{
+  "answer": "{\n  \"types\": [\n    \"media\"\n  ],\n  \"features\": [\n    \"apparel\",\n    \"visual variations\"\n  ]\n}",
+  "finish": "stop",
+  "prompt_tokens": 1512,
+  "generated_tokens": 44,
+  "decode_tokens_per_sec": 18.939911149793552,
+  "wall_secs": 8.4,
+  "item": "3666883698",
+  "title": "Gerrymon's Greekcore Style",
+  "prompt": "features",
+  "with_image": true,
+  "model_file": "gemma-4-E4B-q4_0.gguf",
+  "label": "q4_0-promptv2"
+}
