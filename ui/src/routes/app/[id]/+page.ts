@@ -90,14 +90,14 @@ function loadParams(params: URLSearchParams) {
 	if (paramLanguage) {
 		language.v = paramLanguage;
 	} else {
-		language.v = '';
+		language.v = '1';
 	}
 
 	const paramOrderBy = params.get('order_by');
 	if (paramOrderBy) {
 		orderBy.v = paramOrderBy;
 	} else {
-		orderBy.v = '';
+		orderBy.v = 'LastUpdated';
 	}
 
 	const paramLimit = params.get('limit');
