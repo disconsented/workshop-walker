@@ -50,9 +50,9 @@
 		</div>
 	</div>
 	<hr class="hr border-b-surface-200-800" />
-	<div class="flex flex-col">
+	<div class="flex flex-col gap-2">
 		<div>
-			<span> {Math.trunc(item.score * 100)}%</span>
+			<span> {Math.trunc(item.score * 100)}% Upvoted</span>
 			<Progress value={progress}>
 				<Progress.Track class="bg-primary-50-950 h-1">
 					<Progress.Range class="bg-primary-500" />
@@ -67,7 +67,7 @@
 	</div>
 	<hr class="hr border-b-surface-200-800" />
 	<div class="flex flex-col">
-		<span class="opacity-50">Popularity · 12 months</span>
+		<span class="uppercase opacity-50">Popularity · 12 months</span>
 		<div>
 			<svg
 				width="150"
@@ -101,7 +101,7 @@
 	</div>
 	<hr class="hr border-b-surface-200-800" />
 	<div class="flex flex-col">
-		<span class="text-sm opacity-50">TAGS · {item.tags.length}</span>
+		<span class="text-sm uppercase opacity-50">Tags · {item.tags.length}</span>
 
 		<div>
 			{#each item.tags as tag}
@@ -115,7 +115,7 @@
 	</div>
 	<hr class="hr border-b-surface-200-800" />
 	<div class="flex flex-col">
-		<span class="text-sm opacity-50">LANGS · {item.languages.length}</span>
+		<span class="text-sm uppercase opacity-50">Langs · {item.languages.length}</span>
 
 		<div>
 			{#each item.languages as lang, i}
@@ -128,7 +128,7 @@
 	</div>
 	<hr class="hr border-b-surface-200-800" />
 	<div>
-		<span class="text-sm opacity-50">Community Properties</span>
+		<span class="text-sm uppercase opacity-50">Community Properties</span>
 		<Properties {loggedIn} itemID={item.id} properties={item.properties} />
 	</div>
 </div>

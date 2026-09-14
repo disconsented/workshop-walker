@@ -98,51 +98,59 @@
 						<Accordion.ItemContent>
 							<form>
 								<div class="grid grid-cols-2 gap-2">
-									<ToggleGroup
-										value={selectedTags}
-										onValueChange={(details) => (selectedTags = details.value)}
-										multiple
-									>
-										{#each all_tags as tag}
-											<ToggleGroup.Item
-												value={tag.id}
-												class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
-											>
-												<Tooltip positioning={{ placement: 'top' }}>
-													<!--Fixes submitting the forum prematurely-->
-													<Tooltip.Trigger>
-														<button type="button">{tag.display_name}</button>
-													</Tooltip.Trigger>
-													<Portal>
-														<Tooltip.Positioner>
-															<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
-																<span>"{tag}"</span>
-																<Tooltip.Arrow
-																	class="[--arrow-background:var(--color-surface-950-50)] [--arrow-size:--spacing(2)]"
-																>
-																	<Tooltip.ArrowTip />
-																</Tooltip.Arrow>
-															</Tooltip.Content>
-														</Tooltip.Positioner>
-													</Portal>
-												</Tooltip>
-											</ToggleGroup.Item>
-										{/each}
-									</ToggleGroup>
-									<ToggleGroup
-										value={selectedLangs}
-										onValueChange={(details) => (selectedLangs = details.value)}
-										multiple
-									>
-										{#each all_langs as lang}
-											<ToggleGroup.Item
-												value={whichLang(lang)}
-												class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
-											>
-												{whichLang(lang)}
-											</ToggleGroup.Item>
-										{/each}
-									</ToggleGroup>
+									<div>
+										<span class="label-text">Tags</span>
+										<ToggleGroup
+											class="flex flex-wrap border-0"
+											value={selectedTags}
+											onValueChange={(details) => (selectedTags = details.value)}
+											multiple
+										>
+											{#each all_tags as tag}
+												<ToggleGroup.Item
+													value={tag.id}
+													class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
+												>
+													<Tooltip positioning={{ placement: 'top' }}>
+														<!--Fixes submitting the forum prematurely-->
+														<Tooltip.Trigger>
+															<button type="button">{tag.display_name}</button>
+														</Tooltip.Trigger>
+														<Portal>
+															<Tooltip.Positioner>
+																<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
+																	<span>"{tag}"</span>
+																	<Tooltip.Arrow
+																		class="[--arrow-background:var(--color-surface-950-50)] [--arrow-size:--spacing(2)]"
+																	>
+																		<Tooltip.ArrowTip />
+																	</Tooltip.Arrow>
+																</Tooltip.Content>
+															</Tooltip.Positioner>
+														</Portal>
+													</Tooltip>
+												</ToggleGroup.Item>
+											{/each}
+										</ToggleGroup>
+									</div>
+									<div>
+										<span class="label-text">Languages</span>
+										<ToggleGroup
+											class="flex flex-wrap border-0"
+											value={selectedLangs}
+											onValueChange={(details) => (selectedLangs = details.value)}
+											multiple
+										>
+											{#each all_langs as lang}
+												<ToggleGroup.Item
+													value={whichLang(lang)}
+													class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
+												>
+													{whichLang(lang)}
+												</ToggleGroup.Item>
+											{/each}
+										</ToggleGroup>
+									</div>
 								</div>
 							</form>
 						</Accordion.ItemContent>
