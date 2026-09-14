@@ -119,7 +119,6 @@
 	}
 
 	function submitForum(event) {
-		console.debug('submitForum', event);
 		event.preventDefault();
 		loadParams();
 	}
