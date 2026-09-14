@@ -35,7 +35,7 @@
 	);
 
 	let page = $state(1);
-	let pageSize = $state(9);
+	let pageSize = $state(3 * 5);
 	let paginated = $derived(filtered.slice((page - 1) * pageSize, page * pageSize));
 </script>
 
@@ -46,7 +46,12 @@
 		{/each}
 	</div>
 
-	<Pagination {page} count={filtered.length} {pageSize} onPageChange={(event) => (page = event.page)}>
+	<Pagination
+		{page}
+		count={filtered.length}
+		{pageSize}
+		onPageChange={(event) => (page = event.page)}
+	>
 		<Pagination.PrevTrigger>
 			<Icon data={faChevronLeft} class="fa-fw"></Icon>
 		</Pagination.PrevTrigger>
@@ -75,14 +80,14 @@
 	<div
 		class="card border-surface-300-700 bg-surface-100-900 flex w-full flex-row place-items-center justify-between gap-2 border-1 p-2"
 	>
-		<div class="flex min-w-0 flex-row place-items-center justify-between gap-2">
+		<div class="flex w-full min-w-0 flex-row place-items-center justify-between gap-2">
 			<img src={item.preview_url} class="h-10" alt="Preview" />
-			<div class="flex min-w-0 flex-col">
+			<div class="flex w-full min-w-0 flex-col">
 				<span class="overflow-hidden text-nowrap text-ellipsis">{item.title}</span>
 				<span class="overflow-hidden text-sm text-nowrap text-ellipsis opacity-50"
 					>{item.author.name}</span
 				>
-				<div class="grid grid-cols-[auto_1fr] gap-2">
+				<div class="grid grid-cols-[1fr_auto] gap-2">
 					<div class="w-min-0 flex flex-row gap-1 overflow-ellipsis">
 						{#each item.tags as tag}
 							<span
@@ -92,7 +97,7 @@
 							</span>
 						{/each}
 					</div>
-					<span class="text-success-500 flex place-items-center"
+					<span class="text-success-500 flex place-items-center gap-1"
 						><Icon data={faThumbsUp} class="fa-fw" />
 						{Math.trunc(item.score * 100)}%</span
 					>
