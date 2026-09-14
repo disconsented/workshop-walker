@@ -46,7 +46,7 @@
 		{/each}
 	</div>
 
-	<Pagination {page} count={items.length} {pageSize} onPageChange={(event) => (page = event.page)}>
+	<Pagination {page} count={filtered.length} {pageSize} onPageChange={(event) => (page = event.page)}>
 		<Pagination.PrevTrigger>
 			<Icon data={faChevronLeft} class="fa-fw"></Icon>
 		</Pagination.PrevTrigger>
