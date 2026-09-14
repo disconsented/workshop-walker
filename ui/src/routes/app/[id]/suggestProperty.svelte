@@ -88,7 +88,7 @@
 				class="w-full"
 				required
 			>
-				<SegmentedControl.Control>
+				<SegmentedControl.Control class="gap-0 p-0">
 					<SegmentedControl.Indicator
 						class="bg-(--color-{accentColour}-100) border-1 border-(--color-{accentColour}-300) opacity-80"
 					/>
@@ -121,12 +121,21 @@
 			<Icon data={faQuoteRight} class="fa-fw"></Icon>
 		</div>
 		<div class="flow-row flex flex-wrap gap-2 p-2" id="suggest-property">
-			<div class="flex w-full">
+			<div class="flex w-full flex-col place-items-center">
+				<span class="label-text">2-32 Alphabetic Characters Only</span>
 				<div class="field-group bg-surface-50-950 w-full grid-cols-[auto_1fr_auto]">
 					<div class="label label-text text-xs uppercase text-(--color-{accentColour}-500)">
 						{prop_class}
 					</div>
-					<input class="input" type="text" required bind:value={property_details.value} />
+					<input
+						class="input"
+						type="text"
+						minlength="2"
+						maxlength="32"
+						pattern="[\w\s]+"
+						required
+						bind:value={property_details.value}
+					/>
 				</div>
 			</div>
 			<div class="flex w-full" id="suggest-property-reasoning">
@@ -144,8 +153,8 @@
 			</div>
 			<footer class="flex w-full justify-between" id="suggest-property-footer">
 				<button class="btn preset-tonal-surface" type="reset" onclick={() => (open = false)}
-					>Cancel</button
-				>
+					>Cancel
+				</button>
 				{#if request}
 					{#await request}
 						<button class="btn preset-tonal-primary disabled" disabled>
@@ -231,7 +240,7 @@
 				request = null;
 			}}
 		>
-			+ Suggest another</button
-		>
+			+ Suggest another
+		</button>
 	</div>
 {/snippet}

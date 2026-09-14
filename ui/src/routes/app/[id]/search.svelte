@@ -119,6 +119,7 @@
 	}
 
 	function submitForum(event) {
+		console.debug('submitForum', event);
 		event.preventDefault();
 		loadParams();
 	}
@@ -133,7 +134,7 @@
 	>
 		<!--		Funny little hack so pressing enter does a submit-->
 		<!--		See https://stackoverflow.com/questions/27807853/html5-how-to-make-a-form-submit-after-pressing-enter-at-any-of-the-text-inputs-->
-		<input type="submit" class="hidden" />
+		<!--		<input type="submit" class="hidden" />-->
 		<select class="select hidden">
 			<!--			ToDo: Dynamically load-->
 			<option value="rimworld">Rimworld</option>
@@ -260,18 +261,21 @@
 					</SegmentedControl>
 				</div>
 				<div class="flex flex-row flex-wrap gap-1">
-					{#each appTags as tag}
-						<ToggleGroup
-							value={tags.v}
-							onValueChange={(details) => (tags.v = details.value)}
-							multiple
-						>
+					<ToggleGroup
+						value={tags.v}
+						onValueChange={(details) => (tags.v = details.value)}
+						multiple
+					>
+						{#each appTags as tag}
 							<ToggleGroup.Item
 								value={tag}
 								class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
 							>
 								<Tooltip positioning={{ placement: 'top' }}>
-									<Tooltip.Trigger>{tag}</Tooltip.Trigger>
+									<!--Fixes submitting the forum prematurely-->
+									<Tooltip.Trigger>
+										<button type="button">{tag}</button>
+									</Tooltip.Trigger>
 									<Portal>
 										<Tooltip.Positioner>
 											<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
@@ -286,8 +290,8 @@
 									</Portal>
 								</Tooltip>
 							</ToggleGroup.Item>
-						</ToggleGroup>
-					{/each}
+						{/each}
+					</ToggleGroup>
 				</div>
 			</div>
 		</div>

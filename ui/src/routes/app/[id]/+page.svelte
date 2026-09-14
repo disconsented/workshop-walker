@@ -21,6 +21,7 @@
 	import Search from './search.svelte';
 	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
+	import { inToLangShort } from '$lib/lang';
 
 	let { data }: { data: PageData } = $props();
 
@@ -43,25 +44,6 @@
 	}
 
 	const logged_in = document.cookie.includes('token_set=');
-
-	function intToLanguage(int: number) {
-		switch (int) {
-			case 1:
-				return 'EN';
-			case 2:
-				return 'RU';
-			case 3:
-				return 'CN';
-			case 4:
-				return 'JP';
-			case 5:
-				return 'KR';
-			case 6:
-				return 'ES';
-			case 7:
-				return 'PT';
-		}
-	}
 </script>
 
 <svelte:head>
@@ -254,7 +236,7 @@
 					<div role="cell" class="flex flex-row place-items-center gap-1">
 						{#each item.languages as language, i}
 							{#if i != 0}·{/if}
-							<span class="text-sm opacity-60"> {intToLanguage(language)}</span>{/each}
+							<span class="text-sm opacity-60"> {inToLangShort(language)}</span>{/each}
 					</div>
 					<div role="cell" class="flex place-items-center">
 						<TimeAgo date={item.last_updated} short={true}></TimeAgo>

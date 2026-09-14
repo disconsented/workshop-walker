@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { faChevronDown, faChevronUp, faLink, faLock } from '@fortawesome/free-solid-svg-icons';
-	import { faSteam, faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
+	import { faLink } from '@fortawesome/free-solid-svg-icons';
+	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
-	import Property from '../../item/[item]/Property.svelte';
 	import Icon from 'svelte-awesome';
 	import SuggestProperty from './suggestProperty.svelte';
+	import Properties from '../../../components/Properties.svelte';
 
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting
@@ -12,10 +12,6 @@
 	}
 
 	let { loggedIn = $bindable(), item }: Props = $props();
-
-	let first_props = $derived(item.properties?.slice(0, 6));
-	let remaining_props = $derived(item.properties?.slice(6));
-	let open = $state(false);
 </script>
 
 <div
@@ -24,15 +20,11 @@
 	<header class="relative h-48">
 		<div>
 			<img
-				src={item.preview_url ||
-					'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189'}
-				class="absolute h-48 w-full object-cover"
+				src={item.preview_url}
+				class="pattern-background absolute h-48 w-full object-cover"
 				alt="banner"
 				class:hue-rotate-90={!item.preview_url}
 				class:grayscale={!item.preview_url}
-				onerror={(e) =>
-					(e.target.src =
-						'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/294100/header.jpg?t=1734154189')}
 				loading="lazy"
 			/>
 			<div class="absolute h-48 w-full bg-linear-to-t from-black to-[transparent]"></div>
@@ -97,60 +89,30 @@
 		</div>
 	</article>
 	<footer class="m-2 flex w-full grow-0 flex-row flex-wrap self-end pl-4">
-		{#if first_props}
-			{@debug first_props}
-			<div class="flex w-full shrink-0 flex-wrap gap-1">
-				{#each first_props as prop}
-					<Property
-						{loggedIn}
-						property={{ class: prop.out.class, value: prop.out.value, ...prop }}
-						hideVote={false}
-						itemID={item.id}
-					></Property>
-				{/each}
-				{#if remaining_props.length > 0}
-					{#if open}
-						{#each remaining_props as prop}
-							<Property
-								{loggedIn}
-								property={{ class: prop.out.class, value: prop.out.value, ...prop }}
-								hideVote={false}
-								itemID={item.id}
-							></Property>
-						{/each}
-					{/if}
-					<button
-						class="text-primary-500 ca w-full text-left text-sm"
-						onclick={() => {
-							open = !open;
-						}}
-					>
-						{#if open}
-							<Icon data={faChevronUp} class="fa-fw"></Icon>
-						{:else}
-							<Icon data={faChevronDown} class="fa-fw"></Icon>
-						{/if}<span class="pl-1">{remaining_props.length} more properties</span>
-					</button>
-				{/if}
-			</div>
-		{/if}
-		{#if !loggedIn}
-			<a
-				href="/api/login?location={location}"
-				class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
-				><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
-				<span class="btn btn-sm preset-filled-primary-500"
-					><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span
-				></a
-			>
-		{:else}
-			<div class="flex h-fit w-full grow-0 flex-col justify-end">
-				{@render suggestProperty(item.id)}
-			</div>
-		{/if}
+		<Properties {loggedIn} itemID={item.id} properties={item.properties} />
 	</footer>
 </div>
 
-{#snippet suggestProperty(itemID: string)}
-	<SuggestProperty {itemID} />
-{/snippet}
+<style>
+	.pattern-background {
+		background-color: var(--colour-surface-800);
+	}
+
+	.pattern-background::before {
+		content: '';
+		position: absolute;
+		inset: -100%;
+		transform: rotate(90deg);
+		transform-origin: center;
+		background-color: var(--colour-surface-800);
+		opacity: 0.8;
+		background-size: 10px 10px;
+		background-image: repeating-linear-gradient(
+			45deg,
+			var(--colour-surface-400) 0,
+			var(--colour-surface-400) 1px,
+			var(--colour-surface-800) 0,
+			var(--colour-surface-800) 50%
+		);
+	}
+</style>

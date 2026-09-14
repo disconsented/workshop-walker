@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 @import '@skeletonlabs/skeleton';
-@import '@skeletonlabs/skeleton/themes/hamlindigo';
 @import '../src/workshop-walker.css';
+@import '@skeletonlabs/skeleton-svelte';
+
+@import '@fontsource/ibm-plex-mono';
+@import '@fontsource/atkinson-hyperlegible-next';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
-@import '@skeletonlabs/skeleton-svelte';
