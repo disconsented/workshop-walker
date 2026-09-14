@@ -2,7 +2,7 @@
 @import '@skeletonlabs/skeleton';
 @import '../src/workshop-walker.css';
 @import '@skeletonlabs/skeleton-svelte';
-
+@import 'layerchart/skeleton-5.css';
 @import '@fontsource/ibm-plex-mono';
 @import '@fontsource/atkinson-hyperlegible-next';
 @plugin '@tailwindcss/forms';

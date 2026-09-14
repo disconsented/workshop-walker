@@ -55,6 +55,7 @@
 		"@inlang/paraglide-js": "^2.0.0",
 		"@internationalized/date": "^3.8.2",
 		"javascript-time-ago": "^2.5.11",
+		"layerchart": "^2.5.0",
 		"svelte-awesome": "^3.3.5",
 		"svelte-loading-spinners": "^0.3.6"
 	}
