@@ -1,0 +1,59 @@
+name: clippy
+
+# Only on a pull request. The reporter writes review comments, and a push to
+# master has nothing to write them on.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clippy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clippy:
+    name: cargo clippy (advisory)
+    runs-on: ubuntu-latest
+    # Advisory. `Cargo.toml` sets the lint groups to deny, so clippy exits
+    # non-zero on any finding. The findings arrive as review comments and the
+    # job stays green. Keep this check out of the required set in the branch
+    # protection rules.
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      # `.cargo/config.toml` describes a developer machine: it links with mold
+      # from /usr/bin, and it builds for the local CPU with AVX-512. A runner
+      # has no mold, and a build script that holds AVX-512 instructions stops
+      # with SIGILL on a runner without that instruction set. A value in
+      # RUSTFLAGS, an empty one included, replaces every `rustflags` in the
+      # config file. The `linker = "clang"` key stays, and the runner image
+      # holds clang.
+      RUSTFLAGS: ''
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install clippy
+        run: rustup component add clippy
+
+      # The default feature set builds candle with MKL, which is slow on a cold
+      # cache.
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run clippy
+        uses: giraffate/clippy-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Inline review comments on the pull request.
+          reporter: github-pr-review
+          # Only report on the lines the pull request adds. The existing code
+          # has findings that are not the author's to fix.
+          filter_mode: added
+          level: warning
+          fail_on_error: false
+          clippy_flags: --workspace --all-targets
