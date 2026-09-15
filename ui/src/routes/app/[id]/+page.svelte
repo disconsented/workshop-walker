@@ -34,6 +34,8 @@
 
 	let page = $state(1);
 	let pageSize = $state(15);
+	// Reset the page when search changes
+	$effect(() => { data.searchRequest; page = 1; });
 	const slicedSource = $derived((s) => s.slice((page - 1) * pageSize, page * pageSize));
 
 	function runSearch(e) {
@@ -223,15 +225,18 @@
 						</div>
 					</div>
 					<div role="cell" class="flex place-items-center">
-						<a
-							href="https://steamcommunity.com/id/{item.author.id}"
-							target="_self"
-							rel="noopener noreferrer"
-							class="anchor flex place-items-center gap-1"
-						>
-							<Icon data={faSteam} class="fa-fw" />
-							{item.author.name}</a
-						>
+						{#if item.author}
+							<a
+								href="https://steamcommunity.com/profiles/{item.author
+									.id}/myworkshopfiles/?appid={item.app}"
+								target="_self"
+								rel="noopener noreferrer"
+								class="anchor flex place-items-center gap-1"
+							>
+								<Icon data={faSteam} class="fa-fw" />
+								{item.author?.name ?? 'Unknown'}</a
+							>
+						{/if}
 					</div>
 					<div role="cell" class="flex flex-row place-items-center gap-1">
 						{#each item.languages as language, i}
