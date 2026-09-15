@@ -124,7 +124,7 @@
 				<span class="vr"></span>
 				<!-- Voting -->
 				<div
-					class="align ml-1 grid gap-1 pr-1 align-middle"
+					class="ml-1 grid place-items-center items-baseline gap-1 pr-1"
 					class:grid-cols-[1fr_auto]={!loggedIn}
 					class:grid-cols-[1fr_auto_auto]={loggedIn}
 				>
