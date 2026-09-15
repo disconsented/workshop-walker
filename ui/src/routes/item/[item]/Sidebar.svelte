@@ -21,22 +21,25 @@
 	<div class="flex flex-col gap-4">
 		<img
 			src={item.preview_url}
-			class="pattern-background h-48 w-full object-scale-down object-center"
+			class="pattern-background h-48 w-full object-cover"
 			alt="banner"
 			loading="lazy"
 		/>
 		<h3 class="h3">{item.title}</h3>
-		<span>
-			by
-			<a
-				href="https://steamcommunity.com/id/{item.author.id}"
-				target="_self"
-				rel="noopener noreferrer"
-				class="anchor"
-			>
-				{item.author.name}</a
-			>
-		</span>
+		{#if item.author}
+			<span>
+				by
+				<a
+					href="https://steamcommunity.com/profiles/{item.author
+						.id}/myworkshopfiles/?appid={item.app}"
+					target="_self"
+					rel="noopener noreferrer"
+					class="anchor"
+				>
+					{item.author?.name ?? 'Unknown'}</a
+				>
+			</span>
+		{/if}
 
 		<div>
 			<a
@@ -77,7 +80,7 @@
 	<div class="flex flex-col">
 		<span class="text-sm uppercase opacity-50">Tags · {item.tags.length}</span>
 
-		<div>
+		<div class="flex flex-row gap-2">
 			{#each item.tags as tag}
 				<span
 					class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
@@ -91,12 +94,10 @@
 	<div class="flex flex-col">
 		<span class="text-sm uppercase opacity-50">Langs · {item.languages.length}</span>
 
-		<div>
+		<div class="flex flex-row gap-2">
 			{#each item.languages as lang, i}
-				{#if i != 0}
-					·
-				{/if}
-				{inToLangShort(lang)}
+				{#if i != 0}·{/if}
+				<span>{inToLangShort(lang)}</span>
 			{/each}
 		</div>
 	</div>
@@ -108,4 +109,17 @@
 </div>
 
 <style>
+	.pattern-background {
+		background-color: var(--color-surface-800);
+		transform-origin: center;
+		opacity: 0.8;
+		background-size: 10px 10px;
+		background-image: repeating-linear-gradient(
+			45deg,
+			var(--color-surface-400) 0,
+			var(--color-surface-400) 1px,
+			var(--color-surface-800) 0,
+			var(--color-surface-800) 50%
+		);
+	}
 </style>

@@ -12,23 +12,12 @@
 	}
 
 	let { loggedIn = $bindable(), itemID, properties }: Props = $props();
-	// const propz = 	properties.sort((a, b) => {
-	// 	if (a.vote_count > b.vote_count) {
-	// 		return -1;
-	// 	} else if (a.vote_count < b.vote_count) {
-	// 		return 1;
-	// 	} else {
-	// 		return 0;
-	// 	}
-	// });
-
 	let first_props = $derived(properties?.slice(0, 6));
 	let remaining_props = $derived(properties?.slice(6));
 	let open = $state(false);
 </script>
 
 {#if first_props}
-	{@debug first_props}
 	<div class="flex w-full shrink-0 flex-wrap gap-1">
 		{#each first_props as prop}
 			<Property

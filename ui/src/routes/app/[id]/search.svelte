@@ -261,6 +261,7 @@
 				</div>
 				<div class="flex flex-row flex-wrap gap-1">
 					<ToggleGroup
+						class="flex flex-wrap border-0"
 						value={tags.v}
 						onValueChange={(details) => (tags.v = details.value)}
 						multiple

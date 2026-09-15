@@ -3,7 +3,6 @@
 	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import Icon from 'svelte-awesome';
-	import SuggestProperty from './suggestProperty.svelte';
 	import Properties from '../../../components/Properties.svelte';
 
 	interface Props {
@@ -55,15 +54,18 @@
 					</h6>
 				</div>
 				<div class="flex w-full items-center justify-between p-1">
-					<a
-						href="https://steamcommunity.com/id/{item.author.id}"
-						target="_self"
-						rel="noopener noreferrer"
-						class="anchor flex items-center gap-1"
-					>
-						<Icon data={faSteam} class="fa-fw" />
-						{item.author.name}</a
-					>
+					{#if item.author}
+						<a
+							href="https://steamcommunity.com/profiles/{item.author
+								.id}/myworkshopfiles/?appid={item.app}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="anchor flex items-center gap-1"
+						>
+							<Icon data={faSteam} class="fa-fw" />
+							{item.author?.name ?? 'Unknown'}</a
+						>
+					{/if}
 					<div class="mb-2 flex items-center">
 						<span class="text-[0.5rem] text-gray-500">
 							Updated: <TimeAgo date={item.last_updated}></TimeAgo></span

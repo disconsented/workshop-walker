@@ -119,7 +119,7 @@
 														<Portal>
 															<Tooltip.Positioner>
 																<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
-																	<span>"{tag}"</span>
+																	<span>"{tag.display_name}"</span>
 																	<Tooltip.Arrow
 																		class="[--arrow-background:var(--color-surface-950-50)] [--arrow-size:--spacing(2)]"
 																	>
