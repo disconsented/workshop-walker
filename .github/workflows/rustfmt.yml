@@ -1,0 +1,65 @@
+name: rustfmt
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rustfmt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rustfmt:
+    name: cargo fmt --check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The job writes the diff into a comment on the pull request.
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # `rustfmt.toml` sets options that only nightly rustfmt reads, such as
+      # `group_imports`, `imports_granularity` and `format_strings`. Stable
+      # rustfmt ignores them and reports a different result.
+      - name: Install the nightly rustfmt
+        run: rustup toolchain install nightly --profile minimal --component rustfmt
+
+      # This step fails the job. `shell: bash` for the pipefail that carries the
+      # rustfmt exit code through tee. `--color=never` because rustfmt colours
+      # the diff even when it does not write to a terminal.
+      - name: Check the formatting
+        shell: bash
+        run: cargo +nightly fmt --all --check -- --color=never | tee "$RUNNER_TEMP/fmt.diff"
+
+      # A pull request from a fork gets a read-only token, so the two comment
+      # steps cannot write. They must not fail the job on that account.
+      - name: Comment with the diff
+        if: failure() && github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: rustfmt
+          path: ${{ runner.temp }}/fmt.diff
+          message: |
+            ### :straight_ruler: `cargo fmt` has changes
+
+            Run `cargo +nightly fmt --all` and push the result.
+
+            ```diff
+            {{{content}}}
+            ```
+
+      - name: Remove the comment once the formatting is clean
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: rustfmt
+          delete: true
