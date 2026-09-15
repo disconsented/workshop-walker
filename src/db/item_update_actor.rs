@@ -125,7 +125,7 @@ impl Actor for ItemUpdateActor {
                 let title = item.title.clone();
                 let item_id = item.id.clone();
 
-                state
+                let _ = state
                     .tags_actor
                     .send_message(TagsMsg::AddTagToApp(item.app.clone(), item.tags.clone()));
 

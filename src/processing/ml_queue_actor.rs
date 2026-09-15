@@ -10,8 +10,8 @@ use crate::{
         properties_actor::PropertiesMsg,
     },
     domain::properties::{InternalNewProperty, PropertiesError},
+    processing::llama_actor::LlamaMsg,
 };
-use crate::processing::llama_actor::LlamaMsg;
 
 pub struct MLQueueActor;
 

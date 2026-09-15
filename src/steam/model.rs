@@ -72,7 +72,6 @@ pub enum EPublishedFileInfoMatchingFileType {
     MatchingFileType_WorkshopShowcase = 19,
     MatchingFileType_GameManagedItems = 20,
 }
-#[expect(dead_code)]
 #[expect(clippy::missing_docs_in_private_items)]
 pub struct GetTagCount {
     pub tag_id: String,
