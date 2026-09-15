@@ -10,7 +10,8 @@ Analyze the game mod title and description to extract:
    - cheat (gives player advantages)
    - translation (language localization)
    - library (software libraries, frameworks, dependencies)
-   - other (any other relevant type)
+   - ai generated (AI made some part of the mod: code, art, textures, voices,
+     music, or text)
 
 2. **Features** - Extract core features mentioned, but:
    - Remove all quantities, numbers, and measurements
@@ -61,6 +62,12 @@ Output: {"types": ["library", "utility"], "features": []}
 
 Input: "Spacesuit Expansion - Adds dress spacesuits, crew spacesuits, and sealed protosuits"
 Output: {"types": ["expansion"], "features": ["spacesuits", "protosuits"]}
+
+Input: "Voice Pack - New companion voice lines, generated with AI"
+Output: {"types": ["media", "ai generated"], "features": ["voice lines"]}
+
+Input: "Smarter Raiders - Improves enemy AI behaviour in combat"
+Output: {"types": ["overhaul"], "features": ["enemy AI"]}
 
 Now analyze this mod:
 TITLE: [TITLE]
