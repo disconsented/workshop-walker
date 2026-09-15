@@ -16,6 +16,7 @@ use crate::{
     processing::{
         bb_actor::{BBActor, BBArgs},
         language_actor::{LanguageActor, LanguageArgs},
+        llama_actor::{LlamaActor, LlamaArgs},
         ml_queue_actor::{MLQueueActor, MLQueueArgs},
     },
     steam::{
@@ -47,8 +48,11 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
 
     let (extraction_actor, _) = Actor::spawn(
         Some("/ml_extractor".to_string()),
-        ExtractionActor,
-        ExtractionArgs {},
+        LlamaActor,
+        LlamaArgs {
+            client: reqwest_client.clone(),
+            api_url: (*config.ml_extraction.url).clone(),
+        },
     )
     .instrument(info_span!("spawn::extraction"))
     .await
@@ -112,7 +116,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
             bb_actor,
             steam_user_actor: steam_user_actor.clone(),
             database: db.clone(),
-            ml_queue: config.ml_extraction.then_some(ml_queue_actor),
+            ml_queue: config.ml_extraction.enabled.then_some(ml_queue_actor),
             tags_actor,
         },
     )

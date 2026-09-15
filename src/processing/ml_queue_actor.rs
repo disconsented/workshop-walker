@@ -11,18 +11,19 @@ use crate::{
     },
     domain::properties::{InternalNewProperty, PropertiesError},
 };
+use crate::processing::llama_actor::LlamaMsg;
 
 pub struct MLQueueActor;
 
 pub struct MLQueueArgs {
     pub database: Surreal<Db>,
-    pub extractor: ActorRef<ExtractionMsg>,
+    pub extractor: ActorRef<LlamaMsg>,
     pub property_actor: ActorRef<PropertiesMsg>,
 }
 
 pub struct MLQueueState {
     database: Surreal<Db>,
-    extractor: ActorRef<ExtractionMsg>,
+    extractor: ActorRef<LlamaMsg>,
     property_actor: ActorRef<PropertiesMsg>,
 }
 
@@ -89,7 +90,7 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
     };
 
     // Call the extractor via RPC using ractor::call! macro
-    match call!(state.extractor, |reply| ExtractionMsg::Process {
+    match call!(state.extractor, |reply| LlamaMsg::Process {
         title,
         description,
         rpc_reply_port: reply
