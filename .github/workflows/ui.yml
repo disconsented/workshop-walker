@@ -1,0 +1,151 @@
+name: ui
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Blocking. `npm run format` writes the files, so the job asks git what
+  # changed and puts that diff on the pull request.
+  format:
+    name: npm run format
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install the dependencies
+        run: npm ci
+
+      # This step fails the job. `npm run format` writes the files, so git
+      # says what changed. `--exit-code` gives the non-zero exit, and
+      # `shell: bash` gives the pipefail that carries it through tee.
+      - name: Format the frontend
+        shell: bash
+        run: npm run format && git --no-pager diff --exit-code --no-color -- . | tee "$RUNNER_TEMP/ui-format.diff"
+
+      # A pull request from a fork gets a read-only token, so the two comment
+      # steps cannot write. They must not fail the job on that account.
+      - name: Comment with the diff
+        if: failure() && github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: ui-format
+          path: ${{ runner.temp }}/ui-format.diff
+          message: |
+            ### :straight_ruler: `npm run format` has changes
+
+            Run `npm run format` in `ui/` and push the result.
+
+            ```diff
+            {{{content}}}
+            ```
+
+      - name: Remove the comment once the formatting is clean
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: ui-format
+          delete: true
+
+  # Advisory. `npm run lint` is `prettier --check . && eslint .`. The format job
+  # above already answers the prettier half, and the `&&` means a prettier
+  # failure stops eslint from running at all, so this job runs eslint alone.
+  lint:
+    name: eslint (advisory)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      # The action calls the eslint in `node_modules`, and the svelte and
+      # typescript plugins must be there with it.
+      - name: Install the dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Run eslint
+        uses: reviewdog/action-eslint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workdir: ui
+          eslint_flags: '.'
+          reporter: github-pr-review
+          # Only report on the lines the pull request adds. The existing code
+          # has findings that are not the author's to fix.
+          filter_mode: added
+          level: warning
+          fail_level: none
+
+  # Advisory. The action runs svelte-check on the files the pull request
+  # changes, and writes the findings as comments and annotations.
+  check:
+    name: svelte-check (advisory)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install the dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Run svelte-check
+        uses: ghostdevv/svelte-check-action@v1.6.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          paths: ./ui
+          filterChanges: true
+          failOnError: false
+          failOnWarning: false
