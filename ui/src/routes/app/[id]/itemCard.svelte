@@ -14,7 +14,7 @@
 </script>
 
 <div
-	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-md flex-col justify-between divide-y overflow-hidden border-[1px]"
+	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 flex w-full flex-col justify-between divide-y overflow-hidden border-[1px] md:w-md"
 >
 	<header class="relative h-48">
 		<div>

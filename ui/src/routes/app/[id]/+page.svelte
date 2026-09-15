@@ -70,9 +70,9 @@
 			<div class="mx-auto px-4 py-8">
 				<Search appTags={app.v.tags}></Search>
 				<div class="mt-6">
-					<div class="mb-4 flex w-full justify-between gap-4">
+					<div class="mb-4 flex w-full flex-wrap justify-between gap-4">
 						<!--Left-->
-						<div class="flex items-center gap-4">
+						<div class="flex flex-wrap items-center gap-4">
 							<div>
 								<span class="font-bold text-white">{value.length}</span>
 								<span class="text-sm opacity-60">results</span>
@@ -101,7 +101,7 @@
 								</SegmentedControl.Control>
 							</SegmentedControl>
 
-							<div class="flex w-fit items-center gap-2">
+							<div class="flex w-fit flex-wrap items-center gap-2">
 								<span class="shrink-0 text-sm opacity-60">Per page</span>
 								<select
 									class="select"
@@ -277,7 +277,7 @@
 {#snippet rGrid(data)}
 	<div class="flex flex-wrap place-content-center gap-4">
 		{#each slicedSource(data) as item (item.id)}
-			<ItemCard {item} loggedIn={logged_in}></ItemCard>
+			<ItemCard {item} loggedIn={logged_in} />
 		{:else}
 			<div class="text-center text-gray-500 py-8">No results found</div>
 		{/each}
