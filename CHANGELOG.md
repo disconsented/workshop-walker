@@ -7,6 +7,230 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/disconsented/workshop-walker/compare/v0.2.0...v0.3.0) - 2026-09-15
+
+### Added
+
+- *(item)* replace the popularity svg with a layerchart plot
+- *(ui)* rebuild the item page and replace the theme
+- *(search)* let the user toggle the app tags in the filter
+- *(tags)* hide the tags that few members use
+- *(tags)* count the workshop items that use each tag
+- *(search)* match titles against a full-text index
+- *(search)* put the search filters in the URL query
+- *(table)* rebuild the result table on a CSS grid
+- *(table)* rebuild the result table with tags, languages and links
+- *(search)* rework the result toolbar and the filter panel
+- *(nav)* show a breadcrumb trail in the navbar
+- *(search)* add a static mockup of the search panel
+- collect workshop item tags onto the app record
+- New index page
+- New navbar and footer
+- Render the author
+- *(web)* send the vote state of the user with each property
+- *(ui)* send a suggested property to the API
+- *(ui)* add a form that suggests a property
+- *(web)* return the item properties from the item endpoint
+- *(db)* link the item author to the usernames table
+- *(macros)* pass surreal attributes through dual_type
+- *(db)* change the dependency, username and user IDs to integers
+- *(db)* add a migration that puts the property in the record ID
+- *(web)* restore the filters and the sort order in the list query
+- *(migrations)* add a command that makes a migration file
+- *(migrations)* add the migrations-tool crate
+- *(db)* change the app field on workshop items to a record link
+- *(macros)* add field converters to dual_type
+- *(db)* add ID newtypes for the remaining tables
+- *(macros)* add a ConvertId derive macro
+- add debug logging for item query
+- change score label to upvote percentage in UI
+- update UI to handle complex tags and app-specific logic
+- add app_from_item endpoint and update apps API
+- make App generic and add previews to Steam model
+- add tags support to App and update UI
+- update app and item pages
+- add Steam tags support
+- integrate user name fetching and display in UI
+- implement Steam user name caching and repository
+- add French language support to detector
+- Add username mapping migration and model
+- implement multi-app support across API and UI
+- Admin ui enhancements
+- Populate admin users from config
+- *(config)* Add force steam update
+- Approve ML source properties
+- Improve property filtering
+- ML Extraction
+- Handle more auth errors rather than panicing
+- Increase token lifetime to 30 days
+- Enforce alphabetic characters for properties
+
+### Fixed
+
+- *(ui)* pass the path to the login link and align the badges
+- *(ui)* guard the author link and correct the page layout
+- *(ui)* parse the large identifiers as big integers
+- *(tags)* skip the tag update when the list is empty
+- *(steam)* query the tag count with the ranked query type
+- *(item)* count the filtered items in the pagination
+- *(search)* use the store defaults for language and order
+- *(search)* reset a filter when its parameter is absent
+- *(tags)* lower the known member threshold to 100
+- *(classes)* print the class name as the database stores it
+- *(properties)* compare the new property with the existing ones
+- *(db)* add the missing tag field to the test helper
+- *(tags)* merge the tag set with union instead of concat
+- *(search)* remove the gap in the AND and OR toggle
+- *(layout)* make the page grid fill the viewport width
+- report a property conflict at debug level
+- find an existing property link before the write
+- encode `InternalSource::System` as a bare string
+- *(auth)* Reject stale OpenID nonces and off-site redirects
+- *(classification)* Missing `}` in sanatised string
+- Record username count before draining
+- *(web)* filter the properties in the graph lookup
+- *(ui)* keep the upvote count in local state
+- Submitting properties
+- Incorrect dependency/dependant ordering
+- *(ui)* guard the item page filters against missing data
+- Tags sometimes show up as None because the entry doesn't exist, this attacks it at both ends
+- *(db)* store the app tags as arrays
+- Migration performance blackhole
+- *(auth)* refuse a steam ID that is not a number
+- *(db)* set the dependency ID to stop duplicate relations
+- *(steam)* skip the items that have no app ID
+- Missing properties
+- *(steam)* read the last update time from the app record
+- *(ui)* Colour in properties
+- *(ui)* Back navigation
+- *(ui)* Item page accordion
+- *(web)* join the query conditions with AND
+- *(db)* store the item languages and tags as arrays
+- *(db)* write SurrealValue for DetectedLanguage by hand
+- *(db)* correct the ID types that stopped the build
+- resolve title rendering and data access on item page
+- Correct language selection from "None" to "Any"
+- use path parameter for get app endpoint
+- fix loop condition in steam download actor
+- *(database)* Add missing user field to votes table
+- fix user listing query in admin repository
+- *(prompt)* Update themes prompt to remove some of the technical details that have been appearing
+- Banning users
+- themes prompt producing text after the JSON is returned
+- Missing DB setup for web functions
+- Voting failed due to incorrect auth state management
+- Missing ML properties
+- Prompt ordering & redundant features
+- Override fields in bad migration
+- *(DB)* Missing vote indications
+
+### Other
+
+- *(ci)* add the frontend format, lint and check workflow
+- *(ci)* add the rustfmt and clippy workflows
+- *(ui)* add a .gitignore for eslint and prettier
+- format the rust and svelte sources
+- *(release)* bump the minor version for a feature
+- *(release)* make release-plz read the last version from a tag
+- *(build)* restate the reason for the surrealdb patch
+- *(ui)* correct the labels, the spacing, and the colour tokens
+- *(ui)* remove the dead markup and the debug output
+- drop the avx-vnni and ifma target features
+- remove the dead code that the tag filter left
+- *(search)* hide the unfinished game selector
+- compile dependencies at opt-level 2 in dev
+- ignore node, SvelteKit and local dump artifacts
+- *(tags)* record how to read the declared tag list
+- drop the dead Steam tag selector setting
+- *(ui)* apply the formatter to the remaining components
+- *(ui)* apply the formatter to markup and tokens
+- Lazy manual ig-cell migration
+- Automatic skeleton V5 update
+- rewrap comments with rustfmt
+- set `git_only` for one package only
+- install the linker and cache cargo in the release job
+- move the surrealdb patch into the cargo config
+- "Update Claude Code Review workflow"
+- "Claude PR Assistant workflow"
+- describe the project layout and rules for Claude
+- review pull requests with Claude Code
+- Trying to fix release-plz
+- Minor dep updates
+- Remove unneeded branch
+- Remove the scratch crate
+- Clippy fixes
+- format
+- enable the mold linker again
+- Tidy unused deps
+- Remove the steam tag actor, tags are upserted as they arrive
+- Fix release please
+- Remove dead /api/item/{id}/app route and handler
+- *(ui)* remove the request to the deleted app route
+- *(db)* add tests for the vote repository and the tag repository
+- *(web)* add a regression test for the item endpoint
+- *(steam)* upsert the tags in one query
+- *(ui)* Minor tweaks
+- format the code and group the imports
+- *(ui)* rework the item card and the property layout
+- *(ui)* update skeleton and the UI dependencies
+- *(ui)* move the item card into its own component
+- *(web)* rebuild the list query on the surrealdb 3.0 statements
+- format the code with rustfmt
+- *(web)* remove the version 2 query builder
+- *(web)* return the external types from the endpoints
+- *(db)* apply dual_struct to Tag and WorkshopItem
+- *(macros)* move the ID conversion macro to the proc-macros crate
+- *(db)* try one enum for the internal and the external ID
+- patch the surrealdb crates to a local checkout
+- format the manifests with taplo
+- *(db)* replace RecordId::from_table_key with RecordId::new
+- update surrealdb to 3.0
+- update surrealdb query and cleanup item route logic
+- add SurrealDB transaction/throw tests
+- update codebase to use generic App and TagRef
+- update dependencies in ui
+- Formatting
+- simplify backtrace mapping in StatusError
+- update dependencies and add scraper
+- remove unused enum variant in test
+- clean up tag insertion and repository code
+- rename new_item to try_new and update appid source
+- remove unused surrealdb imports and functions in model.rs
+- improve SteamUserActor batching and error handling
+- simplify SQL query and add tracing in SteamDownloadActor
+- remove unused Depot parameter from admin endpoints
+- simplify load function in item page
+- stash
+- Admin functionality
+- typos
+- Lints, formatting and minor tweaks
+- Optimise dev dependencies
+- *(database)* Add id index
+- Handle model loading asynchronously
+- Instrumentation
+- Rollback LLM experiments
+- Small improvements and tidying
+- Update surrealdb version
+- *(web)* wire item, properties and query routes; spawn actors
+- *(web/properties)* refactor properties into their own actor
+- *(web/query)* add list actor
+- *(web/item)* add item actor
+- *(auth)* extract Steam OpenID handling into AuthActor and clean up endpoints
+- Add formatting for Class & Property to be used in logging
+- Use only a single reqwest client
+- Clippy lints and other minor changes
+- Drop `-actor` from actor names
+- Use workspaces
+- Ser/de for `Source<T>`
+- Tidy small things
+- Add AVX512 targets
+- migrate steam updating process to actor model
+- *(ui)* Lazy load images
+- Patch SurrealDB
+- Set 1.6 to be the default version for rimworld
+- Style item descriptions
+- Make cards in the grid view fixed size
+
 ## [0.2.0](https://github.com/disconsented/workshop-walker/releases/tag/workshop-walker-v0.2.0) - 2025-07-15
 
 ### Added
