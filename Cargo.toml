@@ -14,12 +14,13 @@ version = "0.2.0"
 
 [workspace.dependencies]
 
-# Versions needed for release plz
-classification = { path = "./classification", version = "0" }
-macros = { path = "./macros", version = "0" }
-migrations-tool = { path = "./migrations-tool", version = "0" }
-proc-macros = { path = "./proc-macros", version = "0" }
-serde-hack = { path = "./serde-hack", version = "0" }
+# The members inherit these. Without them `dep.workspace = true` in a member
+# manifest has nothing to resolve against.
+classification = { path = "./classification" }
+macros = { path = "./macros" }
+migrations-tool = { path = "./migrations-tool" }
+proc-macros = { path = "./proc-macros" }
+serde-hack = { path = "./serde-hack" }
 
 async-stream = "0.3.6"
 bbscope = "0.2"
@@ -88,7 +89,9 @@ veil = "0.3"
 edition.workspace = true
 license.workspace = true
 name = "workshop-walker"
-publish = false
+# No `publish = false` here. Cargo reads that as an empty registry list, and
+# release-plz then drops the package from the release set and does nothing.
+# `publish = false` in `release-plz.toml` stops the upload instead.
 version.workspace = true
 
 [dependencies]
@@ -156,7 +159,6 @@ ml-classification = ["classification", "classification/mkl"]
 [profile.release]
 lto = true
 opt-level = 3
-#codegen-units = 1
 
 [profile.dev.package."*"]
 opt-level = 2

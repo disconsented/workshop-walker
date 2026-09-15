@@ -9,24 +9,30 @@ publish = false # nothing in this workspace goes to a cargo registry
 release = false # every member inherits one `workspace.package.version`, so only
 # `workshop-walker` below is released; releasing each member separately would
 # create one tag per crate for what is really a single version.
+release_always = false # tag and make the release when the release PR merges.
+# Without this the release job tags every push whose version has no tag yet,
+# which would tag master before the release PR that prepares it can merge.
 semver_check = false # disable API breaking changes checks
-release_commits = "^feat:" # prepare release only if at least one commit matches a regex
+release_commits = "^feat(\\(.+\\))?!?:" # prepare a release only when a feature
+# lands. The scope group matters: every feature commit in this repo is scoped,
+# such as `feat(search):`, so a plain `^feat:` matches none of them.
 
 [[package]] # the double square brackets define a TOML table array
 name = "workshop-walker"
 release = true # the one crate that is released, standing in for the workspace
-git_only = true # derive the last release from a git tag instead of crates.io.
-# Without this, release-plz looks the crate up on crates.io, finds nothing,
-# treats it as never released, and echoes the current version back unchanged.
-# Keep this per-package. `git_only` is resolved per package, and for each
-# git-only package release-plz checks the last release tag out into a worktree
-# and runs `cargo package --workspace` in it. At the workspace level that is one
-# such pass per member, six full builds of the workspace for one answer.
+# No `git_only` here. That mode reads the last version from the git tags, which
+# is what this workspace needs, but it also runs `cargo package --workspace` on
+# a worktree of the tag. That command fails here because the internal path
+# dependencies, such as `proc-macros`, are not on crates.io, and cargo demands a
+# registry match for every path dependency it packages. See release-plz issue
+# 2595. `.github/workflows/release.yml` gives release-plz the manifest of the
+# last tag with `--registry-manifest-path` instead, which answers the same
+# question and runs no build.
 git_tag_name = "v{{version}}" # match the existing `v0.1.0` tags. release-plz
 # otherwise defaults to `{{package}}-v{{version}}` in a workspace, which matches
-# none of the tags in this repo — every crate then looks unreleased and the
+# none of the tags in this repo. Every crate then looks unreleased and the
 # release PR bumps nothing.
-changelog_path = "CHANGELOG.md" # use a custom changelog path for `package_a`
-changelog_update = true # enable changelog update for `package_a`
-git_release_enable = true # enable GitHub/Gitea releases for `package_a`
-publish = false # disable `cargo publish` for `package_a`
+changelog_path = "CHANGELOG.md"
+changelog_update = true
+git_release_enable = true # make the GitHub release
+publish = false # never run `cargo publish`

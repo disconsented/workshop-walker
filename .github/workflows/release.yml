@@ -1,8 +1,7 @@
 name: Release-plz
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 on:
   push:
@@ -10,7 +9,7 @@ on:
       - master
 
 jobs:
-  # Create a PR with the new versions and changelog, preparing the next release.
+  # Create a PR with the new version and changelog, preparing the next release.
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
@@ -20,24 +19,57 @@ jobs:
       # https://til.simonwillison.net/github-actions/creating-github-labels
       issues: write
     concurrency:
-      group: release-plz-${{ github.ref }}
+      group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      # `.cargo/config.toml` links through clang and mold, and release-plz's
-      # git-only mode runs a verification build of the packaged crate.
-      - name: Install linker
-        run: sudo apt-get update && sudo apt-get install --yes clang mold
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
-      - name: Run release-plz
-        uses: release-plz/action@v0.5
+      - name: Install release-plz
+        uses: taiki-e/install-action@v2
         with:
-          command: release-pr
+          tool: release-plz
+      # release-plz reads the last released version from a cargo registry, and
+      # this workspace publishes to none. The highest release tag holds the same
+      # answer, so put its tree beside the repository and point release-plz at
+      # it below. `$RUNNER_TEMP` and not the repository directory, because
+      # release-plz copies the repository to a temporary directory and would
+      # copy the worktree with it.
+      - name: Check out the last release
+        run: git worktree add --detach "$RUNNER_TEMP/last-release" "$(git tag --list 'v[0-9]*' --sort=-v:refname | head -1)"
+      - name: Run release-plz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          release-plz release-pr
+          --git-token "$GITHUB_TOKEN"
+          --registry-manifest-path "$RUNNER_TEMP/last-release/Cargo.toml"
+
+  # Tag the merged release PR and publish the GitHub release. `release_always`
+  # is false, so this does nothing on an ordinary push.
+  release-plz-release:
+    name: Release-plz release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-plz-release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+      - name: Install release-plz
+        uses: taiki-e/install-action@v2
+        with:
+          tool: release-plz
+      - name: Run release-plz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: release-plz release --git-token "$GITHUB_TOKEN"
