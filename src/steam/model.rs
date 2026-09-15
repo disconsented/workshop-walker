@@ -89,7 +89,7 @@ impl GetTagCount {
                 ("cursor", "*"),
                 (
                     "query_type",
-                    &(EPublishedFileInfoMatchingFileType::MatchingFileType_Items as i64)
+                    &(EPublishedFileQueryType::RankedByLastUpdatedDate as i64)
                         .to_string(),
                 ),
                 ("requiredtags[0]", &self.tag_id),
