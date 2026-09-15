@@ -121,8 +121,8 @@ async fn run_process(
 
     {
         let features_prompt = populate_prompt(&state.features_prompt, &title, &description);
-        let prompt = Root {
-            messages: vec![Struct {
+        let prompt = Envelope {
+            messages: vec![Message {
                 role: "user".to_string(),
                 content: features_prompt,
             }],
@@ -136,13 +136,13 @@ async fn run_process(
                     schema: Schema {
                         r#type: "object".to_string(),
                         properties: FeaturesProperties {
-                            types: Struct1 {
+                            types: SchemaField {
                                 r#type: "array".to_string(),
                                 items: Items {
                                     r#type: "string".to_string(),
                                 },
                             },
-                            features: Struct1 {
+                            features: SchemaField {
                                 r#type: "array".to_string(),
                                 items: Items {
                                     r#type: "string".to_string(),
@@ -181,8 +181,8 @@ async fn run_process(
 
     {
         let genres_prompt = populate_prompt(&state.genres_prompt, &title, &description);
-        let prompt = Root {
-            messages: vec![Struct {
+        let prompt = Envelope {
+            messages: vec![Message {
                 role: "user".to_string(),
                 content: genres_prompt,
             }],
@@ -196,13 +196,13 @@ async fn run_process(
                     schema: Schema {
                         r#type: "object".to_string(),
                         properties: GenresProperties {
-                            genres: Struct1 {
+                            genres: SchemaField {
                                 r#type: "array".to_string(),
                                 items: Items {
                                     r#type: "string".to_string(),
                                 },
                             },
-                            themes: Struct1 {
+                            themes: SchemaField {
                                 r#type: "array".to_string(),
                                 items: Items {
                                     r#type: "string".to_string(),
@@ -315,7 +315,7 @@ struct Items {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Struct1 {
+struct SchemaField {
     #[serde(rename = "type")]
     pub r#type: String,
     pub items: Items,
@@ -323,14 +323,14 @@ struct Struct1 {
 
 #[derive(Serialize, Deserialize)]
 struct FeaturesProperties {
-    pub types: Struct1,
-    pub features: Struct1,
+    pub types: SchemaField,
+    pub features: SchemaField,
 }
 
 #[derive(Serialize, Deserialize)]
 struct GenresProperties {
-    pub genres: Struct1,
-    pub themes: Struct1,
+    pub genres: SchemaField,
+    pub themes: SchemaField,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -358,14 +358,14 @@ struct ResponseFormat<T> {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Struct {
+struct Message {
     pub role: String,
     pub content: String,
 }
 
 #[derive(Serialize, Deserialize)]
-struct Root<T> {
-    pub messages: Vec<Struct>,
+struct Envelope<T> {
+    pub messages: Vec<Message>,
     pub temperature: f64,
     pub max_tokens: i64,
     pub response_format: ResponseFormat<T>,
