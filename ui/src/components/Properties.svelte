@@ -55,8 +55,8 @@
 {/if}
 {#if !loggedIn}
 	<a
-		href="/api/login?location={location}"
-		class="btn btn-sm preset-outlined-primary-500 text-primary-500 mt-1 w-full justify-between pt-1 opacity-50"
+		href="/api/login?location={location.pathname + location.search}"
+		class="btn btn-sm preset-outlined-primary-500 text-primary-500 flex w-full justify-between opacity-50"
 		><span><Icon data={faLock} class="fa-fw"></Icon> Sign in to vote on properties</span>
 		<span class="btn btn-sm preset-filled-primary-500"
 			><Icon data={faSteamSymbol} class="fa-fw"></Icon> Sign in</span

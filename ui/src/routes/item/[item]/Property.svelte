@@ -3,7 +3,6 @@
 	import {
 		faCircleXmark,
 		faClock,
-		faLock,
 		faThumbsDown,
 		faThumbsUp
 	} from '@fortawesome/free-solid-svg-icons';
@@ -90,9 +89,14 @@
 <!--<div class="bg-(--color-green-500) bg-(--color-blue-500) bg-(--color-purple-500) bg-(--color-orange-500)"></div>-->
 <!--<div class="text-(--color-green-500) text-(--color-blue-500) text-(--color-purple-500) text-(--color-orange-500)"></div>-->
 
-<div class={['badge preset-outlined-surface-200-800 flex grow basis-0 overflow-clip p-0']}>
-	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})"></div>
-	<div class="flex shrink grow justify-between" style="padding-block: calc(var(--spacing) * 1);">
+<div
+	class="preset-outlined-surface-200-800 flex grow basis-0 gap-1 overflow-clip p-0 text-sm text-nowrap"
+>
+	<div class="w-4px inline-block h-full shrink-0 bg-({accentColour})">&nbsp</div>
+	<div
+		class="w-min-0 flex shrink grow place-items-center justify-between"
+		style="padding-block: calc(var(--spacing) * 1);"
+	>
 		<div class="flex h-full">
 			<div class="h-auto pr-2">
 				{#if property.status === -1}
@@ -116,10 +120,14 @@
 						? 'text-error-500'
 						: ''
 				: 'text-gray-600'}
-			<div class="flex">
+			<div class="flex shrink place-items-center">
 				<span class="vr"></span>
 				<!-- Voting -->
-				<div class="ml-1 flex items-center gap-1 pr-1">
+				<div
+					class="align ml-1 grid gap-1 pr-1 align-middle"
+					class:grid-cols-[1fr_auto]={!loggedIn}
+					class:grid-cols-[1fr_auto_auto]={loggedIn}
+				>
 					{#if loggedIn}
 						<button
 							class={[voteState === 1 ? 'text-success-500' : 'hover:text-success-500', 'p-0.5']}
@@ -128,11 +136,9 @@
 						>
 							<Icon data={faThumbsUp} class="text-xs" scale={0.8} />
 						</button>
-					{:else}
-						<Icon data={faLock} class="text-xs text-gray-600" scale={0.8} />
 					{/if}
 
-					<span class={['min-w-[1ch] font-mono text-xs', textColour]}
+					<span class={['font-mono', textColour]}
 						>{#if score > 0}+{/if}{score}</span
 					>
 					{#if loggedIn}
