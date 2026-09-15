@@ -1,26 +1,26 @@
 [workspace]
-allow_dirty = true # allow updating repositories with uncommitted changes
-changelog_update = false # disable changelog updates
-dependencies_update = true # update dependencies with `cargo update`
-git_release_enable = false # disable GitHub/Gitea releases
+allow_dirty = true                # allow updating repositories with uncommitted changes
+changelog_update = false          # disable changelog updates
+dependencies_update = true        # update dependencies with `cargo update`
+git_release_enable = false        # disable GitHub/Gitea releases
 pr_branch_prefix = "release-plz-" # PR branch prefix
-pr_labels = ["release"] # add the `release` label to the release Pull Request
-publish = false # nothing in this workspace goes to a cargo registry
-release = false # every member inherits one `workspace.package.version`, so only
+pr_labels = ["release"]           # add the `release` label to the release Pull Request
+publish = false                   # nothing in this workspace goes to a cargo registry
+release = false                   # every member inherits one `workspace.package.version`, so only
 # `workshop-walker` below is released; releasing each member separately would
 # create one tag per crate for what is really a single version.
 release_always = false # tag and make the release when the release PR merges.
 # Without this the release job tags every push whose version has no tag yet,
 # which would tag master before the release PR that prepares it can merge.
-semver_check = false # disable API breaking changes checks
 release_commits = "^feat(\\(.+\\))?!?:" # prepare a release only when a feature
+semver_check = false                    # disable API breaking changes checks
 # lands. The scope group matters: every feature commit in this repo is scoped,
 # such as `feat(search):`, so a plain `^feat:` matches none of them.
 
 [[package]] # the double square brackets define a TOML table array
-name = "workshop-walker"
-release = true # the one crate that is released, standing in for the workspace
 features_always_increment_minor = true # a feature moves 0.2 to 0.3, not 0.2.1.
+name = "workshop-walker"
+release = true                         # the one crate that is released, standing in for the workspace
 # Cargo semver reads the minor of a `0.x` version as its major, so by default a
 # feature only moves the patch. This project uses the minor for its feature
 # releases, so release-plz must do the same.
@@ -38,5 +38,5 @@ git_tag_name = "v{{version}}" # match the existing `v0.1.0` tags. release-plz
 # release PR bumps nothing.
 changelog_path = "CHANGELOG.md"
 changelog_update = true
-git_release_enable = true # make the GitHub release
-publish = false # never run `cargo publish`
+git_release_enable = true       # make the GitHub release
+publish = false                 # never run `cargo publish`

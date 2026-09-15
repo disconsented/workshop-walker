@@ -1,10 +1,5 @@
 [workspace]
-members = [
-  "macros",
-  "migrations-tool",
-  "proc-macros",
-  "serde-hack",
-]
+members = ["macros", "migrations-tool", "proc-macros", "serde-hack"]
 
 [workspace.package]
 edition = "2024"
