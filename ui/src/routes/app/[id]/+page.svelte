@@ -35,7 +35,10 @@
 	let page = $state(1);
 	let pageSize = $state(15);
 	// Reset the page when search changes
-	$effect(() => { data.searchRequest; page = 1; });
+	$effect(() => {
+		data.searchRequest;
+		page = 1;
+	});
 	const slicedSource = $derived((s) => s.slice((page - 1) * pageSize, page * pageSize));
 
 	function runSearch(e) {
