@@ -34,8 +34,8 @@
 	{#if item.status}
 		{@render errorCard(item)}
 	{:else}
-		<div class="grid min-h-screen grid-cols-1 gap-4 pt-4 md:grid-cols-[auto_1fr]">
-			<div class="w-md p-4">
+		<div class="grid min-h-screen grid-cols-1 gap-4 pt-4 lg:grid-cols-[auto_1fr]">
+			<div class="w-full border-b-1 p-4 lg:w-md lg:border-b-0">
 				<Sidebar {loggedIn} {item} />
 			</div>
 			<div class="w-full max-w-6xl">

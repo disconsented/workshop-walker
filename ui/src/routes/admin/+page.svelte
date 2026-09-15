@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Tabs } from '@skeletonlabs/skeleton-svelte';
-	import AppCard from '$lib/app_card.svelte';
 
 	let { data }: { data } = $props();
 	console.log(data);

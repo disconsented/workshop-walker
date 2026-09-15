@@ -129,7 +129,7 @@
 	onsubmit={submitForum}
 >
 	<div
-		class="border-surface-200-800 grid grid-cols-[1fr_auto_auto_auto_auto] items-center justify-between gap-3 border-b-1 p-4"
+		class="border-surface-200-800 flex flex-wrap items-center justify-between gap-3 border-b-1 p-4 lg:grid lg:grid-cols-[1fr_auto_auto_auto_auto]"
 	>
 		<!--		Funny little hack so pressing enter does a submit-->
 		<!--		See https://stackoverflow.com/questions/27807853/html5-how-to-make-a-form-submit-after-pressing-enter-at-any-of-the-text-inputs-->
@@ -180,11 +180,14 @@
 		</button>
 		<button class="btn preset-filled" type="button" onclick={loadParams}>Search</button>
 	</div>
-	<div class="bg-surface-50-950/50 grid grid-cols-2 gap-4 p-4" class:hidden={!showAdvanced}>
+	<div
+		class="bg-surface-50-950/50 flex flex-wrap gap-4 p-4 lg:grid lg:grid-cols-2"
+		class:hidden={!showAdvanced}
+	>
 		<div class="flex w-full flex-col gap-2">
 			<div class="flex flex-col gap-2">
 				Updated
-				<div class="flex flex-row gap-2">
+				<div class="flex flex-row flex-wrap gap-2">
 					<div class="field-group w-full grid-cols-[auto_1fr] gap-0">
 						<label class="label label-text preset-tonal" for="url">
 							<Icon data={faCalendar} class="fa-fw" />

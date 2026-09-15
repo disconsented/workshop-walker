@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AppCard from '$lib/app_card.svelte';
+	import AppCard from '$lib/appCard.svelte';
 	import Logotype from '$lib/logotype.svelte';
 	import Icon from 'svelte-awesome';
 	import { faGithub, faSteam } from '@fortawesome/free-brands-svg-icons';
