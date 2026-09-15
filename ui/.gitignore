@@ -1,0 +1,11 @@
+# The root .gitignore already covers these. This copy exists because
+# eslint.config.js gives the path to eslint through `includeIgnoreFile`, and
+# prettier reads the .gitignore beside the directory it runs in. Both need the
+# file here.
+node_modules/
+.svelte-kit/
+build/
+.vercel/
+.output/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
