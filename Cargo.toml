@@ -95,9 +95,12 @@ itertools.workspace = true
 lingua = { features = [
   "chinese",
   "english",
+  "french",
   "japanese",
   "korean",
+  "portuguese",
   "russian",
+  "spanish",
 ], workspace = true }
 macros.workspace = true
 migrations-tool.workspace = true
