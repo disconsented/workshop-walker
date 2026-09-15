@@ -1,4 +1,3 @@
-use classification::actor::{ExtractionActor, ExtractionArgs};
 use ractor::Actor;
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};

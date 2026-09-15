@@ -1,4 +1,3 @@
-use classification::actor::ExtractionMsg;
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};

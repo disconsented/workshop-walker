@@ -1,6 +1,5 @@
 [workspace]
 members = [
-  "classification",
   "macros",
   "migrations-tool",
   "proc-macros",
@@ -16,7 +15,6 @@ version = "0.2.0"
 
 # The members inherit these. Without them `dep.workspace = true` in a member
 # manifest has nothing to resolve against.
-classification = { path = "./classification" }
 macros = { path = "./macros" }
 migrations-tool = { path = "./migrations-tool" }
 proc-macros = { path = "./proc-macros" }
@@ -26,15 +24,10 @@ async-stream = "0.3.6"
 bbscope = "0.2"
 biscuit-auth = "6.0.0"
 blake2 = "0.11"
-candle-core = { version = "0.11" }
-candle-examples = "0.11"
-candle-nn = "0.11"
-candle-transformers = "0.11"
 chrono = "0.4"
 clap = { features = ["derive"], version = "4.6" }
 config = "0.15"
 futures = "0.3"
-hf-hub = "0.5.0"
 humantime = "2.2"
 intel-mkl-src = { version = "0.8" }
 itertools = "0.15"
@@ -77,8 +70,6 @@ surrealdb-core = "3.1"
 surrealdb-types = "3.1"
 syn = "3.0"
 tempfile = "3.27.0"
-# Important to make sure this doesn't conflict with the versions that candle uses
-tokenizers = "0.22"
 tokio = { features = ["full"], version = "1.48" }
 tokio-stream = { features = ["fs"], version = "0.1" }
 tracing = "0.1"
@@ -98,7 +89,6 @@ version.workspace = true
 bbscope.workspace = true
 biscuit-auth.workspace = true
 chrono.workspace = true
-classification = { optional = true, workspace = true }
 config.workspace = true
 humantime.workspace = true
 itertools.workspace = true
@@ -152,9 +142,6 @@ tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
 
 [features]
-default = ["ml-classification"]
-ml-classification = ["classification", "classification/mkl"]
-
 
 [profile.release]
 lto = true
