@@ -9,11 +9,17 @@ pub struct Config {
     pub steam: Steam,
     pub database: Database,
     pub updater: bool,
-    pub ml_extraction: bool,
+    pub ml_extraction: ML,
     pub force_update: bool,
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
     pub admin_users: Vec<i64>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ML {
+    pub enabled: bool,
+    pub url: Arc<String>,
 }
 #[derive(Deserialize, Redact)]
 pub struct Steam {
