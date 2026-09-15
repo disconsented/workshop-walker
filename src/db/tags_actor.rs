@@ -114,7 +114,9 @@ impl Actor for TagsActor {
                     }
                     acc
                 });
-                if let Err(error) = state.service.update_tags(appid.clone(), new_tags).await {
+                if !new_tags.is_empty()
+                    && let Err(error) = state.service.update_tags(appid.clone(), new_tags).await
+                {
                     error!(?error, ?appid, "Failed to update tags");
                 }
             }
