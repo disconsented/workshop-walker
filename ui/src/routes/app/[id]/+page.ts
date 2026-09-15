@@ -9,6 +9,7 @@ import {
 	updatedBefore
 } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
+import { parseSafeJSON } from '$lib/parser';
 
 export const prerender = false;
 let firstRun = true;
@@ -47,7 +48,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 	paramList.push(['app', params.id]);
 
 	const appRequest = fetch(`/api/app/${params.id}`).then(async (res) => {
-		app.v = await res.json();
+		app.v = await res.text().then(parseSafeJSON);
 		if (firstRun && tags.v.length == 0) {
 			tags.v = app.v.tags.filter((tag) => app.v.default_tags.some((e) => e === tag));
 			app.v.default_tags.forEach((tag) => {
@@ -67,7 +68,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 		searchRequest: appRequest.then(() =>
 			fetch(`/api/list?` + new URLSearchParams(paramList).toString()).then(async (res) => {
 				if (res.ok) {
-					return res.json();
+					return res.text().then(parseSafeJSON);
 				}
 				const status = res.status;
 				const statusText = res.statusText;

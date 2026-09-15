@@ -1,6 +1,10 @@
+import { parseSafeJSON, reviver } from '$lib/parser';
+
 export const prerender = false;
 export const load = async ({ fetch, params }) => {
-	const item = await fetch(`/api/item/${params.item}`).then((res) => res.json());
+	const item = await fetch(`/api/item/${params.item}`)
+		.then((res) => res.text())
+		.then(parseSafeJSON);
 
 	return {
 		data: item,
