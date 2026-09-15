@@ -20,6 +20,10 @@ release_commits = "^feat(\\(.+\\))?!?:" # prepare a release only when a feature
 [[package]] # the double square brackets define a TOML table array
 name = "workshop-walker"
 release = true # the one crate that is released, standing in for the workspace
+features_always_increment_minor = true # a feature moves 0.2 to 0.3, not 0.2.1.
+# Cargo semver reads the minor of a `0.x` version as its major, so by default a
+# feature only moves the patch. This project uses the minor for its feature
+# releases, so release-plz must do the same.
 # No `git_only` here. That mode reads the last version from the git tags, which
 # is what this workspace needs, but it also runs `cargo package --workspace` on
 # a worktree of the tag. That command fails here because the internal path
