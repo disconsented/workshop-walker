@@ -4,16 +4,23 @@ use salvo::{
     oapi::extract::JsonBody,
     prelude::{StatusCode, StatusError, endpoint},
 };
+use salvo::prelude::Json;
 use snafu::{ErrorCompat, prelude::*};
+use surrealdb::{Surreal, engine::local::Db};
 
 use crate::{
     db::{
-        model::{ExternalSource, Status},
+        model::{ExternalSource, Property, Status},
         properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
+        properties_repository::PropertiesSilo,
     },
-    domain::properties::{ExternalNewProperty, ExternalVoteData, PropertiesError},
-    web::auth,
+    domain::properties::{
+        ExternalNewProperty, ExternalSearchProperty, ExternalVoteData, PropertiesError,
+        PropertiesPort,
+    },
+    web::{DB_POOL, auth},
 };
+use crate::db::model::ExternalWorkshopItem;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
@@ -150,6 +157,19 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
     .map_err(InnerError::from)?
     .map_err(InnerError::from)?;
     Ok(())
+}
+
+/// lookahead search for properties, doesn't discriminate by type just by value.
+/// Will only return results that are approved, and have a score of at least 0.
+#[endpoint]
+pub async fn search_properties(search_property: JsonBody<ExternalSearchProperty>) -> Result<Json<Vec<Property>>> {
+    let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
+    let silo = PropertiesSilo::new(db.clone());
+    let properties = silo
+        .search_property(search_property.0.into())
+        .await
+        .map_err(InnerError::from)?;
+    Ok(Json(properties))
 }
 
 #[cfg(test)]

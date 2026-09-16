@@ -8,7 +8,10 @@ use crate::{
         IUserID,
         model::{InternalSource, Property, Status},
     },
-    domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
+    domain::properties::{
+        InternalNewProperty, InternalSearchProperty, InternalVoteData, PropertiesError,
+        PropertiesPort,
+    },
 };
 
 pub struct PropertiesSilo {
@@ -224,6 +227,40 @@ impl PropertiesPort for PropertiesSilo {
                 debug!(?e, "bad vote removal from user");
                 Err(PropertiesError::BadRequest {
                     msg: "Invalid removal".into(),
+                })
+            }
+            Err(e) => {
+                error!(?e, "vote removal query error");
+                Err(PropertiesError::Internal)
+            }
+        }
+    }
+
+    async fn search_property(
+        &self,
+        search_query: InternalSearchProperty,
+    ) -> Result<Vec<Property>, PropertiesError> {
+        // SELECT out.id().class AS class, out.id().value as value FROM
+        // workshop_item_properties WHERE in.*.app = apps:294100 AND
+        // upvote_count >= 1 AND status = 1 AND prop_value @@ 'exp' GROUP BY
+        // class, value LIMIT 10;
+        let results = self
+            .db
+            .query(
+                "SELECT out.id().class AS class, out.id().value as value FROM \
+                 workshop_item_properties WHERE in.*.app = $app AND upvote_count >= 1 AND status \
+                 = 1 AND prop_value @@ $term GROUP BY class, value LIMIT 10;",
+            )
+            .bind(("app", search_query.app))
+            .bind(("term", search_query.search_term))
+            .await;
+
+        match results.map(surrealdb::IndexedResults::check) {
+            Ok(Ok(mut terms)) => Ok(terms.take(0).map_err(|_| PropertiesError::Internal)?),
+            Ok(Err(e)) => {
+                debug!(?e, "bad search term");
+                Err(PropertiesError::BadRequest {
+                    msg: "Invalid search term".into(),
                 })
             }
             Err(e) => {

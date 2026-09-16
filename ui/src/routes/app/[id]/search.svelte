@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { Portal, SegmentedControl, ToggleGroup, Tooltip } from '@skeletonlabs/skeleton-svelte';
+	import {
+		Avatar,
+		Listbox,
+		Popover,
+		Portal,
+		SegmentedControl,
+		ToggleGroup,
+		Tooltip,
+		useListCollection
+	} from '@skeletonlabs/skeleton-svelte';
 	import Icon from 'svelte-awesome';
 	import {
 		faArrowDownWideShort,
@@ -17,9 +26,10 @@
 
 	interface Props {
 		appTags: string[];
+		appID: string;
 	}
 
-	let { appTags }: Props = $props();
+	let { appTags, appID }: Props = $props();
 	let value = $state<string | null>('and');
 	let showAdvanced = $state(true);
 	let updatedDate = $state(updatedBefore.v || updatedAfter.v ? 'custom' : 'all');
@@ -122,6 +132,30 @@
 		event.preventDefault();
 		loadParams();
 	}
+
+
+	let searchProps = $state(null);
+	let searchQuery: Promise<Response> = $state(null);
+	let query = $state('');
+
+	function searchProps(term: string) {
+		searchQuery = fetch('/api/properties/search', {
+			method: 'post',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ app: appID, search_term: term })
+		}).then(response => response.json()).then(data => {
+			searchProps = data;
+		});
+	}
+
+
+	const collection = $derived(
+		useListCollection({
+			items: data.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())),
+			itemToString: (item) => item.label,
+			itemToValue: (item) => item.value
+		})
+	);
 </script>
 
 <form
@@ -245,8 +279,8 @@
 				<div class="flex flex-row items-center justify-between">
 					<div>
 						Tags <span class="text-sm italic opacity-50"
-							>(Steam tag, shown as written. Similar names can be different tags.)</span
-						>
+					>(Steam tag, shown as written. Similar names can be different tags.)</span
+					>
 					</div>
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
 						<SegmentedControl.Control class="gap-0 p-0">
@@ -317,8 +351,56 @@
 					</SegmentedControl>
 				</div>
 				<div class="field-group w-2xs grid-cols-[1fr_auto] gap-0">
-					<input class="input grow-0" type="text" placeholder="Add property" disabled />
-					<button class="btn preset-filled" disabled>Add</button>
+					<Listbox class="w-full max-w-md" {collection} typeahead>
+						<!--						<Listbox.Label>Search for Food</Listbox.Label>-->
+						<Listbox.Input placeholder="Type to search..." value={query}
+													 oninput={(e) => {query = e.currentTarget.value; searchProps(query)}} />
+						<Listbox.Content>
+							<Popover>
+								<Portal>
+									<Popover.Positioner>
+										<Popover.Content class="card w-96 p-4 bg-surface-100-900 shadow-xl">
+											<div class="space-y-4">
+												<header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+													<Avatar>
+														<Avatar.Image
+															src="https://cdn.bsky.app/img/avatar/plain/did:plc:whtgi5zx7ylmdw2i76vq7vq4/bafkreibgoxuqahwcpiah22yfovqszh33x2u4sysmqoyuk5j54aoakt7364@jpeg"
+															alt="Skeleton Labs"
+														/>
+													</Avatar>
+													<div>
+														<Popover.Title class="text-lg font-bold">Skeleton Labs</Popover.Title>
+														<a href="https://bsky.app/profile/skeleton.dev" target="_blank" class="anchor">@skeletonlabs.dev</a>
+													</div>
+													<Popover.CloseTrigger class="btn-icon hover:preset-tonal self-start">
+														X
+													</Popover.CloseTrigger>
+												</header>
+												<Popover.Description>
+													{#each collection.items as item (item.value)}
+														<Listbox.Item {item}>
+															<Listbox.ItemText>{item.label}</Listbox.ItemText>
+															<Listbox.ItemIndicator />
+														</Listbox.Item>
+													{/each}
+												</Popover.Description>
+												<div class="flex gap-4">
+													<p class="text-sm">800 <span class="opacity-60">Followers</span></p>
+													<p class="text-sm">120 <span class="opacity-60">Following</span></p>
+													<p class="text-sm">100 <span class="opacity-60">Posts</span></p>
+												</div>
+											</div>
+											<Popover.Arrow
+												class="[--arrow-size:--spacing(2)] [--arrow-background:var(--color-surface-100-900)]">
+												<Popover.ArrowTip />
+											</Popover.Arrow>
+										</Popover.Content>
+									</Popover.Positioner>
+								</Portal>
+							</Popover>
+						</Listbox.Content>
+					</Listbox>
+					<button class="btn preset-filled">Add</button>
 				</div>
 			</div>
 		</div>
