@@ -4,8 +4,8 @@ use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 
 use crate::db::{
-    IItemID, IUserID, ItemID,
-    model::{Class, InternalSource, Status},
+    AppID, IAppID, IItemID, IUserID, ItemID,
+    model::{Class, InternalSource, Property, Status},
 };
 
 #[derive(Debug, Snafu, Clone)]
@@ -32,6 +32,15 @@ pub struct NewProperty {
     pub note: Option<String>,
 }
 
+/// Do a full text search for a property by value, "globally" for a specific
+/// app. Will only return properties who are voted >0 and approved.
+#[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
+pub struct SearchProperty {
+    #[dual_type(IAppID)]
+    pub app: AppID,
+    pub search_term: String,
+}
+
 /// Data required to cast or update a vote on a property
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct VoteData {
@@ -56,4 +65,9 @@ pub trait PropertiesPort: Send + Sync + 'static {
         vote: InternalVoteData,
         userid: IUserID,
     ) -> Result<(), PropertiesError>;
+
+    async fn search_property(
+        &self,
+        search_query: InternalSearchProperty,
+    ) -> Result<Vec<Property>, PropertiesError>;
 }

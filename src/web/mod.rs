@@ -17,7 +17,7 @@ use snafu::Whatever;
 use surrealdb::{Surreal, engine::local::Db};
 use tokio::sync::OnceCell;
 
-use crate::app_config::Config;
+use crate::{app_config::Config, web::properties::search_properties};
 
 /// Global
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
@@ -41,6 +41,9 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                 Router::with_path("property")
                     .hoop(auth::validate_biscuit_token)
                     .post(properties::new),
+            )            .push(
+                Router::with_path("properties")
+                    .push(Router::with_path("search").post(search_properties))
             )
             .push(
                 Router::with_path("vote")
@@ -58,7 +61,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                     .push(
                         Router::with_path("properties")
                             .put(admin::patch_workshop_item_properties)
-                            .get(admin::get_workshop_item_properties),
+                            .get(admin::get_workshop_item_properties)
                     )
                     .push(
                         Router::with_path("users")

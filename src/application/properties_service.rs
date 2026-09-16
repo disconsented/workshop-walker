@@ -5,6 +5,8 @@ use crate::{
     },
     domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
 };
+use crate::db::model::Property;
+use crate::domain::properties::InternalSearchProperty;
 
 pub struct PropertiesService<R: PropertiesPort> {
     repo: R,
@@ -68,6 +70,14 @@ impl<R: PropertiesPort> PropertiesService<R> {
     ) -> Result<(), PropertiesError> {
         self.repo.remove_vote(vote, userid).await
     }
+
+    async fn search_property(
+        &self,
+        search_query: InternalSearchProperty,
+    ) -> Result<Vec<Property>, PropertiesError>{
+        self.repo.search_property(search_query).await
+    }
+
 }
 
 #[cfg(test)]
@@ -81,6 +91,8 @@ mod tests {
             InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort,
         },
     };
+    use crate::db::model::Property;
+    use crate::domain::properties::InternalSearchProperty;
 
     /// A `PropertiesPort` that records how many times each method was called so
     /// tests can assert whether the service delegated to the repository.
@@ -112,6 +124,10 @@ mod tests {
         ) -> Result<(), PropertiesError> {
             self.remove_calls.fetch_add(1, Ordering::SeqCst);
             Ok(())
+        }
+
+        async fn search_property(&self, search_query: InternalSearchProperty) -> Result<Vec<Property>, PropertiesError> {
+            todo!()
         }
     }
 

@@ -68,7 +68,7 @@
 	{:else}
 		<div class="min-h-screen">
 			<div class="mx-auto px-4 py-8">
-				<Search appTags={app.v.tags}></Search>
+				<Search appTags={app.v.tags} appID={app.v.id}></Search>
 				<div class="mt-6">
 					<div class="mb-4 flex w-full flex-wrap justify-between gap-4">
 						<!--Left-->
