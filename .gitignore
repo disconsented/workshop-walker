@@ -209,3 +209,7 @@ ui/project.inlag
 
 # Local notes and session transcripts
 20??-??-??-*.txt
+
+# Local planning notes and IDE agent guidelines
+/docs/
+/.junie/
