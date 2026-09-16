@@ -1,0 +1,2 @@
+-- Stupid surrealdb bug that never got fixed https://github.com/surrealdb/surrealdb/issues/7234
+DEFINE INDEX workshop_item_property_full_text_property ON TABLE workshop_item_properties FIELDS prop_value FULLTEXT ANALYZER property_analyzer;

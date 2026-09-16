@@ -1,0 +1,2 @@
+-- Stupid surrealdb bug that never got fixed https://github.com/surrealdb/surrealdb/issues/7234
+DEFINE ANALYZER property_analyzer TOKENIZERS punct, blank FILTERS ascii, snowball(english), edgengram(3,15);
