@@ -11,12 +11,14 @@ pub struct AppsSilo {
 }
 
 impl AppsSilo {
+    #[tracing::instrument(level = "trace", skip(db))]
     pub fn new(db: Surreal<Db>) -> Self {
         Self { db }
     }
 }
 
 impl AppsPort for AppsSilo {
+    #[tracing::instrument(level = "trace", skip(self))]
     async fn list_available(&self) -> Result<Vec<InternalApp>, AppError> {
         match self
             .db
@@ -35,6 +37,7 @@ impl AppsPort for AppsSilo {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(self, app))]
     async fn upsert(&self, app: InternalApp) -> Result<(), AppError> {
         match self
             .db
@@ -54,6 +57,7 @@ impl AppsPort for AppsSilo {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(self, id))]
     async fn remove(&self, id: IAppID) -> Result<(), AppError> {
         if let Err(error) = self.db.query("DELETE $id").bind(("id", id)).await {
             error!(?error, "failed to remove app");
@@ -62,6 +66,7 @@ impl AppsPort for AppsSilo {
         Ok(())
     }
 
+    #[tracing::instrument(level = "trace", skip(self))]
     async fn list(&self) -> Result<Vec<InternalApp>, AppError> {
         match self
             .db
@@ -79,6 +84,7 @@ impl AppsPort for AppsSilo {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(self, id))]
     async fn get(&self, id: IAppID) -> Result<InternalApp, AppError> {
         match self
             .db

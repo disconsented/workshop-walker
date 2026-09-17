@@ -105,6 +105,7 @@ impl Actor for LlamaActor {
     type Msg = LlamaMsg;
     type State = LlamaState;
 
+    #[tracing::instrument(level = "trace", skip(self, args))]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -183,6 +184,7 @@ async fn wait_until_healthy(client: &Client, api_url: &str) -> Result<(), Startu
     }
 }
 
+#[tracing::instrument(level = "trace", skip(state, title, description))]
 /// Runs each task against the model and collects the answers into one set of
 /// properties.
 async fn run_process(
@@ -231,6 +233,7 @@ async fn extract(state: &LlamaState, task: Task, prompt: &str) -> Result<MLPrope
     serde_json::from_str(&answer).context(ParseSnafu { task: task.name })
 }
 
+#[tracing::instrument(level = "trace", skip(task, prompt))]
 /// Builds the chat completion request. The JSON schema holds the model to two
 /// arrays of strings, one per field of the task.
 fn request_body(task: Task, prompt: &str) -> ChatRequest<'_> {
@@ -270,6 +273,7 @@ struct ChatRequest<'a> {
 }
 
 impl Default for ChatRequest<'_> {
+    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             messages: [RequestMessage::default()],
@@ -295,6 +299,7 @@ struct ResponseFormat {
 }
 
 impl Default for ResponseFormat {
+    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             kind: "json_schema",
@@ -311,6 +316,7 @@ struct JsonSchema {
 }
 
 impl Default for JsonSchema {
+    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             name: "",
@@ -332,6 +338,7 @@ struct ObjectSchema {
 }
 
 impl Default for ObjectSchema {
+    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             kind: "object",
@@ -350,6 +357,7 @@ struct ArraySchema {
 }
 
 impl Default for ArraySchema {
+    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             kind: "array",
@@ -365,11 +373,13 @@ struct ItemSchema {
 }
 
 impl Default for ItemSchema {
+    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self { kind: "string" }
     }
 }
 
+#[tracing::instrument(level = "trace", skip(prompt, title, description))]
 pub fn populate_prompt(prompt: &str, title: &str, description: &str) -> String {
     prompt
         .replace("[TITLE]", title)
@@ -390,6 +400,7 @@ pub struct MLProperties {
 }
 
 impl MLProperties {
+    #[tracing::instrument(level = "trace", skip(self, other))]
     /// Adds the other answer to this one. Each task fills two of the four
     /// fields and leaves the rest empty, so the tasks never overwrite each
     /// other.

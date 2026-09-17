@@ -38,6 +38,7 @@ impl Actor for MLQueueActor {
     type Msg = MLQueueMsg;
     type State = MLQueueState;
 
+    #[tracing::instrument(level = "trace", skip(self, args))]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -50,6 +51,7 @@ impl Actor for MLQueueActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -67,6 +69,7 @@ impl Actor for MLQueueActor {
     }
 }
 
+#[tracing::instrument(level = "trace", skip(state, workshop_item))]
 async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result<(), Whatever> {
     // Load minimal fields needed
     let mut resp = state

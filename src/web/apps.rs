@@ -37,6 +37,7 @@ enum InnerError {
 }
 
 impl InnerError {
+    #[tracing::instrument(level = "trace", skip(self))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             InnerError::BadRequest { .. } => StatusCode::BAD_REQUEST,
@@ -49,6 +50,7 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -64,16 +66,19 @@ impl From<InnerError> for StatusError {
 }
 
 impl From<ActorProcessingErr> for InnerError {
+    #[tracing::instrument(level = "trace", skip())]
     fn from(_: ActorProcessingErr) -> Self {
         Self::InternalError
     }
 }
 impl<T> From<RactorErr<T>> for InnerError {
+    #[tracing::instrument(level = "trace", skip())]
     fn from(_: RactorErr<T>) -> Self {
         Self::InternalError
     }
 }
 impl From<AppError> for InnerError {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: AppError) -> Self {
         match value {
             AppError::BadRequest { msg } => Self::BadRequest { msg },
@@ -84,6 +89,7 @@ impl From<AppError> for InnerError {
     }
 }
 
+#[tracing::instrument(level = "trace", skip())]
 #[endpoint]
 pub async fn list_available() -> Result<Json<Vec<ExternalApp>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
@@ -98,6 +104,7 @@ pub async fn list_available() -> Result<Json<Vec<ExternalApp>>> {
     Ok(Json(apps))
 }
 
+#[tracing::instrument(level = "trace", skip(app))]
 #[endpoint]
 pub async fn upsert(app: JsonBody<ExternalApp>) -> Result<()> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
@@ -106,6 +113,7 @@ pub async fn upsert(app: JsonBody<ExternalApp>) -> Result<()> {
         .map_err(InnerError::from)?;
     Ok(())
 }
+#[tracing::instrument(level = "trace", skip(id))]
 #[endpoint]
 pub async fn remove(id: QueryParam<AppID, true>) -> Result<()> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
@@ -118,6 +126,7 @@ pub async fn remove(id: QueryParam<AppID, true>) -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip())]
 #[endpoint]
 pub async fn list() -> Result<Json<Vec<ExternalApp>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
@@ -132,6 +141,7 @@ pub async fn list() -> Result<Json<Vec<ExternalApp>>> {
     Ok(Json(apps))
 }
 
+#[tracing::instrument(level = "trace", skip(id))]
 #[endpoint]
 pub async fn get(id: PathParam<AppID>) -> Result<Json<ExternalApp>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;

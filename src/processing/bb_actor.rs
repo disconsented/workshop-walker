@@ -17,6 +17,7 @@ impl Actor for BBActor {
     type Msg = BBMsg;
     type State = BBState;
 
+    #[tracing::instrument(level = "trace", skip(self))]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -27,6 +28,7 @@ impl Actor for BBActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,

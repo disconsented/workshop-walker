@@ -40,6 +40,7 @@ pub struct BiscuitConfig {
 }
 
 impl<'de> serde::Deserialize<'de> for BiscuitConfig {
+    #[tracing::instrument(level = "trace", skip(d))]
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let mut map: HashMap<String, String> = HashMap::deserialize(d)?;
         Ok(Self {

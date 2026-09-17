@@ -38,6 +38,7 @@ impl Actor for AppsActor {
     type Msg = AppsMsg;
     type State = AppsState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -50,6 +51,7 @@ impl Actor for AppsActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,

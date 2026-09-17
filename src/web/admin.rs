@@ -30,6 +30,7 @@ enum InnerError {
 }
 
 impl InnerError {
+    #[tracing::instrument(level = "trace", skip(self))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             InnerError::BadRequest { .. } => StatusCode::BAD_REQUEST,
@@ -40,6 +41,7 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -55,16 +57,19 @@ impl From<InnerError> for StatusError {
 }
 
 impl From<ActorProcessingErr> for InnerError {
+    #[tracing::instrument(level = "trace", skip())]
     fn from(_: ActorProcessingErr) -> Self {
         Self::InternalError
     }
 }
 impl<T> From<RactorErr<T>> for InnerError {
+    #[tracing::instrument(level = "trace", skip())]
     fn from(_: RactorErr<T>) -> Self {
         Self::InternalError
     }
 }
 impl From<AdminError> for InnerError {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: AdminError) -> Self {
         match value {
             AdminError::BadRequest { msg } => Self::BadRequest { msg },
@@ -74,6 +79,7 @@ impl From<AdminError> for InnerError {
     }
 }
 
+#[tracing::instrument(level = "trace", skip())]
 #[endpoint]
 pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, StatusError> {
     let actor = ADMIN_ACTOR
@@ -91,6 +97,7 @@ pub async fn get_users() -> Result<Json<Vec<ExternalUser>>, StatusError> {
     Ok(Json(users))
 }
 
+#[tracing::instrument(level = "trace", skip(data))]
 #[endpoint]
 pub async fn patch_user(data: JsonBody<PatchUserData>) -> Result<()> {
     let actor = ADMIN_ACTOR
@@ -103,6 +110,7 @@ pub async fn patch_user(data: JsonBody<PatchUserData>) -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip())]
 #[endpoint]
 pub async fn get_workshop_item_properties() -> Result<Json<Vec<ExternalWorkshopItemProperties>>> {
     let actor = ADMIN_ACTOR
@@ -119,6 +127,7 @@ pub async fn get_workshop_item_properties() -> Result<Json<Vec<ExternalWorkshopI
     Ok(Json(list))
 }
 
+#[tracing::instrument(level = "trace", skip(data))]
 #[endpoint]
 pub async fn patch_workshop_item_properties(data: JsonBody<PatchRelationshipData>) -> Result<()> {
     let actor = ADMIN_ACTOR

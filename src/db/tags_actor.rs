@@ -82,6 +82,7 @@ impl Actor for TagsActor {
     type Msg = TagsMsg;
     type State = TagsState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -98,6 +99,7 @@ impl Actor for TagsActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, myself, message, state))]
     async fn handle(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -135,6 +137,7 @@ impl TagsActor {
     // N.B. there's a possible bug here, because steam does weird things with
     // totals when you _dont_ specify an app, we may get incorrect tag counts
     // for an app
+    #[tracing::instrument(level = "trace", skip(state, app, tag))]
     async fn run_get_count(
         state: &mut TagsState,
         app: IAppID,

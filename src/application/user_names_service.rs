@@ -11,10 +11,12 @@ pub struct UserNamesService<R: UserNamesPort> {
 }
 
 impl<R: UserNamesPort> UserNamesService<R> {
+    #[tracing::instrument(level = "trace", skip(repo))]
     pub fn new(repo: R) -> Self {
         Self { repo }
     }
 
+    #[tracing::instrument(level = "trace", skip(self, id, name))]
     pub async fn update_user_name(
         &self,
         id: IUsernameID,
@@ -39,6 +41,7 @@ impl<R: UserNamesPort> UserNamesService<R> {
         Ok(())
     }
 
+    #[tracing::instrument(level = "trace", skip(self, id))]
     pub async fn should_update_user(&self, id: IUsernameID) -> Result<bool, UserNameError> {
         match self.repo.get_by_id(id).await? {
             Some(existing) => {

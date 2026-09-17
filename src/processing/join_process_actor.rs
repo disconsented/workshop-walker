@@ -41,6 +41,7 @@ impl Actor for JoinProcessActor {
     type Msg = JoinProcessMsg;
     type State = JoinProcessState;
 
+    #[tracing::instrument(level = "trace", skip(self, args))]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -53,6 +54,7 @@ impl Actor for JoinProcessActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, myself, message, state))]
     async fn handle(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -91,6 +93,7 @@ impl Actor for JoinProcessActor {
 }
 
 impl InternalWorkshopItem {
+    #[tracing::instrument(level = "trace", skip(data, languages, description))]
     fn try_new(
         data: IPublishedStruct,
         languages: Vec<DetectedLanguage>,

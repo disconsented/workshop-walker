@@ -21,6 +21,7 @@ use crate::{app_config::Config, web::properties::search_properties};
 
 /// Global
 static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
+#[tracing::instrument(level = "trace", skip(db, config))]
 ///  Start the webserver returning once it exists
 pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let _ = DB_POOL.get_or_init(|| async { db }).await.clone();
@@ -107,12 +108,14 @@ pub struct Error(Box<Whatever>);
 
 unsafe impl Send for Error {}
 impl From<Whatever> for Error {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: Whatever) -> Self {
         Self(Box::new(value))
     }
 }
 
 impl EndpointOutRegister for Error {
+    #[tracing::instrument(level = "trace", skip(operation))]
     fn register(_: &mut Components, operation: &mut Operation) {
         let code = StatusCode::INTERNAL_SERVER_ERROR;
 
@@ -125,6 +128,7 @@ impl EndpointOutRegister for Error {
 
 #[async_trait]
 impl Writer for Error {
+    #[tracing::instrument(level = "trace", skip(self, res))]
     async fn write(mut self, _: &mut Request, _: &mut Depot, res: &mut Response) {
         res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
         res.render(Text::Plain(format!("Error: {:#?}", self.0)));

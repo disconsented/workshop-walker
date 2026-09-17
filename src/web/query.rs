@@ -416,6 +416,7 @@ mod test {
         model::{Class, ExternalSource, Status},
     };
 
+    #[tracing::instrument(level = "trace", skip())]
     /// In-memory database with one app, one item, and three property edges on
     /// that item: one accepted, one pending (submitted by user 2) and one
     /// rejected. Only the accepted one is visible to everybody; user 2 also
@@ -506,6 +507,7 @@ mod test {
         db
     }
 
+    #[tracing::instrument(level = "trace", skip(db, user))]
     async fn list_property_values(
         db: &Surreal<Db>,
         user: Option<IUserID>,
@@ -584,6 +586,7 @@ mod test {
         );
     }
 
+    #[tracing::instrument(level = "trace", skip(db))]
     /// Adds two more items to the seeded app so the three items have distinct
     /// `last_updated` stamps: 0, 100 and 200.
     async fn seed_more_timestamps(db: &Surreal<Db>) {
@@ -603,6 +606,7 @@ mod test {
         .unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip(db, updated_before, updated_after))]
     /// The `last_updated` stamps that the list query returns for the given
     /// bounds, in ascending order.
     async fn list_last_updated(
@@ -705,6 +709,7 @@ mod test {
         );
     }
 
+    #[tracing::instrument(level = "trace", skip(db))]
     /// Adds a second tag, plus three items, so a tag filter has something to
     /// discriminate on. Item 100 from `seed_db` already carries `tags:test`.
     /// Item 600 points at `tags:deleted`, a link with no row behind it.
@@ -730,6 +735,7 @@ mod test {
         .unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip(db, tags))]
     /// The item ids the list query returns for the given tag filter, ascending.
     async fn list_ids_for_tags(db: &Surreal<Db>, tags: &[&str]) -> Vec<i64> {
         let items = query_inner(
@@ -790,6 +796,7 @@ mod test {
     /// item.
     #[tokio::test]
     async fn the_tag_projection_does_not_change_what_containsall_matches() {
+        #[tracing::instrument(level = "trace", skip(db, projection))]
         /// Runs the tag filter with the given extra projection fields spliced
         /// in, and returns the ids that survived, ascending.
         async fn ids_for_projection(db: &Surreal<Db>, projection: &str) -> Vec<i64> {

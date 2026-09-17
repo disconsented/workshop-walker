@@ -14,10 +14,12 @@ pub struct PropertiesService<R: PropertiesPort> {
 }
 
 impl<R: PropertiesPort> PropertiesService<R> {
+    #[tracing::instrument(level = "trace", skip(repo))]
     pub fn new(repo: R) -> Self {
         Self { repo }
     }
 
+    #[tracing::instrument(level = "trace", skip(self, new_property, source, status))]
     pub async fn new_property(
         &self,
         mut new_property: InternalNewProperty,
@@ -53,6 +55,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
             .await
     }
 
+    #[tracing::instrument(level = "trace", skip(self, vote, userid))]
     pub async fn vote(
         &self,
         vote: InternalVoteData,
@@ -64,6 +67,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         self.repo.vote(vote, userid).await
     }
 
+    #[tracing::instrument(level = "trace", skip(self, vote, userid))]
     pub async fn remove_vote(
         &self,
         vote: InternalVoteData,
@@ -72,6 +76,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         self.repo.remove_vote(vote, userid).await
     }
 
+    #[tracing::instrument(level = "trace", skip(self, search_query))]
     pub async fn search_property(
         &self,
         search_query: InternalSearchProperty,
@@ -105,6 +110,7 @@ mod tests {
     }
 
     impl PropertiesPort for SpyRepo {
+        #[tracing::instrument(level = "trace", skip(self))]
         async fn create_or_link_property(
             &self,
             _: InternalNewProperty,
@@ -114,11 +120,13 @@ mod tests {
             Ok(())
         }
 
+        #[tracing::instrument(level = "trace", skip(self))]
         async fn vote(&self, _: InternalVoteData, _: IUserID) -> Result<(), PropertiesError> {
             self.vote_calls.fetch_add(1, Ordering::SeqCst);
             Ok(())
         }
 
+        #[tracing::instrument(level = "trace", skip(self))]
         async fn remove_vote(
             &self,
             _: InternalVoteData,
@@ -128,6 +136,7 @@ mod tests {
             Ok(())
         }
 
+        #[tracing::instrument(level = "trace", skip(self, search_query))]
         async fn search_property(
             &self,
             search_query: InternalSearchProperty,
@@ -136,6 +145,7 @@ mod tests {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(score))]
     fn vote(score: i32) -> InternalVoteData {
         InternalVoteData {
             item: IItemID::from(1_i64),

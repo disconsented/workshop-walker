@@ -60,6 +60,7 @@ impl Actor for ItemUpdateActor {
     type Msg = ItemUpdateMsg;
     type State = ItemUpdateState;
 
+    #[tracing::instrument(level = "trace", skip(self, args))]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -75,6 +76,7 @@ impl Actor for ItemUpdateActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, myself, message, state))]
     async fn handle(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -142,6 +144,7 @@ impl Actor for ItemUpdateActor {
         Ok(())
     }
 }
+#[tracing::instrument(level = "trace", skip(db, ml_queue, item))]
 /// Attempt to extract data from posts text using an LLM under the following
 /// conditions:
 ///
@@ -185,6 +188,7 @@ async fn maybe_queue_ml(
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(db, item, children))]
 async fn insert_data(
     db: &Surreal<Db>,
     mut item: InternalWorkshopItem,

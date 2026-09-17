@@ -31,6 +31,7 @@ pub struct SteamUserState {
 }
 
 impl Drop for SteamUserState {
+    #[tracing::instrument(level = "trace", skip(self))]
     fn drop(&mut self) {
         self.handle.abort();
     }
@@ -65,6 +66,7 @@ impl Actor for SteamUserActor {
         Ok(SteamUserState { sender: tx, handle })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -84,6 +86,7 @@ impl Actor for SteamUserActor {
 }
 
 impl SteamUserActor {
+    #[tracing::instrument(level = "trace", skip(self, args))]
     async fn run_batched(
         args: SteamUserArgs,
         mut rx: Receiver<IUsernameID>,
@@ -181,6 +184,7 @@ impl SteamUserActor {
     }
 }
 
+#[tracing::instrument(level = "trace", skip(user_names_service, id))]
 async fn should_update_user(
     user_names_service: &UserNamesService<UserNamesSilo>,
     id: IUsernameID,

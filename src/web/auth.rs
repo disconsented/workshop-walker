@@ -71,6 +71,7 @@ enum InnerError {
 }
 
 impl InnerError {
+    #[tracing::instrument(level = "trace", skip(self))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             InnerError::SelfValidationFailed | InnerError::PeerValidationFailed => {
@@ -89,6 +90,7 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -103,6 +105,7 @@ impl From<InnerError> for StatusError {
     }
 }
 
+#[tracing::instrument(level = "trace", skip(nonce, now))]
 /// Rejects an `OpenID` response nonce whose timestamp is not close to now.
 ///
 /// Without this, a captured `/api/verify` query string stays a valid
@@ -121,6 +124,7 @@ fn validate_nonce(nonce: &str, now: NaiveDateTime) -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(location))]
 /// Accepts only a site-relative path.
 ///
 /// The `location` parameter decides where the user lands after login and
@@ -139,6 +143,7 @@ fn validate_location(location: &str) -> Result<&str> {
     }
 }
 
+#[tracing::instrument(level = "trace", skip(req, resp))]
 #[endpoint]
 pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> Result<()> {
     let location = req
@@ -159,6 +164,7 @@ pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> R
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(req, response))]
 #[endpoint]
 pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response) -> Result<()> {
     // Pull this out first because it'll likely be gone after the take.
@@ -196,6 +202,7 @@ pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response)
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(req, response))]
 /// Instructs the client to clear the cookies for the site, functioning as
 /// logout. Done here because JS can't access the tokens we use.
 #[endpoint]
@@ -211,6 +218,7 @@ pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(req, depot))]
 #[endpoint]
 pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Result<()> {
     match req.cookie("token") {
@@ -228,6 +236,7 @@ pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Res
     }
 }
 
+#[tracing::instrument(level = "trace", skip(depot))]
 #[endpoint]
 pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
     match get_user_from_depot(depot) {
@@ -245,6 +254,7 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         }
     }
 }
+#[tracing::instrument(level = "trace", skip(req, depot))]
 #[endpoint]
 pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     if req.cookie("token").is_some() {
@@ -252,6 +262,7 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     }
     Ok(())
 }
+#[tracing::instrument(level = "trace", skip(depot))]
 /// Returns the user id of the current user, if any.
 pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
     let authorizer = depot.get_typed_mut::<Authorizer>().ok()?;
@@ -306,6 +317,7 @@ impl Actor for AuthActor {
     type Msg = AuthMessage;
     type State = AuthState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -322,6 +334,7 @@ impl Actor for AuthActor {
     }
 
     // This is our main message handler
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -370,6 +383,7 @@ impl Actor for AuthActor {
 }
 
 impl AuthActor {
+    #[tracing::instrument(level = "trace", skip(db, userid))]
     async fn is_admin(db: &Surreal<Db>, userid: IUserID) -> Result<bool> {
         match db
             .query("SELECT admin FROM $user")
@@ -382,6 +396,7 @@ impl AuthActor {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(config, token))]
     fn validate_cookie(config: &BiscuitConfig, token: &str) -> Result<Authorizer> {
         let keypair = &KeyPair::from(&config.private_key);
         let Ok(token) = Biscuit::from_base64(token, keypair.public()) else {
@@ -398,6 +413,7 @@ impl AuthActor {
         Ok(authorizer)
     }
 
+    #[tracing::instrument(level = "trace", skip(state, location))]
     fn get_auth_url(state: &AuthState, location: &str) -> Result<String> {
         let mut url =
             Url::from_str(&state.open_id_info.uri).map_err(|_| InnerError::BuildingURI)?;
@@ -422,10 +438,12 @@ impl AuthActor {
         Ok(url.to_string())
     }
 
+    #[tracing::instrument(level = "trace", skip(base, location))]
     fn redirect_url(base: &Arc<String>, location: &str) -> String {
         String::clone(base) + "/api/verify?location=" + location
     }
 
+    #[tracing::instrument(level = "trace", skip(client))]
     async fn discover_openid_info(client: &Client) -> Result<Info> {
         let response = client
             .get(STEAM_DISCOVERY)
@@ -444,6 +462,7 @@ impl AuthActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(map, state))]
     async fn verify_steam_response(
         map: MultiMap<String, String>,
         state: &mut AuthState,
@@ -576,6 +595,7 @@ mod tests {
 
     use super::{validate_location, validate_nonce};
 
+    #[tracing::instrument(level = "trace", skip())]
     fn now() -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 9, 3)
             .unwrap()
@@ -583,6 +603,7 @@ mod tests {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip(timestamp))]
     /// Steam puts a random suffix after the `Z`.
     fn nonce(timestamp: &str) -> String {
         format!("{timestamp}ZbGVFvAo3nQ=")

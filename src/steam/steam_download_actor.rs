@@ -47,6 +47,7 @@ impl Actor for SteamDownloadActor {
     type Msg = SteamDownloadMsg;
     type State = SteamDownloadState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -75,6 +76,7 @@ impl Actor for SteamDownloadActor {
         Ok(state)
     }
 
+    #[tracing::instrument(level = "trace", skip(self, myself, message, state))]
     async fn handle(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -111,6 +113,7 @@ impl Actor for SteamDownloadActor {
     }
 }
 
+#[tracing::instrument(level = "trace", skip(state, app, page, database_writer_actor_ref))]
 async fn download(
     state: &mut SteamDownloadState,
     app: IAppID,
@@ -161,6 +164,7 @@ async fn download(
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(myself, state, app, force))]
 async fn start_downloader(
     myself: &ActorRef<SteamDownloadMsg>,
     state: &mut SteamDownloadState,

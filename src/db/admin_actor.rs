@@ -39,6 +39,7 @@ impl Actor for AdminActor {
     type Msg = AdminMsg;
     type State = AdminState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -50,6 +51,7 @@ impl Actor for AdminActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,

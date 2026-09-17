@@ -16,12 +16,14 @@ pub struct TagsSilo {
 }
 
 impl TagsSilo {
+    #[tracing::instrument(level = "trace", skip(db))]
     pub fn new(db: Surreal<Db>) -> Self {
         Self { db }
     }
 }
 
 impl TagsPort for TagsSilo {
+    #[tracing::instrument(level = "trace", skip(self, app, tags))]
     async fn upsert_tags(&self, app: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError> {
         let tag_ids = tags
             .iter()
@@ -71,6 +73,7 @@ impl TagsPort for TagsSilo {
         Ok(())
     }
 
+    #[tracing::instrument(level = "trace", skip(self, tag, members))]
     async fn set_tag_known_members(&self, tag: ITagID, members: i64) -> Result<(), TagError> {
         let query = self
             .db
@@ -129,10 +132,12 @@ mod test {
     const TAGS_FIELD_NO_DISTINCT: &str =
         "DEFINE FIELD tags ON apps TYPE array<record<tags>> DEFAULT [] PERMISSIONS FULL;";
 
+    #[tracing::instrument(level = "trace", skip())]
     async fn setup() -> Surreal<Db> {
         setup_with(TAGS_FIELD).await
     }
 
+    #[tracing::instrument(level = "trace", skip(tags_field))]
     async fn setup_with(tags_field: &str) -> Surreal<Db> {
         let db = Surreal::new::<Mem>(()).await.unwrap();
         db.use_ns("test").use_db("test").await.unwrap();
@@ -150,6 +155,7 @@ mod test {
         db
     }
 
+    #[tracing::instrument(level = "trace", skip(id, display_name))]
     fn tag(id: &str, display_name: &str) -> InternalTag {
         InternalTag {
             id: ITagID::from(id.to_string()),
@@ -158,6 +164,7 @@ mod test {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(db))]
     /// `apps:4.tags` as a sorted list of `"tags:<key>"` strings.
     async fn app_tag_ids(db: &Surreal<Db>) -> Vec<String> {
         let mut r = db
@@ -169,6 +176,7 @@ mod test {
         ids
     }
 
+    #[tracing::instrument(level = "trace", skip(db))]
     /// Rows in the `tags` table as `(id_key, display_name, app_id)`, sorted.
     async fn tag_rows(db: &Surreal<Db>) -> Vec<(String, String, i64)> {
         let mut r = db

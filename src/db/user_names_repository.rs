@@ -11,12 +11,14 @@ pub struct UserNamesSilo {
 }
 
 impl UserNamesSilo {
+    #[tracing::instrument(level = "trace", skip(db))]
     pub fn new(db: Surreal<Db>) -> Self {
         Self { db }
     }
 }
 
 impl UserNamesPort for UserNamesSilo {
+    #[tracing::instrument(level = "trace", skip(self, username))]
     async fn upsert(&self, username: UserName) -> Result<(), UserNameError> {
         match self
             .db
@@ -35,6 +37,7 @@ impl UserNamesPort for UserNamesSilo {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip(self, id))]
     async fn get_by_id(&self, id: IUsernameID) -> Result<Option<UserName>, UserNameError> {
         match self
             .db

@@ -39,6 +39,7 @@ enum InnerError {
 }
 
 impl InnerError {
+    #[tracing::instrument(level = "trace", skip(self))]
     fn status_code(&self) -> StatusCode {
         match self {
             InnerError::NotFound => StatusCode::NOT_FOUND,
@@ -48,6 +49,7 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
+    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -84,6 +86,7 @@ impl Actor for ItemActor {
     type Msg = ItemMsg;
     type State = ItemState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -95,6 +98,7 @@ impl Actor for ItemActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -113,6 +117,7 @@ impl Actor for ItemActor {
     }
 }
 
+#[tracing::instrument(level = "trace", skip(db, id, user))]
 async fn get_item(
     db: &Surreal<Db>,
     id: IItemID,
@@ -344,6 +349,7 @@ mod test {
     use super::{Db, InternalFullWorkshopItem, get_item};
     use crate::db::{IItemID, IUserID};
 
+    #[tracing::instrument(level = "trace", skip())]
     /// Stand up an in-memory database with just enough schema for `get_item`,
     /// and wire up two dependency edges around item 100:
     ///   - 100 -> item_dependencies -> 200   (100 depends on 200)
@@ -615,6 +621,7 @@ mod test {
         );
     }
 
+    #[tracing::instrument(level = "trace", skip(item))]
     /// The property values on an item, sorted so the assertions do not depend
     /// on edge order.
     fn property_values(item: &InternalFullWorkshopItem) -> Vec<String> {

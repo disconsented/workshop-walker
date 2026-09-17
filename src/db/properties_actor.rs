@@ -55,6 +55,7 @@ impl Actor for PropertiesActor {
     type Msg = PropertiesMsg;
     type State = PropertiesState;
 
+    #[tracing::instrument(level = "trace", skip(self, myself, args))]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -66,6 +67,7 @@ impl Actor for PropertiesActor {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,

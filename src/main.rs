@@ -31,6 +31,7 @@ mod web;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = Whatever;
+#[tracing::instrument(level = "trace", skip())]
 #[tokio::main]
 async fn main() -> Result<()> {
     let _ = tracing_subscriber::fmt()
@@ -70,6 +71,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(settings))]
 async fn setup_database(settings: &app_config::Config) -> Result<Surreal<Db>, Error> {
     let db = Surreal::new::<RocksDb>("./workshopdb".to_string())
         .await
