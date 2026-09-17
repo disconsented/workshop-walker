@@ -21,6 +21,7 @@ Analyze the game mod title and description to extract:
    - Remove adjectives and descriptors unless they fundamentally change the concept
    - Group variants under the main category (e.g., "spacesuits" covers all types of spacesuits)
    - If three or more features are kinds of one broader thing, list only the broader thing
+   - The most important features only, the ones a user would install this for
 
 **Feature Consolidation Examples:**
 - "dress spacesuit", "crew spacesuit", "spacesuit" → "spacesuits"

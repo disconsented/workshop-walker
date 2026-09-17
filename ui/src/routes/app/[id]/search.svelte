@@ -1,8 +1,6 @@
 <script lang="ts">
 	import {
-		Avatar,
-		Listbox,
-		Popover,
+		Combobox,
 		Portal,
 		SegmentedControl,
 		ToggleGroup,
@@ -13,16 +11,19 @@
 	import {
 		faArrowDownWideShort,
 		faCalendar,
+		faCancel,
 		faChevronDown,
 		faChevronUp,
+		faClose,
 		faLanguage,
 		faRightFromBracket,
 		faRightToBracket,
 		faSliders
 	} from '@fortawesome/free-solid-svg-icons';
 	import { language, orderBy, tags, title, updatedAfter, updatedBefore } from './store.svelte';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteMap, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
+	import Property from '../../item/[item]/Property.svelte';
 
 	interface Props {
 		appTags: string[];
@@ -134,28 +135,31 @@
 	}
 
 
-	let searchProps = $state(null);
+	let searchProps = $state(new SvelteMap());
+	let foundProps = $state(null);
 	let searchQuery: Promise<Response> = $state(null);
 	let query = $state('');
+	let searchComboboxValue = $state([]);
 
-	function searchProps(term: string) {
+	function searchSuggestProps(term: string) {
 		searchQuery = fetch('/api/properties/search', {
 			method: 'post',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ app: appID, search_term: term })
 		}).then(response => response.json()).then(data => {
-			searchProps = data;
+			foundProps = data;
 		});
 	}
 
-
 	const collection = $derived(
 		useListCollection({
-			items: data.filter((item) => item.label.toLowerCase().includes(query.toLowerCase())),
-			itemToString: (item) => item.label,
-			itemToValue: (item) => item.value
+			items: foundProps ?? [],
+			itemToValue: (item) => `${item.class}:${item.value}`,
+			itemToString: (item) => `${item.class}:${item.value}`
 		})
 	);
+
+	$inspect(searchProps);
 </script>
 
 <form
@@ -221,7 +225,7 @@
 		<div class="flex w-full flex-col gap-2">
 			<div class="flex flex-col gap-2">
 				Updated
-				<div class="flex flex-row flex-wrap gap-2">
+				<div class="flex flex-row flex-wrap lg:flex-nowrap gap-2">
 					<div class="field-group w-full grid-cols-[auto_1fr] gap-0">
 						<label class="label label-text preset-tonal" for="url">
 							<Icon data={faCalendar} class="fa-fw" />
@@ -244,22 +248,6 @@
 
 					<div class="field-group grid-cols-[auto_1fr] gap-0">
 						<label class="label label-text preset-tonal gap-1" for="url">
-							<Icon data={faRightToBracket} class="fa-fw" />
-							After
-						</label>
-						<input
-							class="input"
-							type="date"
-							disabled={updatedDate != 'custom'}
-							bind:value={
-								() => updatedAfter.v?.toISOString().slice(0, 10) ?? '',
-								(v) => (updatedAfter.v = v ? new Date(v + 'T00:00:00Z') : undefined)
-							}
-						/>
-					</div>
-
-					<div class="field-group grid-cols-[auto_1fr] gap-0">
-						<label class="label label-text preset-tonal gap-1" for="url">
 							<Icon data={faRightFromBracket} class="fa-fw" />
 							Before
 						</label>
@@ -270,6 +258,22 @@
 							bind:value={
 								() => updatedBefore.v?.toISOString().slice(0, 10) ?? '',
 								(v) => (updatedBefore.v = v ? new Date(v + 'T00:00:00Z') : undefined)
+							}
+						/>
+					</div>
+
+					<div class="field-group grid-cols-[auto_1fr] gap-0">
+						<label class="label label-text preset-tonal gap-1" for="url">
+							<Icon data={faRightToBracket} class="fa-fw" />
+							After
+						</label>
+						<input
+							class="input"
+							type="date"
+							disabled={updatedDate != 'custom'}
+							bind:value={
+								() => updatedAfter.v?.toISOString().slice(0, 10) ?? '',
+								(v) => (updatedAfter.v = v ? new Date(v + 'T00:00:00Z') : undefined)
 							}
 						/>
 					</div>
@@ -351,57 +355,58 @@
 					</SegmentedControl>
 				</div>
 				<div class="field-group w-2xs grid-cols-[1fr_auto] gap-0">
-					<Listbox class="w-full max-w-md" {collection} typeahead>
-						<!--						<Listbox.Label>Search for Food</Listbox.Label>-->
-						<Listbox.Input placeholder="Type to search..." value={query}
-													 oninput={(e) => {query = e.currentTarget.value; searchProps(query)}} />
-						<Listbox.Content>
-							<Popover>
-								<Portal>
-									<Popover.Positioner>
-										<Popover.Content class="card w-96 p-4 bg-surface-100-900 shadow-xl">
-											<div class="space-y-4">
-												<header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
-													<Avatar>
-														<Avatar.Image
-															src="https://cdn.bsky.app/img/avatar/plain/did:plc:whtgi5zx7ylmdw2i76vq7vq4/bafkreibgoxuqahwcpiah22yfovqszh33x2u4sysmqoyuk5j54aoakt7364@jpeg"
-															alt="Skeleton Labs"
-														/>
-													</Avatar>
-													<div>
-														<Popover.Title class="text-lg font-bold">Skeleton Labs</Popover.Title>
-														<a href="https://bsky.app/profile/skeleton.dev" target="_blank" class="anchor">@skeletonlabs.dev</a>
+					<Combobox onInputValueChange={(e) => {query = e.inputValue; searchSuggestProps(query)}}
+										{collection}
+										selectionBehavior="clear"
+										onValueChange={(details) => {searchProps.set(details.items[0], true);}}
+										value={undefined}>
+						<Combobox.Control>
+							<Combobox.Input />
+							<Combobox.Trigger />
+						</Combobox.Control>
+						<Portal>
+							<Combobox.Positioner>
+								<Combobox.Content>
+									<Combobox.ItemGroup>
+										{#each foundProps as item(item.class + ':' + item.value)}
+											<Combobox.Item item={item}>
+												<Combobox.ItemText>
+													<div class="flex">
+														<Property loggedIn={false} property={item} hideVote={true} />
 													</div>
-													<Popover.CloseTrigger class="btn-icon hover:preset-tonal self-start">
-														X
-													</Popover.CloseTrigger>
-												</header>
-												<Popover.Description>
-													{#each collection.items as item (item.value)}
-														<Listbox.Item {item}>
-															<Listbox.ItemText>{item.label}</Listbox.ItemText>
-															<Listbox.ItemIndicator />
-														</Listbox.Item>
-													{/each}
-												</Popover.Description>
-												<div class="flex gap-4">
-													<p class="text-sm">800 <span class="opacity-60">Followers</span></p>
-													<p class="text-sm">120 <span class="opacity-60">Following</span></p>
-													<p class="text-sm">100 <span class="opacity-60">Posts</span></p>
-												</div>
-											</div>
-											<Popover.Arrow
-												class="[--arrow-size:--spacing(2)] [--arrow-background:var(--color-surface-100-900)]">
-												<Popover.ArrowTip />
-											</Popover.Arrow>
-										</Popover.Content>
-									</Popover.Positioner>
-								</Portal>
-							</Popover>
-						</Listbox.Content>
-					</Listbox>
-					<button class="btn preset-filled">Add</button>
+												</Combobox.ItemText>
+												<Combobox.ItemIndicator />
+											</Combobox.Item>
+										{/each}
+									</Combobox.ItemGroup>
+								</Combobox.Content>
+							</Combobox.Positioner>
+						</Portal>
+					</Combobox>
 				</div>
+			</div>
+			<div class="flex flex-row gap-1">
+				{#each searchProps as item}
+					{@const property = item[0]}
+					{@const positive = item[1]}
+					<div class="grid gap-1 place-items-center cursor-pointer pl-1" class:grid-cols-[auto_1fr_auto]={!positive}
+							 class:grid-cols-[1fr_auto]={positive} class:preset-tonal-error={!positive}
+							 class:preset-outlined-surface-200-800={positive}
+							 class:preset-outlined-error-500={!positive}>
+						{#if !positive}
+							<Icon data={faCancel} class="fa-fw" />
+						{/if}
+						<button type="button" class="flex cursor-pointer"
+										onclick={() => {console.debug(item[0], searchProps.get(property)); searchProps.set(property, !positive); searchProps = searchProps}}>
+							<Property loggedIn={false} {property} hideVote={true} subtle={true} />
+						</button>
+						<button class="btn cursor-pointer" class:preset-outlined-surface-200-800={positive}
+						        class:preset-tonal-error={!positive}
+										type="button" onclick={() => {searchProps.delete(property)}}>
+							<Icon data={faClose} class="fa-fw" />
+						</button>
+					</div>
+				{/each}
 			</div>
 		</div>
 	</div>

@@ -101,7 +101,7 @@
 								</SegmentedControl.Control>
 							</SegmentedControl>
 
-							<div class="flex w-fit flex-wrap items-center gap-2">
+							<div class="flex w-fit flex-wrap lg:flex-nowrap items-center gap-2">
 								<span class="shrink-0 text-sm opacity-60">Per page</span>
 								<select
 									class="select"
