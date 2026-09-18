@@ -22,6 +22,11 @@ Analyze the game mod title and description to extract:
    - Group variants under the main category (e.g., "spacesuits" covers all types of spacesuits)
    - If three or more features are kinds of one broader thing, list only the broader thing
    - The most important features only, the ones a user would install this for
+   - Never put a type name in the features array. "translation",
+     "localization", "overhaul", "patch", "media", "QOL", "expansion",
+     "utility", "cheat", "library" and "ai generated" are types only. A
+     translation mod has the type "translation" and lists the content that it
+     translates, or an empty features array
 
 **Feature Consolidation Examples:**
 - "dress spacesuit", "crew spacesuit", "spacesuit" → "spacesuits"
@@ -49,6 +54,7 @@ Analyze the game mod title and description to extract:
 - "Better UI with new inventory system" → ["UI", "inventory system"]
 - "Adds a new weapon type" → "weapons"
 - "Library for other modders" → ["library"] (in types)
+- "German translation of the mod" → ["translation"] (in types, not in features)
 - **For consolidation:** "Adds dress spacesuits, crew spacesuits, and sealed protosuits" → ["spacesuits", "protosuits"]
 
 **Examples:**
@@ -69,6 +75,9 @@ Output: {"types": ["media", "ai generated"], "features": ["voice lines"]}
 
 Input: "Smarter Raiders - Improves enemy AI behaviour in combat"
 Output: {"types": ["overhaul"], "features": ["enemy AI"]}
+
+Input: "Russian Localization - Translates all dialogue and item names"
+Output: {"types": ["translation"], "features": ["dialogue", "item names"]}
 
 Now analyze this mod:
 TITLE: [TITLE]
