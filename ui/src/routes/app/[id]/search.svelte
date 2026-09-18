@@ -20,8 +20,8 @@
 		faRightToBracket,
 		faSliders
 	} from '@fortawesome/free-solid-svg-icons';
-	import { language, orderBy, tags, title, updatedAfter, updatedBefore } from './store.svelte';
-	import { SvelteMap, SvelteURLSearchParams } from 'svelte/reactivity';
+	import { language, orderBy, searchProps, tags, title, updatedAfter, updatedBefore } from './store.svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import Property from '../../item/[item]/Property.svelte';
 
@@ -79,6 +79,34 @@
 		}
 	});
 
+
+	$effect(() => {
+		if (searchProps.v) {
+			params.delete('positive_props');
+			searchProps.v.forEach((positive, v) => {
+				if (positive) {
+					params.append('positive_props', v.class+":"+v.value);
+				}
+			});
+		} else {
+			params.delete('positive_props');
+		}
+	});
+
+	$effect(() => {
+		if (searchProps.v) {
+			params.delete('negative_props');
+			searchProps.v.forEach((positive, v) => {
+				if (!positive) {
+					params.append('negative_props', v.class+":"+v.value);
+				}
+			});
+		} else {
+			params.delete('negative_props');
+		}
+	});
+
+
 	const loadParams = () => {
 		goto(`?${params}`, {
 			keepFocus: true,
@@ -135,11 +163,9 @@
 	}
 
 
-	let searchProps = $state(new SvelteMap());
 	let foundProps = $state(null);
 	let searchQuery: Promise<Response> = $state(null);
 	let query = $state('');
-	let searchComboboxValue = $state([]);
 
 	function searchSuggestProps(term: string) {
 		searchQuery = fetch('/api/properties/search', {
@@ -159,7 +185,8 @@
 		})
 	);
 
-	$inspect(searchProps);
+	$inspect(searchProps.v);
+
 </script>
 
 <form
@@ -171,7 +198,7 @@
 	>
 		<!--		Funny little hack so pressing enter does a submit-->
 		<!--		See https://stackoverflow.com/questions/27807853/html5-how-to-make-a-form-submit-after-pressing-enter-at-any-of-the-text-inputs-->
-		<!--		<input type="submit" class="hidden" />-->
+		<input type="submit" class="hidden" />
 		<select class="select hidden">
 			<!--			ToDo: Dynamically load-->
 			<option value="rimworld">Rimworld</option>
@@ -362,7 +389,7 @@
 					<Combobox onInputValueChange={(e) => {query = e.inputValue; searchSuggestProps(query)}}
 										{collection}
 										selectionBehavior="clear"
-										onValueChange={(details) => {searchProps.set(details.items[0], true);}}
+										onValueChange={(details) => {searchProps.v.set(details.items[0], true);}}
 										value={undefined}>
 						<Combobox.Control>
 							<Combobox.Input />
@@ -390,7 +417,7 @@
 				</div>
 			</div>
 			<div class="flex flex-row gap-1">
-				{#each searchProps as item}
+				{#each searchProps.v as item}
 					{@const property = item[0]}
 					{@const positive = item[1]}
 					<div class="grid gap-1 place-items-center cursor-pointer pl-1" class:grid-cols-[auto_1fr_auto]={!positive}
@@ -401,12 +428,12 @@
 							<Icon data={faCancel} class="fa-fw" />
 						{/if}
 						<button type="button" class="flex cursor-pointer"
-										onclick={() => {console.debug(item[0], searchProps.get(property)); searchProps.set(property, !positive); searchProps = searchProps}}>
+										onclick={() => {console.debug(item[0], searchProps.v.get(property)); searchProps.v.set(property, !positive);}}>
 							<Property loggedIn={false} {property} hideVote={true} subtle={true} />
 						</button>
 						<button class="btn cursor-pointer" class:preset-outlined-surface-200-800={positive}
-						        class:preset-tonal-error={!positive}
-										type="button" onclick={() => {searchProps.delete(property)}}>
+										class:preset-tonal-error={!positive}
+										type="button" onclick={() => {searchProps.v.delete(property)}}>
 							<Icon data={faClose} class="fa-fw" />
 						</button>
 					</div>
