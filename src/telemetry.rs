@@ -9,9 +9,7 @@ use opentelemetry_sdk::{
     trace::{SdkTracerProvider, Tracer},
 };
 use snafu::{ResultExt, Snafu};
-use tracing_subscriber::{
-    EnvFilter, Layer, fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt,
-};
+use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::app_config::Telemetry;
 
@@ -54,9 +52,8 @@ const DEFAULT_FILTER: &str = "info,workshop_walker=debug,ractor=off";
 /// Installs the global subscriber. Each layer has its own filter: `RUST_LOG`
 /// selects what stdout gets, [`FILTER_VAR`] selects what the collector gets.
 pub fn init(config: &Telemetry) -> Result<Guard, TelemetryError> {
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_span_events(FmtSpan::CLOSE)
-        .with_filter(filter_from(EnvFilter::DEFAULT_ENV, "info"));
+    let fmt_layer =
+        tracing_subscriber::fmt::layer().with_filter(filter_from(EnvFilter::DEFAULT_ENV, "info"));
 
     let provider = if config.enabled {
         Some(provider(config)?)
