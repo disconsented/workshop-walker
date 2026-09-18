@@ -87,8 +87,8 @@
 				<span class="overflow-hidden text-sm text-nowrap text-ellipsis opacity-50"
 					>{item.author.name}</span
 				>
-				<div class="grid grid-cols-[1fr_auto] gap-2">
-					<div class="w-min-0 flex flex-row gap-1 overflow-ellipsis">
+				<div class="grid grid-cols-[1fr_auto] gap-2 w-full w-min-0">
+					<div class="w-min-0 flex flex-row overflow-auto">
 						{#each item.tags as tag}
 							<span
 								class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
