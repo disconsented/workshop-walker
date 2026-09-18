@@ -2,7 +2,7 @@ use std::{collections::HashMap, convert::Into, fmt};
 
 use lingua::{
     Language,
-    Language::{Chinese, English, French, Japanese, Korean, Portuguese, Russian, Spanish},
+    Language::{Chinese, English, French, German, Japanese, Korean, Portuguese, Russian, Spanish},
     LanguageDetector, LanguageDetectorBuilder,
 };
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
