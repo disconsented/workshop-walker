@@ -30,7 +30,6 @@ const WORD_PERCENTAGE: f32 = 0.2;
 )]
 #[repr(u8)]
 pub enum DetectedLanguage {
-    #[default]
     English = 1,
     Russian = 2,
     Chinese = 3,
@@ -38,7 +37,9 @@ pub enum DetectedLanguage {
     Korean = 5,
     Spanish = 6,
     Portuguese = 7,
+    German = 8,
     French = 9,
+    #[default]
     Unknown = 0,
 }
 
@@ -58,6 +59,7 @@ impl From<Language> for DetectedLanguage {
             Spanish => Self::Spanish,
             Portuguese => Self::Portuguese,
             French => Self::French,
+            German => Self::German,
             _ => Self::Unknown,
         }
     }
@@ -84,6 +86,7 @@ impl SurrealValue for DetectedLanguage {
             5 => Ok(DetectedLanguage::Korean),
             6 => Ok(DetectedLanguage::Spanish),
             7 => Ok(DetectedLanguage::Portuguese),
+            8 => Ok(DetectedLanguage::German),
             9 => Ok(DetectedLanguage::French),
             _ => Ok(DetectedLanguage::Unknown),
         }
@@ -113,7 +116,7 @@ impl Actor for LanguageActor {
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(Self::State {
             detector: LanguageDetectorBuilder::from_languages(&[
-                English, Russian, Chinese, Japanese, Korean,
+                English, Russian, Chinese, Japanese, Korean, French, Spanish, Portuguese, German,
             ])
             .with_minimum_relative_distance(0.9)
             .build(),

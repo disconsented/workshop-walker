@@ -196,6 +196,10 @@
 				<option value="6">Español</option>
 				<!--Portuguese-->
 				<option value="7">Português</option>
+				<!--German-->
+				<option value="8">Deutsch</option>
+				<!--French-->
+				<option value="9">Français</option>
 			</select>
 		</div>
 

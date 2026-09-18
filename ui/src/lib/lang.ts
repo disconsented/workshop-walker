@@ -14,6 +14,10 @@ export function whichLang(lang: Number): String {
 			return 'Spanish';
 		case 7:
 			return 'Portuguese';
+		case 8:
+			return 'German';
+		case 9:
+			return 'French';
 		default:
 			return 'Unknown';
 	}
@@ -34,5 +38,11 @@ export function inToLangShort(int: number) {
 			return 'ES';
 		case 7:
 			return 'PT';
+		case 8:
+			return 'DE';
+		case 9:
+			return 'FR';
+		default:
+			return "?";
 	}
 }
