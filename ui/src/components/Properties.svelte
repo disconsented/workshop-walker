@@ -48,7 +48,7 @@
 					<Icon data={faChevronUp} class="fa-fw"></Icon>
 				{:else}
 					<Icon data={faChevronDown} class="fa-fw"></Icon>
-				{/if}<span class="pl-1">{remaining_props.length} more properties</span>
+				{/if}<span class="pl-1 cursor-pointer">{remaining_props.length} more properties</span>
 			</button>
 		{/if}
 	</div>
