@@ -9,7 +9,7 @@ use surrealdb_core::sql::{
     statements::{InsertStatement, UpsertStatement},
 };
 use surrealdb_types::{SurrealValue, Value};
-use tracing::{debug, error};
+use tracing::{Instrument, debug, debug_span, error, info_span};
 
 use crate::{
     db::{
@@ -60,7 +60,7 @@ impl Actor for ItemUpdateActor {
     type Msg = ItemUpdateMsg;
     type State = ItemUpdateState;
 
-    #[tracing::instrument(level = "trace", skip(self, args))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -76,7 +76,9 @@ impl Actor for ItemUpdateActor {
         })
     }
 
-    #[tracing::instrument(level = "trace", skip(self, myself, message, state))]
+    /// Each arm makes its own span, and each one is a root. A message arrives
+    /// on its own task, so there is no caller span to hang it from. `item.id`
+    /// is the field to search on to follow one item across the stages.
     async fn handle(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -85,16 +87,27 @@ impl Actor for ItemUpdateActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             ItemUpdateMsg::DeserializeRawFiles(steam_root) => {
-                for file in steam_root.response.publishedfiledetails {
-                    match serde_json::from_value(file) {
+                let files = steam_root.response.publishedfiledetails;
+                let batch = info_span!(
+                    parent: None,
+                    "deserialize raw files",
+                    batch.size = files.len(),
+                    batch.failed = tracing::field::Empty,
+                );
+                let _entered = batch.enter();
+                let mut failed = 0_usize;
+                for file in files {
+                    match serde_json::from_value::<IPublishedStruct>(file) {
                         Ok(file) => {
                             myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
                         }
                         Err(error) => {
+                            failed += 1;
                             error!(?error, "deserializing raw file");
                         }
                     }
                 }
+                batch.record("batch.failed", failed);
             }
             ItemUpdateMsg::MainlineProcessing(data) => {
                 let (join_process_actor, _) = Actor::spawn(
@@ -106,36 +119,44 @@ impl Actor for ItemUpdateActor {
                         bb: state.bb_actor.clone(),
                     },
                 )
+                .instrument(debug_span!("spawn join process", item.id = %data.publishedfileid))
                 .await?;
 
                 join_process_actor.send_message(JoinProcessMsg::Process(data))?;
             }
-            ItemUpdateMsg::MaybeQueueMl((item, children)) => {
+            ItemUpdateMsg::MaybeQueueMl((workshop_item, children)) => {
                 if let Err(error) =
-                    maybe_queue_ml(&state.database, state.ml_queue.as_ref(), &item).await
+                    maybe_queue_ml(&state.database, state.ml_queue.as_ref(), &workshop_item)
+                        .instrument(debug_span!("maybe queue ml", item.id = ?workshop_item.id.key))
+                        .await
                 {
-                    error!(?error, id = ?item.id, "queuing ML work (message)");
+                    error!(?error, id = ?workshop_item.id, "queuing ML work (message)");
                 }
                 if myself
-                    .send_message(ItemUpdateMsg::Upsert((item, children)))
+                    .send_message(ItemUpdateMsg::Upsert((workshop_item, children)))
                     .is_err()
                 {
                     error!("forwarding work to upsert");
                 }
             }
-            ItemUpdateMsg::Upsert((item, children)) => {
-                let title = item.title.clone();
-                let item_id = item.id.clone();
+            ItemUpdateMsg::Upsert((workshop_item, children)) => {
+                let span = debug_span!("insert item", item.id = ?workshop_item.id.key);
+                let title = workshop_item.title.clone();
+                let item_id = workshop_item.id.clone();
 
-                let _ = state
-                    .tags_actor
-                    .send_message(TagsMsg::AddTagToApp(item.app.clone(), item.tags.clone()));
+                let _ = state.tags_actor.send_message(TagsMsg::AddTagToApp(
+                    workshop_item.app.clone(),
+                    workshop_item.tags.clone(),
+                ));
 
                 let _ = state
                     .steam_user_actor
-                    .send_message(SteamUserMsg::Fetch(item.author.id.clone()));
+                    .send_message(SteamUserMsg::Fetch(workshop_item.author.id.clone()));
 
-                if let Err(error) = insert_data(&state.database, item, children).await {
+                if let Err(error) = insert_data(&state.database, workshop_item, children)
+                    .instrument(span)
+                    .await
+                {
                     error!(?error, title, ?item_id, "upserting item");
                 }
             }
@@ -144,7 +165,7 @@ impl Actor for ItemUpdateActor {
         Ok(())
     }
 }
-#[tracing::instrument(level = "trace", skip(db, ml_queue, item))]
+#[tracing::instrument(level = "debug", skip(db, ml_queue, item))]
 /// Attempt to extract data from posts text using an LLM under the following
 /// conditions:
 ///
@@ -188,7 +209,7 @@ async fn maybe_queue_ml(
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(db, item, children))]
+#[tracing::instrument(level = "debug", skip(db, item, children))]
 async fn insert_data(
     db: &Surreal<Db>,
     mut item: InternalWorkshopItem,

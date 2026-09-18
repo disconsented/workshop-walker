@@ -1,7 +1,7 @@
 extern crate alloc;
 extern crate core;
 
-use std::{env, sync::Arc};
+use std::sync::Arc;
 
 use migrations_tool::{Migrator, Outcome};
 use snafu::{Whatever, prelude::*};
@@ -12,7 +12,6 @@ use surrealdb::{
 };
 use tokio_stream::StreamExt;
 use tracing::{Instrument, debug, error, info_span};
-use tracing_subscriber::fmt::format::FmtSpan;
 
 use crate::{
     application::admin_service::AdminService,
@@ -27,29 +26,32 @@ mod db;
 mod domain;
 mod processing;
 mod steam;
+mod telemetry;
 mod web;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = Whatever;
-#[tracing::instrument(level = "trace", skip())]
 #[tokio::main]
 async fn main() -> Result<()> {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(env::var("RUST_LOG").unwrap_or_default())
-        .with_span_events(FmtSpan::CLOSE)
-        .try_init();
     let settings: app_config::Config = config::Config::builder()
         .add_source(config::File::with_name("config/config.toml"))
         .build()
         .whatever_context("finding config")?
         .try_deserialize()
         .whatever_context("deserializing config")?;
-    let span = info_span!("spawn");
+    let guard = telemetry::init(&settings.telemetry).whatever_context("starting telemetry")?;
+    // A root of its own, and dropped before the server starts. Left open it
+    // would be the parent of every actor, and the whole run would arrive at
+    // the collector as one trace that never ends.
+    let startup = info_span!(parent: None, "startup");
 
     let db = setup_database(&settings)
+        .instrument(info_span!(parent: &startup, "setup database"))
         .await
         .inspect_err(|error| error!(?error, "Failed to setup db"))?;
-    {
+    // An async block, not an entered guard: the loop awaits, and an entered
+    // guard held across an await marks the span busy while another task runs.
+    async {
         let admin_service = AdminService::new(AdminSilo::new(db.clone()));
         for user in &settings.admin_users {
             debug!(%user, "Setting admin flag for user");
@@ -63,15 +65,20 @@ async fn main() -> Result<()> {
                 .inspect_err(|error| error!(?error, %user, "Failed to set admin flag for user"));
         }
     }
+    .instrument(info_span!(parent: &startup, "set admin flags"))
+    .await;
 
     actors::spawn(&settings, &db)
-        .instrument(info_span!(parent: &span, "spawn actors"))
+        .instrument(info_span!(parent: &startup, "spawn actors"))
         .await?;
+    drop(startup);
+
     web::start(db, Arc::new(settings)).await;
+    guard.shutdown();
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(settings))]
+#[tracing::instrument(level = "debug", skip(settings))]
 async fn setup_database(settings: &app_config::Config) -> Result<Surreal<Db>, Error> {
     let db = Surreal::new::<RocksDb>("./workshopdb".to_string())
         .await

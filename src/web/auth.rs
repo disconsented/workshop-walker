@@ -33,7 +33,7 @@ use surrealdb_core::sql::{
     statements::InsertStatement,
 };
 use surrealdb_types::{SurrealValue, Value};
-use tracing::{debug, error};
+use tracing::{Instrument, debug, debug_span, error};
 
 use crate::{
     app_config::BiscuitConfig,
@@ -71,7 +71,6 @@ enum InnerError {
 }
 
 impl InnerError {
-    #[tracing::instrument(level = "trace", skip(self))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             InnerError::SelfValidationFailed | InnerError::PeerValidationFailed => {
@@ -90,7 +89,6 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -105,7 +103,6 @@ impl From<InnerError> for StatusError {
     }
 }
 
-#[tracing::instrument(level = "trace", skip(nonce, now))]
 /// Rejects an `OpenID` response nonce whose timestamp is not close to now.
 ///
 /// Without this, a captured `/api/verify` query string stays a valid
@@ -124,7 +121,6 @@ fn validate_nonce(nonce: &str, now: NaiveDateTime) -> Result<()> {
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(location))]
 /// Accepts only a site-relative path.
 ///
 /// The `location` parameter decides where the user lands after login and
@@ -143,7 +139,7 @@ fn validate_location(location: &str) -> Result<&str> {
     }
 }
 
-#[tracing::instrument(level = "trace", skip(req, resp))]
+#[tracing::instrument(level = "debug", name = "GET /api/login", skip(req, resp))]
 #[endpoint]
 pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> Result<()> {
     let location = req
@@ -155,7 +151,7 @@ pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> R
         .cloned()
         .ok_or(InnerError::InternalError)
         .inspect_err(|e| error!(?e, "{}:{}", file!(), line!()))?;
-    let steam_auth_url = call!(actor, AuthMessage::GetAuthUrl, location)
+    let steam_auth_url = call!(actor, |reply| AuthRequest::GetAuthUrl(location, reply))
         .map_err(|_| InnerError::InternalError)
         .inspect_err(|e| error!(?e, "{}:{}", file!(), line!()))?;
 
@@ -164,7 +160,7 @@ pub async fn redirect_to_steam_auth(req: &mut Request, resp: &mut Response) -> R
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(req, response))]
+#[tracing::instrument(level = "debug", name = "GET /api/verify", skip(req, response))]
 #[endpoint]
 pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response) -> Result<()> {
     // Pull this out first because it'll likely be gone after the take.
@@ -175,7 +171,7 @@ pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response)
     let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
     let map = mem::take(req.queries_mut());
     let token = call!(actor, |reply| {
-        AuthMessage::VerifySteamResponse(map, reply)
+        AuthRequest::VerifySteamResponse(map, reply)
     })
     .map_err(|_| InnerError::InternalError)?;
 
@@ -202,7 +198,7 @@ pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response)
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(req, response))]
+#[tracing::instrument(level = "debug", name = "GET /api/logout", skip(req, response))]
 /// Instructs the client to clear the cookies for the site, functioning as
 /// logout. Done here because JS can't access the tokens we use.
 #[endpoint]
@@ -218,7 +214,7 @@ pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(req, depot))]
+#[tracing::instrument(level = "debug", skip(req, depot))]
 #[endpoint]
 pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Result<()> {
     match req.cookie("token") {
@@ -226,7 +222,7 @@ pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Res
         Some(token) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
             let authorizer = call!(actor, |reply| {
-                AuthMessage::ValidateToken(token.clone(), reply)
+                AuthRequest::ValidateToken(token.clone(), reply)
             })
             .map_err(|_| InnerError::InternalError)??;
 
@@ -236,14 +232,14 @@ pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Res
     }
 }
 
-#[tracing::instrument(level = "trace", skip(depot))]
+#[tracing::instrument(level = "debug", skip(depot))]
 #[endpoint]
 pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
     match get_user_from_depot(depot) {
         None => Err(InnerError::Unauthorized)?,
         Some(userid) => {
             let actor = AUTH_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
-            let admin = call!(actor, |reply| { AuthMessage::IsAdmin(userid, reply) })
+            let admin = call!(actor, |reply| AuthRequest::IsAdmin(userid, reply))
                 .map_err(|_| InnerError::InternalError)??;
 
             if admin {
@@ -254,7 +250,7 @@ pub async fn enforce_admin(depot: &mut Depot) -> Result<()> {
         }
     }
 }
-#[tracing::instrument(level = "trace", skip(req, depot))]
+#[tracing::instrument(level = "debug", skip(req, depot))]
 #[endpoint]
 pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     if req.cookie("token").is_some() {
@@ -262,7 +258,6 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
     }
     Ok(())
 }
-#[tracing::instrument(level = "trace", skip(depot))]
 /// Returns the user id of the current user, if any.
 pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
     let authorizer = depot.get_typed_mut::<Authorizer>().ok()?;
@@ -291,7 +286,10 @@ struct Service {
 }
 
 pub struct AuthActor {}
-pub enum AuthMessage {
+/// What the actor takes.
+pub type AuthMessage = AuthRequest;
+
+pub enum AuthRequest {
     GetAuthUrl(String, RpcReplyPort<String>),
     VerifySteamResponse(MultiMap<String, String>, RpcReplyPort<String>),
     ValidateToken(Cookie<'static>, RpcReplyPort<Result<Authorizer>>),
@@ -317,7 +315,7 @@ impl Actor for AuthActor {
     type Msg = AuthMessage;
     type State = AuthState;
 
-    #[tracing::instrument(level = "trace", skip(self, myself, args))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -334,7 +332,6 @@ impl Actor for AuthActor {
     }
 
     // This is our main message handler
-    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -342,7 +339,8 @@ impl Actor for AuthActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            AuthMessage::GetAuthUrl(location, reply_port) => {
+            AuthRequest::GetAuthUrl(location, reply_port) => {
+                let _entered = debug_span!("auth get url").entered();
                 if reply_port
                     .send(AuthActor::get_auth_url(state, &location)?)
                     .is_err()
@@ -350,9 +348,13 @@ impl Actor for AuthActor {
                     error!(message = "GetAuthUrl", "Failed to reply to message");
                 }
             }
-            AuthMessage::VerifySteamResponse(map, reply_port) => {
+            AuthRequest::VerifySteamResponse(map, reply_port) => {
                 if reply_port
-                    .send(AuthActor::verify_steam_response(map, state).await?)
+                    .send(
+                        AuthActor::verify_steam_response(map, state)
+                            .instrument(debug_span!("auth verify steam response"))
+                            .await?,
+                    )
                     .is_err()
                 {
                     error!(
@@ -361,7 +363,8 @@ impl Actor for AuthActor {
                     );
                 }
             }
-            AuthMessage::ValidateToken(cookie, reply_port) => {
+            AuthRequest::ValidateToken(cookie, reply_port) => {
+                let _entered = debug_span!("auth validate token").entered();
                 if reply_port
                     .send(AuthActor::validate_cookie(&state.biscuit, cookie.value()))
                     .is_err()
@@ -369,9 +372,14 @@ impl Actor for AuthActor {
                     error!(message = "ValidateToken", "Failed to reply to message");
                 }
             }
-            AuthMessage::IsAdmin(userid, reply_port) => {
+            AuthRequest::IsAdmin(userid, reply_port) => {
+                let span = debug_span!("auth is admin", user.id = ?userid.key);
                 if reply_port
-                    .send(AuthActor::is_admin(&state.database, userid).await)
+                    .send(
+                        AuthActor::is_admin(&state.database, userid)
+                            .instrument(span)
+                            .await,
+                    )
                     .is_err()
                 {
                     error!(message = "IsAdmin", "Failed to reply to message");
@@ -383,7 +391,7 @@ impl Actor for AuthActor {
 }
 
 impl AuthActor {
-    #[tracing::instrument(level = "trace", skip(db, userid))]
+    #[tracing::instrument(level = "debug", skip(db, userid))]
     async fn is_admin(db: &Surreal<Db>, userid: IUserID) -> Result<bool> {
         match db
             .query("SELECT admin FROM $user")
@@ -396,7 +404,7 @@ impl AuthActor {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(config, token))]
+    #[tracing::instrument(level = "debug", skip(config, token))]
     fn validate_cookie(config: &BiscuitConfig, token: &str) -> Result<Authorizer> {
         let keypair = &KeyPair::from(&config.private_key);
         let Ok(token) = Biscuit::from_base64(token, keypair.public()) else {
@@ -413,7 +421,7 @@ impl AuthActor {
         Ok(authorizer)
     }
 
-    #[tracing::instrument(level = "trace", skip(state, location))]
+    #[tracing::instrument(level = "debug", skip(state, location))]
     fn get_auth_url(state: &AuthState, location: &str) -> Result<String> {
         let mut url =
             Url::from_str(&state.open_id_info.uri).map_err(|_| InnerError::BuildingURI)?;
@@ -438,16 +446,18 @@ impl AuthActor {
         Ok(url.to_string())
     }
 
-    #[tracing::instrument(level = "trace", skip(base, location))]
     fn redirect_url(base: &Arc<String>, location: &str) -> String {
         String::clone(base) + "/api/verify?location=" + location
     }
 
-    #[tracing::instrument(level = "trace", skip(client))]
+    #[tracing::instrument(level = "debug", skip(client))]
     async fn discover_openid_info(client: &Client) -> Result<Info> {
+        // reqwest carries no spans of its own, so without this the call is a
+        // gap in the trace.
         let response = client
             .get(STEAM_DISCOVERY)
             .send()
+            .instrument(debug_span!("steam openid discovery"))
             .await
             .map_err(|_| InnerError::QueryingDiscovery)?;
         let response_text = response
@@ -462,7 +472,7 @@ impl AuthActor {
         })
     }
 
-    #[tracing::instrument(level = "trace", skip(map, state))]
+    #[tracing::instrument(level = "debug", skip(map, state))]
     async fn verify_steam_response(
         map: MultiMap<String, String>,
         state: &mut AuthState,
@@ -595,7 +605,6 @@ mod tests {
 
     use super::{validate_location, validate_nonce};
 
-    #[tracing::instrument(level = "trace", skip())]
     fn now() -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 9, 3)
             .unwrap()
@@ -603,7 +612,6 @@ mod tests {
             .unwrap()
     }
 
-    #[tracing::instrument(level = "trace", skip(timestamp))]
     /// Steam puts a random suffix after the `Z`.
     fn nonce(timestamp: &str) -> String {
         format!("{timestamp}ZbGVFvAo3nQ=")

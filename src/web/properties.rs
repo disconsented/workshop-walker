@@ -11,7 +11,7 @@ use crate::{
     application::properties_service::PropertiesService,
     db::{
         model::{ExternalSource, Property, Status},
-        properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
+        properties_actor::{PROPERTIES_ACTOR, PropertiesRequest},
         properties_repository::PropertiesSilo,
     },
     domain::properties::{
@@ -39,7 +39,6 @@ enum InnerError {
 }
 
 impl InnerError {
-    #[tracing::instrument(level = "trace", skip(self))]
     pub fn status_code(&self) -> StatusCode {
         match self {
             InnerError::InvalidVoteScore | InnerError::BadRequest { .. } => StatusCode::BAD_REQUEST,
@@ -51,7 +50,6 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -67,21 +65,18 @@ impl From<InnerError> for StatusError {
 }
 
 impl From<ActorProcessingErr> for InnerError {
-    #[tracing::instrument(level = "trace", skip())]
     fn from(_: ActorProcessingErr) -> Self {
         Self::InternalError
     }
 }
 
 impl<T> From<RactorErr<T>> for InnerError {
-    #[tracing::instrument(level = "trace", skip())]
     fn from(_: RactorErr<T>) -> Self {
         Self::InternalError
     }
 }
 
 impl From<PropertiesError> for InnerError {
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: PropertiesError) -> Self {
         match value {
             PropertiesError::InvalidVoteScore => Self::InvalidVoteScore,
@@ -91,7 +86,11 @@ impl From<PropertiesError> for InnerError {
         }
     }
 }
-#[tracing::instrument(level = "trace", skip(vote_data, depot))]
+#[tracing::instrument(
+    level = "debug",
+    name = "POST /api/vote/property",
+    skip(vote_data, depot)
+)]
 /// Add or change a vote for a property.
 /// Property must exist; score must be either 1 or -1.
 #[endpoint]
@@ -103,7 +102,7 @@ pub async fn vote(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> R
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
-    call!(actor, |reply| PropertiesMsg::Vote(
+    call!(actor, |reply| PropertiesRequest::Vote(
         vote_data.0.into(),
         userid,
         reply
@@ -113,7 +112,11 @@ pub async fn vote(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> R
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(vote_data, depot))]
+#[tracing::instrument(
+    level = "debug",
+    name = "DELETE /api/vote/property",
+    skip(vote_data, depot)
+)]
 /// Remove a vote previously cast for a property by the current user.
 #[endpoint]
 pub async fn remove(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) -> Result<()> {
@@ -124,7 +127,7 @@ pub async fn remove(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) ->
         .get()
         .cloned()
         .ok_or(InnerError::InternalError)?;
-    call!(actor, |reply| PropertiesMsg::Remove(
+    call!(actor, |reply| PropertiesRequest::Remove(
         vote_data.0.into(),
         userid,
         reply
@@ -134,7 +137,11 @@ pub async fn remove(vote_data: JsonBody<ExternalVoteData>, depot: &mut Depot) ->
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(new_property, depot))]
+#[tracing::instrument(
+    level = "debug",
+    name = "POST /api/property",
+    skip(new_property, depot)
+)]
 /// Add a new property with the following rules:
 /// - Either entirely new, or an exact match to an existing property.
 /// - Likeness checks are done on the value only using Damerau–Levenshtein
@@ -154,7 +161,7 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
             .map_err(|_| InnerError::InternalError)?,
     )
     .into();
-    call!(actor, |reply| PropertiesMsg::NewProperty(
+    call!(actor, |reply| PropertiesRequest::NewProperty(
         new_property.0.into(),
         source,
         Status::Pending,
@@ -165,7 +172,11 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(search_property))]
+#[tracing::instrument(
+    level = "debug",
+    name = "POST /api/properties/search",
+    skip(search_property)
+)]
 /// lookahead search for properties, doesn't discriminate by type just by value.
 /// Will only return results that are approved, and have a score of at least 0.
 #[endpoint]

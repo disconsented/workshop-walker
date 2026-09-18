@@ -2,6 +2,7 @@ use std::sync::OnceLock;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use surrealdb::{Surreal, engine::local::Db};
+use tracing::{Instrument, debug_span};
 
 use crate::{
     application::admin_service::AdminService,
@@ -24,7 +25,10 @@ pub struct AdminState {
     service: AdminService<AdminSilo>,
 }
 
-pub enum AdminMsg {
+/// What the actor takes.
+pub type AdminMsg = AdminRequest;
+
+pub enum AdminRequest {
     ListUsers(RpcReplyPort<Result<Vec<InternalUser>, AdminError>>),
     PatchUser(PatchUserData, RpcReplyPort<Result<(), AdminError>>),
     ListWorkshopItemProperties(
@@ -39,7 +43,7 @@ impl Actor for AdminActor {
     type Msg = AdminMsg;
     type State = AdminState;
 
-    #[tracing::instrument(level = "trace", skip(self, myself, args))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -51,7 +55,6 @@ impl Actor for AdminActor {
         })
     }
 
-    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -59,20 +62,33 @@ impl Actor for AdminActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            AdminMsg::ListUsers(reply) => {
-                let res = state.service.list_users().await;
+            AdminRequest::ListUsers(reply) => {
+                let res = state
+                    .service
+                    .list_users()
+                    .instrument(debug_span!("admin list users"))
+                    .await;
                 let _ = reply.send(res);
             }
-            AdminMsg::PatchUser(patch, reply) => {
-                let res = state.service.patch_user(patch).await;
+            AdminRequest::PatchUser(patch, reply) => {
+                let span = debug_span!("admin patch user", user.id = ?patch.id);
+                let res = state.service.patch_user(patch).instrument(span).await;
                 let _ = reply.send(res);
             }
-            AdminMsg::ListWorkshopItemProperties(reply) => {
-                let res = state.service.list_workshop_item_properties().await;
+            AdminRequest::ListWorkshopItemProperties(reply) => {
+                let res = state
+                    .service
+                    .list_workshop_item_properties()
+                    .instrument(debug_span!("admin list item properties"))
+                    .await;
                 let _ = reply.send(res);
             }
-            AdminMsg::PatchWorkshopItemProperty(patch, reply) => {
-                let res = state.service.patch_workshop_item_property(patch).await;
+            AdminRequest::PatchWorkshopItemProperty(patch, reply) => {
+                let res = state
+                    .service
+                    .patch_workshop_item_property(patch)
+                    .instrument(debug_span!("admin patch item property"))
+                    .await;
                 let _ = reply.send(res);
             }
         }

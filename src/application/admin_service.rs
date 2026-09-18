@@ -8,17 +8,16 @@ pub struct AdminService<R: AdminPort> {
 }
 
 impl<R: AdminPort> AdminService<R> {
-    #[tracing::instrument(level = "trace", skip(repo))]
     pub fn new(repo: R) -> Self {
         Self { repo }
     }
 
-    #[tracing::instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "debug", skip(self))]
     pub async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError> {
         self.repo.list_users().await
     }
 
-    #[tracing::instrument(level = "trace", skip(self, patch))]
+    #[tracing::instrument(level = "debug", skip(self, patch))]
     pub async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
         if patch.admin.is_none() && patch.banned.is_none() {
             return Err(AdminError::BadRequest {
@@ -28,14 +27,14 @@ impl<R: AdminPort> AdminService<R> {
         self.repo.patch_user(patch).await
     }
 
-    #[tracing::instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "debug", skip(self))]
     pub async fn list_workshop_item_properties(
         &self,
     ) -> Result<Vec<InternalWorkshopItemProperties>, AdminError> {
         self.repo.list_workshop_item_properties().await
     }
 
-    #[tracing::instrument(level = "trace", skip(self, patch))]
+    #[tracing::instrument(level = "debug", skip(self, patch))]
     pub async fn patch_workshop_item_property(
         &self,
         patch: PatchRelationshipData,

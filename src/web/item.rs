@@ -17,7 +17,7 @@ use surrealdb_core::sql::{
     statements::SelectStatement,
 };
 use surrealdb_types::{RecordId, SurrealValue, ToSql};
-use tracing::{debug, error, instrument};
+use tracing::{Instrument, debug, debug_span, error, instrument};
 
 use crate::{
     db::{
@@ -39,7 +39,6 @@ enum InnerError {
 }
 
 impl InnerError {
-    #[tracing::instrument(level = "trace", skip(self))]
     fn status_code(&self) -> StatusCode {
         match self {
             InnerError::NotFound => StatusCode::NOT_FOUND,
@@ -49,7 +48,6 @@ impl InnerError {
 }
 
 impl From<InnerError> for StatusError {
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: InnerError) -> Self {
         let mut error = StatusError::internal_server_error();
         error.code = value.status_code();
@@ -72,7 +70,10 @@ pub struct ItemArgs {
     pub database: Surreal<Db>,
 }
 
-pub enum ItemMsg {
+/// What the actor takes.
+pub type ItemMsg = ItemRequest;
+
+pub enum ItemRequest {
     Get(
         IItemID,
         Option<IUserID>,
@@ -86,7 +87,7 @@ impl Actor for ItemActor {
     type Msg = ItemMsg;
     type State = ItemState;
 
-    #[tracing::instrument(level = "trace", skip(self, myself, args))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -98,7 +99,6 @@ impl Actor for ItemActor {
         })
     }
 
-    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -106,8 +106,9 @@ impl Actor for ItemActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            ItemMsg::Get(id, user, reply) => {
-                let res = get_item(&state.database, id, user).await;
+            ItemRequest::Get(id, user, reply) => {
+                let span = debug_span!("item get", item.id = ?id.key);
+                let res = get_item(&state.database, id, user).instrument(span).await;
                 if reply.send(res).is_err() {
                     error!(message = "Get", "Failed to reply to message");
                 }
@@ -117,7 +118,7 @@ impl Actor for ItemActor {
     }
 }
 
-#[tracing::instrument(level = "trace", skip(db, id, user))]
+#[tracing::instrument(level = "debug", skip(db, id, user))]
 async fn get_item(
     db: &Surreal<Db>,
     id: IItemID,
@@ -328,15 +329,17 @@ async fn get_item(
 /// GET /api/item/{id}
 /// Retrieves a full workshop item by id, including dependencies and dependants.
 #[endpoint]
-#[instrument(skip_all)]
+#[instrument(level = "debug", name = "GET /api/item/{id}", skip_all, fields(item.id = id.0))]
 pub async fn get(id: PathParam<i64>, depot: &mut Depot) -> Result<Json<ExternalFullWorkshopItem>> {
     // Lazily spawn the actor on first use and keep a global reference like
     // auth.rs
     let actor = ITEM_ACTOR.get().cloned().ok_or(InnerError::InternalError)?;
 
     let user = auth::get_user_from_depot(depot);
-    let data = call!(actor, |reply| { ItemMsg::Get(id.0.into(), user, reply) })
-        .map_err(|_| InnerError::InternalError)??;
+    let data = call!(actor, |reply| {
+        ItemRequest::Get(id.0.into(), user, reply)
+    })
+    .map_err(|_| InnerError::InternalError)??;
     Ok(Json(
         data.try_into().map_err(|_| InnerError::InternalError)?,
     ))
@@ -349,7 +352,6 @@ mod test {
     use super::{Db, InternalFullWorkshopItem, get_item};
     use crate::db::{IItemID, IUserID};
 
-    #[tracing::instrument(level = "trace", skip())]
     /// Stand up an in-memory database with just enough schema for `get_item`,
     /// and wire up two dependency edges around item 100:
     ///   - 100 -> item_dependencies -> 200   (100 depends on 200)
@@ -621,7 +623,6 @@ mod test {
         );
     }
 
-    #[tracing::instrument(level = "trace", skip(item))]
     /// The property values on an item, sorted so the assertions do not depend
     /// on edge order.
     fn property_values(item: &InternalFullWorkshopItem) -> Vec<String> {

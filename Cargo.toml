@@ -24,7 +24,6 @@ clap = { features = ["derive"], version = "4.6" }
 config = "0.15"
 futures = "0.3"
 humantime = "2.2"
-intel-mkl-src = { version = "0.8" }
 itertools = "0.15"
 lingua = { features = [
   "chinese",
@@ -38,9 +37,25 @@ lingua = { features = [
   "spanish",
 ], version = "1.7" }
 multimap = "0.10"
+opentelemetry = "0.32"
+# The batch span processor runs on its own thread and blocks on the export
+# future, so it has no tokio reactor. The blocking reqwest client carries its
+# own runtime and is the only client that works there. `internal-logs` sends
+# export failures to tracing; without it a bad endpoint fails silently.
+opentelemetry-otlp = { default-features = false, features = [
+  "http-proto",
+  "internal-logs",
+  "reqwest-blocking-client",
+  "trace",
+], version = "0.32" }
+opentelemetry_sdk = { features = ["trace"], version = "0.32" }
 paste = "1.0"
 quote = "1.0"
-ractor = { features = ["async-trait", "monitors"], version = "0.16" }
+ractor = { features = [
+  "async-trait",
+  "monitors",
+  "tokio_runtime",
+], version = "0.16" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
   "affix-state",
@@ -71,6 +86,7 @@ tempfile = "3.27.0"
 tokio = { features = ["full"], version = "1.48" }
 tokio-stream = { features = ["fs"], version = "0.1" }
 tracing = "0.1"
+tracing-opentelemetry = "0.33"
 tracing-subscriber = { features = ["env-filter"], version = "0.3.19" }
 veil = "0.3"
 
@@ -104,6 +120,9 @@ lingua = { features = [
 macros.workspace = true
 migrations-tool.workspace = true
 multimap.workspace = true
+opentelemetry.workspace = true
+opentelemetry-otlp.workspace = true
+opentelemetry_sdk.workspace = true
 ractor = { features = ["async-trait", "monitors"], workspace = true }
 reqwest = { features = ["json", "query"], version = "0.13", workspace = true }
 salvo = { features = [
@@ -136,10 +155,12 @@ tokio = { features = [
   "macros",
   "rt",
   "rt-multi-thread",
+  "signal",
   "sync",
 ], workspace = true }
 tokio-stream.workspace = true
 tracing.workspace = true
+tracing-opentelemetry.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
 

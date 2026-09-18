@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use tokio::{fs::read_to_string, time::sleep};
 use tokio_stream::{self as stream, StreamExt};
-use tracing::{debug, instrument, warn};
+use tracing::{Instrument, debug, debug_span, instrument, warn};
 
 /// The pause between two health checks while the server loads its model.
 const HEALTH_POLL: Duration = Duration::from_millis(250);
@@ -52,7 +52,10 @@ pub struct LlamaState {
     prompts: Vec<(Task, String)>,
 }
 
-pub enum LlamaMsg {
+/// What the actor takes.
+pub type LlamaMsg = LlamaRequest;
+
+pub enum LlamaRequest {
     Process {
         title: String,
         description: String,
@@ -105,7 +108,7 @@ impl Actor for LlamaActor {
     type Msg = LlamaMsg;
     type State = LlamaState;
 
-    #[tracing::instrument(level = "trace", skip(self, args))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -132,20 +135,21 @@ impl Actor for LlamaActor {
         })
     }
 
-    #[instrument(skip_all)]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
         message: Self::Msg,
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
-        let LlamaMsg::Process {
+        let LlamaRequest::Process {
             title,
             description,
             rpc_reply_port,
         } = message;
 
-        let output = run_process(state, &title, &description).await;
+        let output = run_process(state, &title, &description)
+            .instrument(debug_span!("llama process", %title))
+            .await;
         debug!(%title, ?output, "got back props");
         let _ = rpc_reply_port.send(output);
 
@@ -184,7 +188,7 @@ async fn wait_until_healthy(client: &Client, api_url: &str) -> Result<(), Startu
     }
 }
 
-#[tracing::instrument(level = "trace", skip(state, title, description))]
+#[tracing::instrument(level = "debug", skip(state, title, description))]
 /// Runs each task against the model and collects the answers into one set of
 /// properties.
 async fn run_process(
@@ -204,16 +208,20 @@ async fn run_process(
 
 #[instrument(skip_all, fields(task = task.name))]
 async fn extract(state: &LlamaState, task: Task, prompt: &str) -> Result<MLProperties, LlamaError> {
+    // reqwest carries no spans of its own, so without these the call is a gap
+    // in the trace.
     let completion: ChatCompletion = state
         .client
         .post(format!("{}/v1/chat/completions", state.api_url))
         .header(CONTENT_TYPE, "application/json")
         .json(&request_body(task, prompt))
         .send()
+        .instrument(debug_span!("chat completion"))
         .await
         .and_then(Response::error_for_status)
         .context(RequestSnafu { task: task.name })?
         .json()
+        .instrument(debug_span!("decode completion"))
         .await
         .context(DecodeSnafu { task: task.name })?;
 
@@ -233,7 +241,6 @@ async fn extract(state: &LlamaState, task: Task, prompt: &str) -> Result<MLPrope
     serde_json::from_str(&answer).context(ParseSnafu { task: task.name })
 }
 
-#[tracing::instrument(level = "trace", skip(task, prompt))]
 /// Builds the chat completion request. The JSON schema holds the model to two
 /// arrays of strings, one per field of the task.
 fn request_body(task: Task, prompt: &str) -> ChatRequest<'_> {
@@ -273,7 +280,6 @@ struct ChatRequest<'a> {
 }
 
 impl Default for ChatRequest<'_> {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             messages: [RequestMessage::default()],
@@ -299,7 +305,6 @@ struct ResponseFormat {
 }
 
 impl Default for ResponseFormat {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             kind: "json_schema",
@@ -316,7 +321,6 @@ struct JsonSchema {
 }
 
 impl Default for JsonSchema {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             name: "",
@@ -338,7 +342,6 @@ struct ObjectSchema {
 }
 
 impl Default for ObjectSchema {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             kind: "object",
@@ -357,7 +360,6 @@ struct ArraySchema {
 }
 
 impl Default for ArraySchema {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             kind: "array",
@@ -373,13 +375,11 @@ struct ItemSchema {
 }
 
 impl Default for ItemSchema {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self { kind: "string" }
     }
 }
 
-#[tracing::instrument(level = "trace", skip(prompt, title, description))]
 pub fn populate_prompt(prompt: &str, title: &str, description: &str) -> String {
     prompt
         .replace("[TITLE]", title)
@@ -400,7 +400,6 @@ pub struct MLProperties {
 }
 
 impl MLProperties {
-    #[tracing::instrument(level = "trace", skip(self, other))]
     /// Adds the other answer to this one. Each task fills two of the four
     /// fields and leaves the rest empty, so the tasks never overwrite each
     /// other.

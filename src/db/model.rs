@@ -8,7 +8,7 @@ use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{Number, Object, RecordIdKey, SurrealValue};
-use tracing::{error, warn};
+use tracing::error;
 
 use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, IUsernameID, ItemID, TagID, UserID, UsernameID},
@@ -23,7 +23,6 @@ pub enum OrderBy {
 }
 
 impl OrderBy {
-    #[tracing::instrument(level = "trace", skip(self))]
     pub fn column_name(&self) -> &str {
         match self {
             OrderBy::Alphabetical => "title",
@@ -33,7 +32,6 @@ impl OrderBy {
 }
 
 impl Display for OrderBy {
-    #[tracing::instrument(level = "trace", skip(self, f))]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
     }
@@ -58,7 +56,6 @@ pub struct Tag {
     pub known_members: i64,
 }
 
-#[tracing::instrument(level = "trace", skip(internal))]
 fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surrealdb_types::Error> {
     internal
         .into_iter()
@@ -67,7 +64,6 @@ fn to_external_tag(internal: Vec<InternalTag>) -> Result<Vec<ExternalTag>, surre
         .inspect_err(|error| error!(?error, "to_external_tag"))
 }
 
-#[tracing::instrument(level = "trace", skip(external))]
 fn to_internal_tag(external: Vec<ExternalTag>) -> Vec<InternalTag> {
     external.into_iter().map(InternalTag::from).collect()
 }
@@ -152,19 +148,16 @@ pub struct FullWorkshopItem {
     pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
 }
 
-#[tracing::instrument(level = "trace", skip(internal))]
 fn to_external_username(
     internal: Option<InternalUsername>,
 ) -> Result<Option<ExternalUsername>, surrealdb_types::Error> {
     internal.map(TryInto::try_into).transpose()
 }
 
-#[tracing::instrument(level = "trace", skip(external))]
 fn to_internal_username(external: Option<ExternalUsername>) -> Option<InternalUsername> {
     external.map(Into::into)
 }
 
-#[tracing::instrument(level = "trace", skip(internal))]
 fn to_external_full_item(
     internal: Vec<InternalFullWorkshopItem>,
 ) -> Result<Vec<ExternalFullWorkshopItem>, surrealdb_types::Error> {
@@ -175,7 +168,6 @@ fn to_external_full_item(
         .inspect_err(|error| error!(?error, "to_external_full_item"))
 }
 
-#[tracing::instrument(level = "trace", skip(external))]
 fn to_internal_full_item(external: Vec<ExternalFullWorkshopItem>) -> Vec<InternalFullWorkshopItem> {
     external.into_iter().map(Into::into).collect()
 }
@@ -206,7 +198,6 @@ pub struct App {
     pub tags: Vec<TagID>,
 }
 
-#[tracing::instrument(level = "trace", skip(internal))]
 fn to_external_tag_id(internal: Vec<ITagID>) -> Result<Vec<TagID>, surrealdb_types::Error> {
     internal
         .into_iter()
@@ -215,7 +206,6 @@ fn to_external_tag_id(internal: Vec<ITagID>) -> Result<Vec<TagID>, surrealdb_typ
         .inspect_err(|error| error!(?error, "to_external_tag"))
 }
 
-#[tracing::instrument(level = "trace", skip(external))]
 fn to_internal_tag_id(external: Vec<TagID>) -> Vec<ITagID> {
     external.into_iter().map(ITagID::from).collect()
 }
@@ -234,7 +224,6 @@ pub struct User {
     #[serde(serialize_with = "serialize_chrono_as_sql_datetime")]
     pub last_logged_in: DateTime<Utc>,
 }
-#[tracing::instrument(level = "trace", skip(x, s))]
 pub fn serialize_chrono_as_sql_datetime<S>(x: &DateTime<Utc>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -262,7 +251,6 @@ pub struct Property {
 }
 
 impl Display for Property {
-    #[tracing::instrument(level = "trace", skip(self, f))]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.class.to_string())?;
         f.write_str(":")?;
@@ -271,7 +259,6 @@ impl Display for Property {
 }
 
 impl From<Property> for RecordIdKey {
-    #[tracing::instrument(level = "trace", skip(val))]
     fn from(val: Property) -> Self {
         let mut obj = Object::new();
         obj.insert("class", val.class);
@@ -299,7 +286,6 @@ pub struct WorkshopItemProperties {
     pub vote_state: Option<i32>,
 }
 
-#[tracing::instrument(level = "trace", skip(internal))]
 fn to_external_props(
     internal: Vec<InternalWorkshopItemProperties>,
 ) -> Result<Vec<ExternalWorkshopItemProperties>, surrealdb_types::Error> {
@@ -309,7 +295,6 @@ fn to_external_props(
         .collect::<Result<_, _>>()
 }
 
-#[tracing::instrument(level = "trace", skip(external))]
 fn to_internal_props(
     external: Vec<ExternalWorkshopItemProperties>,
 ) -> Vec<InternalWorkshopItemProperties> {
@@ -352,7 +337,6 @@ pub enum InternalSource {
 }
 
 impl serde::Serialize for InternalSource {
-    #[tracing::instrument(level = "trace", skip(self, serializer))]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -365,7 +349,6 @@ impl serde::Serialize for InternalSource {
 }
 
 impl<'de> serde::Deserialize<'de> for InternalSource {
-    #[tracing::instrument(level = "trace", skip(deserializer))]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -386,7 +369,6 @@ impl<'de> serde::Deserialize<'de> for InternalSource {
 }
 
 impl From<ExternalSource> for InternalSource {
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: ExternalSource) -> Self {
         match value {
             ExternalSource::System => Self::System,
@@ -396,7 +378,6 @@ impl From<ExternalSource> for InternalSource {
 }
 
 impl SurrealValue for InternalSource {
-    #[tracing::instrument(level = "trace", skip(self))]
     fn into_value(self) -> ::surrealdb::types::Value {
         // The schema declares `'system' | record<users>`, so `System` must go
         // out as the bare string, not as an enum-shaped object.
@@ -406,7 +387,6 @@ impl SurrealValue for InternalSource {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from_value(
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
@@ -444,7 +424,6 @@ impl SurrealValue for InternalSource {
         )))
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn is_value(value: &::surrealdb::types::Value) -> bool {
         match value {
             ::surrealdb::types::Value::String(string) => string == "system",
@@ -452,7 +431,6 @@ impl SurrealValue for InternalSource {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip())]
     fn kind_of() -> ::surrealdb::types::Kind {
         ::surrealdb::types::Kind::Either(vec![
             ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
@@ -474,7 +452,6 @@ pub enum ExternalSource {
 impl TryFrom<InternalSource> for ExternalSource {
     type Error = surrealdb_types::Error;
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn try_from(value: InternalSource) -> Result<Self, Self::Error> {
         match value {
             InternalSource::System => Ok(ExternalSource::System),
@@ -496,7 +473,6 @@ pub enum Class {
 }
 
 impl SurrealValue for Class {
-    #[tracing::instrument(level = "trace", skip(self))]
     fn into_value(self) -> ::surrealdb::types::Value {
         let variant = match self {
             Self::Type => "Type",
@@ -507,7 +483,6 @@ impl SurrealValue for Class {
         ::surrealdb::types::Value::String(variant.to_string())
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from_value(
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
@@ -549,7 +524,6 @@ impl SurrealValue for Class {
         )))
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn is_value(value: &::surrealdb::types::Value) -> bool {
         matches!(
             value,
@@ -558,7 +532,6 @@ impl SurrealValue for Class {
         )
     }
 
-    #[tracing::instrument(level = "trace", skip())]
     fn kind_of() -> ::surrealdb::types::Kind {
         ::surrealdb::types::Kind::Either(vec![
             ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
@@ -578,7 +551,6 @@ impl SurrealValue for Class {
 }
 
 impl Display for Class {
-    #[tracing::instrument(level = "trace", skip(self, f))]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let txt = match self {
             Class::Type => "Type",
@@ -612,12 +584,10 @@ pub enum Status {
 }
 // Horrendous manual hack thanks to _another_ surreal bug
 impl SurrealValue for Status {
-    #[tracing::instrument(level = "trace", skip(self))]
     fn into_value(self) -> ::surrealdb::types::Value {
         ::surrealdb::types::Value::Number(Number::Int(self as i64))
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from_value(
         value: ::surrealdb::types::Value,
     ) -> std::result::Result<Self, ::surrealdb::types::Error> {
@@ -659,9 +629,7 @@ impl SurrealValue for Status {
         )))
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn is_value(value: &::surrealdb::types::Value) -> bool {
-        warn!("{:?}", value);
         if let ::surrealdb::types::Value::Object(map) = value {
             {
                 if map
@@ -691,7 +659,6 @@ impl SurrealValue for Status {
         false
     }
 
-    #[tracing::instrument(level = "trace", skip())]
     fn kind_of() -> ::surrealdb::types::Kind {
         ::surrealdb::types::Kind::Either(vec![
             {

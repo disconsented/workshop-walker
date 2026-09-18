@@ -1,10 +1,23 @@
+//! Placeholder endpoints. The router does not mount them yet.
 use salvo::prelude::endpoint;
-#[tracing::instrument(level = "trace", skip())]
+
+#[allow(
+    clippy::unused_async_trait_impl,
+    reason = "the body comes with the feature"
+)]
 #[endpoint]
 pub async fn vote() {}
-#[tracing::instrument(level = "trace", skip())]
+
+#[allow(
+    clippy::unused_async_trait_impl,
+    reason = "the body comes with the feature"
+)]
 #[endpoint]
 pub async fn remove() {}
-#[tracing::instrument(level = "trace", skip())]
+
+#[allow(
+    clippy::unused_async_trait_impl,
+    reason = "the body comes with the feature"
+)]
 #[endpoint]
 pub async fn new() {}

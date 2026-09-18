@@ -19,14 +19,13 @@ pub struct PropertiesSilo {
 }
 
 impl PropertiesSilo {
-    #[tracing::instrument(level = "trace", skip(db))]
     pub fn new(db: Surreal<Db>) -> Self {
         Self { db }
     }
 }
 
 impl PropertiesPort for PropertiesSilo {
-    #[tracing::instrument(level = "trace", skip(self, new_property, source, status))]
+    #[tracing::instrument(level = "debug", skip(self, new_property, source, status))]
     async fn create_or_link_property(
         &self,
         new_property: InternalNewProperty,
@@ -145,7 +144,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(self, vote_data, user))]
+    #[tracing::instrument(level = "debug", skip(self, vote_data, user))]
     async fn vote(
         &self,
         vote_data: InternalVoteData,
@@ -199,7 +198,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(self, vote_data, user))]
+    #[tracing::instrument(level = "debug", skip(self, vote_data, user))]
     async fn remove_vote(
         &self,
         vote_data: InternalVoteData,
@@ -240,7 +239,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(self, search_query))]
+    #[tracing::instrument(level = "debug", skip(self, search_query))]
     async fn search_property(
         &self,
         search_query: InternalSearchProperty,
@@ -326,7 +325,6 @@ mod tests {
         DEFINE FIELD when ON votes TYPE datetime PERMISSIONS FULL;
     ";
 
-    #[tracing::instrument(level = "trace", skip())]
     /// Build a `PropertiesSilo` over an in-memory DB seeded with one item, one
     /// `Feature/ffff` property, two users, and the link between item and
     /// property. Returns the silo plus a handle to the same DB for assertions.
@@ -358,7 +356,6 @@ mod tests {
         (PropertiesSilo::new(db.clone()), db)
     }
 
-    #[tracing::instrument(level = "trace", skip(score))]
     /// A vote for the seeded `Feature/ffff` property on the seeded item.
     fn vote(score: i32) -> InternalVoteData {
         InternalVoteData {
@@ -369,12 +366,10 @@ mod tests {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(id))]
     fn user(id: i64) -> IUserID {
         IUserID::from(id)
     }
 
-    #[tracing::instrument(level = "trace", skip(db))]
     /// `(vote_count, upvote_count)` on the seeded relation.
     async fn counts(db: &Surreal<Db>) -> (i64, i64) {
         let mut r = db
@@ -391,7 +386,6 @@ mod tests {
         )
     }
 
-    #[tracing::instrument(level = "trace", skip(db))]
     /// Number of rows currently in the `votes` table.
     async fn vote_rows(db: &Surreal<Db>) -> usize {
         let mut r = db.query("SELECT VALUE id FROM votes;").await.unwrap();
@@ -400,7 +394,6 @@ mod tests {
             .len()
     }
 
-    #[tracing::instrument(level = "trace", skip(item, class, value))]
     /// A request to attach `class`/`value` to `item`.
     fn new_property(item: i64, class: Class, value: &str) -> InternalNewProperty {
         InternalNewProperty {
@@ -411,7 +404,6 @@ mod tests {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(db))]
     /// Every `(in, out)` pair on the relation table, as
     /// `"<item>|<CLASS>:<value>"`.
     async fn links(db: &Surreal<Db>) -> Vec<String> {

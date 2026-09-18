@@ -79,7 +79,6 @@ pub struct GetTagCount {
 }
 
 impl GetTagCount {
-    #[tracing::instrument(level = "trace", skip(self, client, access_token))]
     /// Builds the `GetTagCount` request
     pub fn into_request(self, client: &Client, access_token: &str) -> reqwest::Result<Request> {
         client
@@ -124,7 +123,6 @@ pub struct GetPage {
 }
 
 impl Default for GetPage {
-    #[tracing::instrument(level = "trace", skip())]
     fn default() -> Self {
         Self {
             query_type: EPublishedFileQueryType::RankedByLastUpdatedDate,
@@ -145,7 +143,6 @@ impl Default for GetPage {
 }
 
 impl GetPage {
-    #[tracing::instrument(level = "trace", skip(self, client, access_token))]
     /// Builds the `GetPage` request
     pub fn into_request(self, client: &Client, access_token: &str) -> reqwest::Result<Request> {
         client
@@ -171,7 +168,6 @@ impl GetPage {
 impl TryFrom<&SteamRoot<IPublishedResponse>> for GetPage {
     type Error = Whatever;
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn try_from(value: &SteamRoot<IPublishedResponse>) -> Result<Self, Self::Error> {
         Ok(GetPage {
             cursor: value.response.next_cursor.clone(),

@@ -2,7 +2,7 @@ use std::mem::take;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{OptionExt, ResultExt, Whatever};
-use tracing::error;
+use tracing::{Instrument, debug_span, error};
 
 use crate::{
     db::{
@@ -41,7 +41,7 @@ impl Actor for JoinProcessActor {
     type Msg = JoinProcessMsg;
     type State = JoinProcessState;
 
-    #[tracing::instrument(level = "trace", skip(self, args))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -54,7 +54,8 @@ impl Actor for JoinProcessActor {
         })
     }
 
-    #[tracing::instrument(level = "trace", skip(self, myself, message, state))]
+    /// The span comes in with the message, so the language and BB code work
+    /// lands under the same item trace that the update actor started.
     async fn handle(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -63,6 +64,7 @@ impl Actor for JoinProcessActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             JoinProcessMsg::Process(mut data) => {
+                let item = debug_span!("join process", item.id = %data.publishedfileid);
                 // Sometimes we'll find items that are missing this and they're
                 // effectively empty, so, just skip them and
                 // carry on
@@ -71,15 +73,20 @@ impl Actor for JoinProcessActor {
                     return Ok(());
                 }
                 let description = take(&mut data.file_description).unwrap_or_default();
-                let languages = call!(state.language, LanguageMsg::Detect, description.clone())?;
-                let description = call!(state.bb, BBMsg::Process, description)?;
+                let languages =
+                    async { call!(state.language, LanguageMsg::Detect, description.clone()) }
+                        .instrument(debug_span!(parent: &item, "detect language message"))
+                        .await?;
+                let description = async { call!(state.bb, BBMsg::Process, description) }
+                    .instrument(debug_span!(parent: &item, "render bb code"))
+                    .await?;
                 let children = take(&mut data.children);
 
                 match InternalWorkshopItem::try_new(data, languages, description) {
-                    Ok(item) => {
+                    Ok(workshop_item) => {
                         state
                             .item_update
-                            .send_message(ItemUpdateMsg::MaybeQueueMl((item, children)))?;
+                            .send_message(ItemUpdateMsg::MaybeQueueMl((workshop_item, children)))?;
                     }
                     Err(error) => {
                         error!(%error, "Creating new item");
@@ -93,7 +100,6 @@ impl Actor for JoinProcessActor {
 }
 
 impl InternalWorkshopItem {
-    #[tracing::instrument(level = "trace", skip(data, languages, description))]
     fn try_new(
         data: IPublishedStruct,
         languages: Vec<DetectedLanguage>,

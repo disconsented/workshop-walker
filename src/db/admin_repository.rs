@@ -14,14 +14,13 @@ pub struct AdminSilo {
 }
 
 impl AdminSilo {
-    #[tracing::instrument(level = "trace", skip(db))]
     pub fn new(db: Surreal<Db>) -> Self {
         Self { db }
     }
 }
 
 impl AdminPort for AdminSilo {
-    #[tracing::instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "debug", skip(self))]
     async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError> {
         match self
             .db
@@ -37,7 +36,7 @@ impl AdminPort for AdminSilo {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(self, patch))]
+    #[tracing::instrument(level = "debug", skip(self, patch))]
     async fn patch_user(&self, patch: PatchUserData) -> Result<(), AdminError> {
         let id: IUserID = patch.id.clone().into();
         if let Some(banned) = patch.banned
@@ -65,7 +64,7 @@ impl AdminPort for AdminSilo {
         Ok(())
     }
 
-    #[tracing::instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "debug", skip(self))]
     async fn list_workshop_item_properties(
         &self,
     ) -> Result<Vec<InternalWorkshopItemProperties>, AdminError> {
@@ -84,7 +83,7 @@ impl AdminPort for AdminSilo {
         }
     }
 
-    #[tracing::instrument(level = "trace", skip(self, patch))]
+    #[tracing::instrument(level = "debug", skip(self, patch))]
     async fn patch_workshop_item_property(
         &self,
         patch: PatchRelationshipData,

@@ -9,6 +9,7 @@ use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{Error, Kind, SurrealValue, Value};
+use tracing::debug_span;
 
 // The threshold of total words a language must be, to be considered valid for
 // detection.
@@ -44,13 +45,11 @@ pub enum DetectedLanguage {
 }
 
 impl fmt::Display for DetectedLanguage {
-    #[tracing::instrument(level = "trace", skip(self, f))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{self:?}")
     }
 }
 impl From<Language> for DetectedLanguage {
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from(value: Language) -> Self {
         match value {
             Chinese => Self::Chinese,
@@ -68,17 +67,14 @@ impl From<Language> for DetectedLanguage {
 }
 
 impl SurrealValue for DetectedLanguage {
-    #[tracing::instrument(level = "trace", skip())]
     fn kind_of() -> Kind {
         Kind::Int
     }
 
-    #[tracing::instrument(level = "trace", skip(self))]
     fn into_value(self) -> Value {
         Value::Number((self as i64).into())
     }
 
-    #[tracing::instrument(level = "trace", skip(value))]
     fn from_value(value: Value) -> Result<Self, Error>
     where
         Self: Sized,
@@ -100,6 +96,7 @@ impl SurrealValue for DetectedLanguage {
 
 pub struct LanguageActor {}
 
+#[derive(Debug)]
 pub struct LanguageArgs {}
 pub struct LanguageState {
     detector: LanguageDetector,
@@ -114,7 +111,7 @@ impl Actor for LanguageActor {
     type Msg = LanguageMsg;
     type State = LanguageState;
 
-    #[tracing::instrument(level = "trace", skip(self))]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -129,7 +126,6 @@ impl Actor for LanguageActor {
         })
     }
 
-    #[tracing::instrument(level = "trace", skip(self, message, state))]
     async fn handle(
         &self,
         _: ActorRef<Self::Msg>,
@@ -138,6 +134,8 @@ impl Actor for LanguageActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             LanguageMsg::Detect(text, reply) => {
+                // Nothing awaits here, so entering the span is safe.
+                let _entered = debug_span!("detect languages", bytes = text.len()).entered();
                 let _ = reply.send(detect(&text, &state.detector));
             }
         }
@@ -146,7 +144,7 @@ impl Actor for LanguageActor {
     }
 }
 
-#[tracing::instrument(level = "trace", skip(text, language_detector))]
+#[tracing::instrument(level = "debug", skip(text, language_detector))]
 /// Using heuristics, determine what languages are likely present in the text.
 /// I'd noticed that mods sometimes have translated descriptions, hence, the
 /// need to return N langs.

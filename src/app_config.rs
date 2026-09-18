@@ -14,6 +14,28 @@ pub struct Config {
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
     pub admin_users: Vec<i64>,
+    #[serde(default)]
+    pub telemetry: Telemetry,
+}
+
+/// OTLP export. The endpoint is the full trace URL, because the exporter takes
+/// a value set in code as it is and adds no path to it. A local Jaeger listens
+/// on port 4318 for OTLP over HTTP.
+#[derive(Deserialize, Debug)]
+pub struct Telemetry {
+    pub enabled: bool,
+    pub endpoint: Arc<String>,
+    pub service_name: Arc<String>,
+}
+
+impl Default for Telemetry {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            endpoint: Arc::new("http://localhost:4318/v1/traces".to_owned()),
+            service_name: Arc::new("workshop-walker".to_owned()),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -40,7 +62,6 @@ pub struct BiscuitConfig {
 }
 
 impl<'de> serde::Deserialize<'de> for BiscuitConfig {
-    #[tracing::instrument(level = "trace", skip(d))]
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let mut map: HashMap<String, String> = HashMap::deserialize(d)?;
         Ok(Self {
