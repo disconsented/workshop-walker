@@ -22,7 +22,7 @@
 		subtle: boolean;
 	}
 
-	let { loggedIn = $bindable(), property, hideVote, itemID, subtle=false }: Props = $props();
+	let { loggedIn = $bindable(), property, hideVote, itemID, subtle = false }: Props = $props();
 	let request = undefined;
 	let voteState = $state(property.vote_state);
 	let upvoteCount = $state(property.upvote_count);
@@ -90,7 +90,8 @@
 <!--<div class="text-(--color-green-500) text-(--color-blue-500) text-(--color-purple-500) text-(--color-orange-500)"></div>-->
 
 <div
-	class="flex grow basis-0 gap-1 overflow-clip p-0 text-sm text-nowrap" class:preset-outlined-surface-200-800={!subtle}
+	class="flex grow basis-0 gap-1 overflow-clip p-0 text-sm text-nowrap"
+	class:preset-outlined-surface-200-800={!subtle}
 >
 	<div class="w-4px h-full shrink-0 bg-({accentColour})" class:hidden={subtle}>&nbsp</div>
 	<div

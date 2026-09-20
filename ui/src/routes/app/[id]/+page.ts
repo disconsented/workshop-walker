@@ -46,16 +46,16 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 		paramList.push(['updated_after', updatedAfter.v / 1000]);
 	}
 
-	console.log("??", searchProps);
+	console.log('??', searchProps);
 	if (searchProps.v) {
 		searchProps.v.forEach((positive, property) => {
-			const prop_string = property.class+":"+property.value;
-			if (positive){
+			const prop_string = property.class + ':' + property.value;
+			if (positive) {
 				paramList.push(['positive_props', prop_string]);
 			} else {
 				paramList.push(['negative_props', prop_string]);
 			}
-		})
+		});
 	}
 
 	paramList.push(['app', params.id]);
@@ -153,8 +153,8 @@ function loadParams(params: URLSearchParams) {
 	const paramPositiveProps = params.getAll('positive_props');
 	if (paramPositiveProps.length > 0) {
 		paramPositiveProps.forEach((prop) => {
-			const prop_split = prop.split(":");
-			searchProps.v.set({class: prop_split[0], value: prop_split[1]}, true);
+			const prop_split = prop.split(':');
+			searchProps.v.set({ class: prop_split[0], value: prop_split[1] }, true);
 		});
 	}
 

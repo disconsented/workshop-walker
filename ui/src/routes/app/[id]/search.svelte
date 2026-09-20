@@ -20,7 +20,15 @@
 		faRightToBracket,
 		faSliders
 	} from '@fortawesome/free-solid-svg-icons';
-	import { language, orderBy, searchProps, tags, title, updatedAfter, updatedBefore } from './store.svelte';
+	import {
+		language,
+		orderBy,
+		searchProps,
+		tags,
+		title,
+		updatedAfter,
+		updatedBefore
+	} from './store.svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import Property from '../../item/[item]/Property.svelte';
@@ -79,13 +87,12 @@
 		}
 	});
 
-
 	$effect(() => {
 		if (searchProps.v) {
 			params.delete('positive_props');
 			searchProps.v.forEach((positive, v) => {
 				if (positive) {
-					params.append('positive_props', v.class+":"+v.value);
+					params.append('positive_props', v.class + ':' + v.value);
 				}
 			});
 		} else {
@@ -98,14 +105,13 @@
 			params.delete('negative_props');
 			searchProps.v.forEach((positive, v) => {
 				if (!positive) {
-					params.append('negative_props', v.class+":"+v.value);
+					params.append('negative_props', v.class + ':' + v.value);
 				}
 			});
 		} else {
 			params.delete('negative_props');
 		}
 	});
-
 
 	const loadParams = () => {
 		goto(`?${params}`, {
@@ -162,7 +168,6 @@
 		loadParams();
 	}
 
-
 	let foundProps = $state(null);
 	let searchQuery: Promise<Response> = $state(null);
 	let query = $state('');
@@ -172,9 +177,11 @@
 			method: 'post',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ app: appID, search_term: term })
-		}).then(response => response.json()).then(data => {
-			foundProps = data;
-		});
+		})
+			.then((response) => response.json())
+			.then((data) => {
+				foundProps = data;
+			});
 	}
 
 	const collection = $derived(
@@ -186,7 +193,6 @@
 	);
 
 	$inspect(searchProps.v);
-
 </script>
 
 <form
@@ -256,7 +262,7 @@
 		<div class="flex w-full flex-col gap-2">
 			<div class="flex flex-col gap-2">
 				Updated
-				<div class="flex flex-row flex-wrap lg:flex-nowrap gap-2">
+				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">
 					<div class="field-group w-full grid-cols-[auto_1fr] gap-0">
 						<label class="label label-text preset-tonal" for="url">
 							<Icon data={faCalendar} class="fa-fw" />
@@ -314,8 +320,8 @@
 				<div class="flex flex-row items-center justify-between">
 					<div>
 						Tags <span class="text-sm italic opacity-50"
-					>(Steam tag, shown as written. Similar names can be different tags.)</span
-					>
+							>(Steam tag, shown as written. Similar names can be different tags.)</span
+						>
 					</div>
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
 						<SegmentedControl.Control class="gap-0 p-0">
@@ -386,11 +392,18 @@
 					</SegmentedControl>
 				</div>
 				<div class="field-group w-2xs grid-cols-[1fr_auto] gap-0">
-					<Combobox onInputValueChange={(e) => {query = e.inputValue; searchSuggestProps(query)}}
-										{collection}
-										selectionBehavior="clear"
-										onValueChange={(details) => {searchProps.v.set(details.items[0], true);}}
-										value={undefined}>
+					<Combobox
+						onInputValueChange={(e) => {
+							query = e.inputValue;
+							searchSuggestProps(query);
+						}}
+						{collection}
+						selectionBehavior="clear"
+						onValueChange={(details) => {
+							searchProps.v.set(details.items[0], true);
+						}}
+						value={undefined}
+					>
 						<Combobox.Control>
 							<Combobox.Input />
 							<Combobox.Trigger />
@@ -399,8 +412,8 @@
 							<Combobox.Positioner>
 								<Combobox.Content>
 									<Combobox.ItemGroup>
-										{#each foundProps as item(item.class + ':' + item.value)}
-											<Combobox.Item item={item}>
+										{#each foundProps as item (item.class + ':' + item.value)}
+											<Combobox.Item {item}>
 												<Combobox.ItemText>
 													<div class="flex">
 														<Property loggedIn={false} property={item} hideVote={true} />
@@ -420,20 +433,36 @@
 				{#each searchProps.v as item}
 					{@const property = item[0]}
 					{@const positive = item[1]}
-					<div class="grid gap-1 place-items-center cursor-pointer pl-1" class:grid-cols-[auto_1fr_auto]={!positive}
-							 class:grid-cols-[1fr_auto]={positive} class:preset-tonal-error={!positive}
-							 class:preset-outlined-surface-200-800={positive}
-							 class:preset-outlined-error-500={!positive}>
+					<div
+						class="grid cursor-pointer place-items-center gap-1 pl-1"
+						class:grid-cols-[auto_1fr_auto]={!positive}
+						class:grid-cols-[1fr_auto]={positive}
+						class:preset-tonal-error={!positive}
+						class:preset-outlined-surface-200-800={positive}
+						class:preset-outlined-error-500={!positive}
+					>
 						{#if !positive}
 							<Icon data={faCancel} class="fa-fw" />
 						{/if}
-						<button type="button" class="flex cursor-pointer"
-										onclick={() => {console.debug(item[0], searchProps.v.get(property)); searchProps.v.set(property, !positive);}}>
+						<button
+							type="button"
+							class="flex cursor-pointer"
+							onclick={() => {
+								console.debug(item[0], searchProps.v.get(property));
+								searchProps.v.set(property, !positive);
+							}}
+						>
 							<Property loggedIn={false} {property} hideVote={true} subtle={true} />
 						</button>
-						<button class="btn cursor-pointer" class:preset-outlined-surface-200-800={positive}
-										class:preset-tonal-error={!positive}
-										type="button" onclick={() => {searchProps.v.delete(property)}}>
+						<button
+							class="btn cursor-pointer"
+							class:preset-outlined-surface-200-800={positive}
+							class:preset-tonal-error={!positive}
+							type="button"
+							onclick={() => {
+								searchProps.v.delete(property);
+							}}
+						>
 							<Icon data={faClose} class="fa-fw" />
 						</button>
 					</div>

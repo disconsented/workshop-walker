@@ -43,6 +43,6 @@ export function inToLangShort(int: number) {
 		case 9:
 			return 'FR';
 		default:
-			return "?";
+			return '?';
 	}
 }
