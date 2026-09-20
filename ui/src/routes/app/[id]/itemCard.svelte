@@ -94,27 +94,3 @@
 		<Properties {loggedIn} itemID={item.id} properties={item.properties} />
 	</footer>
 </div>
-
-<style>
-	.pattern-background {
-		background-color: var(--color-surface-800);
-	}
-
-	.pattern-background::before {
-		content: '';
-		position: absolute;
-		inset: -100%;
-		transform: rotate(90deg);
-		transform-origin: center;
-		background-color: var(--color-surface-800);
-		opacity: 0.8;
-		background-size: 10px 10px;
-		background-image: repeating-linear-gradient(
-			45deg,
-			var(--color-surface-400) 0,
-			var(--color-surface-400) 1px,
-			var(--color-surface-800) 0,
-			var(--color-surface-800) 50%
-		);
-	}
-</style>

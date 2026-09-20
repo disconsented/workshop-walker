@@ -23,7 +23,7 @@
 	<header class="flex">
 		<img
 			src={image_url}
-			class="aspect-[21/9] w-full object-fill"
+			class="pattern-background aspect-[21/9] w-full object-fill"
 			alt="{name} Banner"
 			loading="lazy"
 		/>

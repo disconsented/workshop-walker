@@ -65,18 +65,18 @@
 		<a
 			href="https://github.com/disconsented/workshop-walker/discussions"
 			aria-label="Suggest A Game"
-			class="card border-surface-200-800 text-surface-500 group hover:border-surface-300-700
-			hover:text-surface-400-600 hover:bg-surface-contrast-950-50 flex flex-col flex-wrap place-items-center
-			border-1 border-dashed p-4"
+			class="card border-surface-300-700
+		preset-filled-surface-100-900 flex flex-col flex-wrap items-center justify-center
+			border-1 border-dashed p-4 opacity-50 hover:opacity-100"
 		>
-			<div class="btn preset-outlined-surface-200-800 my-4 p-2 opacity-50 group-hover:opacity-100">
+			<div class="btn preset-outlined-surface-200-800 my-4 p-2 opacity-50">
 				<Icon data={faGithub} class="fa-fw"></Icon>
 			</div>
-			<div class="font-bold opacity-50 group-hover:opacity-100">Suggest a game</div>
+			<div class="font-bold opacity-50">Suggest a game</div>
 			<div class="text-sm opacity-50">
 				Know a game with a great Workshop? Open an issue on GitHub
 			</div>
-			<div class="pt-2 text-sm opacity-50 group-hover:opacity-100">
+			<div class="pt-2 text-sm opacity-50">
 				<Icon data={faExternalLink} class="fa-fw"></Icon>
 				Open GitHub Issue
 			</div>
