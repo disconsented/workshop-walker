@@ -20,7 +20,6 @@ use crate::{
     },
     web::{DB_POOL, auth},
 };
-use crate::db::model::ExternalWorkshopItem;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;

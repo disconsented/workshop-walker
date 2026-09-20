@@ -13,7 +13,7 @@ use tracing::{debug, error};
 use crate::{
     application::tags_service::TagsService,
     db::{AppID, IAppID, ITagID, TagID, model::InternalTag, tags_repository::TagsSilo},
-    steam::model::{GetTagCount, GetTagCountResponse, IPublishedResponse, SteamRoot},
+    steam::model::{GetTagCount, GetTagCountResponse, SteamRoot},
 };
 
 pub static TAGS_ACTOR: OnceLock<ActorRef<TagsMsg>> = OnceLock::new();
