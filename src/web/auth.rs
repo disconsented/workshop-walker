@@ -222,7 +222,7 @@ pub async fn validate_biscuit_token(req: &mut Request, depot: &mut Depot) -> Res
             })
             .map_err(|_| InnerError::InternalError)??;
 
-            depot.inject::<Authorizer>(authorizer);
+            depot.insert_typed::<Authorizer>(authorizer);
             Ok(())
         }
     }
@@ -254,7 +254,7 @@ pub async fn validate_opt(req: &mut Request, depot: &mut Depot) -> Result<()> {
 }
 /// Returns the user id of the current user, if any.
 pub fn get_user_from_depot(depot: &mut Depot) -> Option<IUserID> {
-    let authorizer = depot.obtain_mut::<Authorizer>().ok()?;
+    let authorizer = depot.get_typed_mut::<Authorizer>().ok()?;
     let (userid, _): (i64, i64) = authorizer
         .query_exactly_one("data($user, 0) <- user($user)")
         .ok()?;
