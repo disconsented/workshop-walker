@@ -62,7 +62,7 @@
 <div>
 	{#if !open}
 		<button
-			class="btn w-full rounded-md border-1 border-dashed border-gray-300 p-1 text-center text-xs text-gray-300 opacity-80 cursor-pointer"
+			class="btn w-full cursor-pointer rounded-md border-1 border-dashed border-gray-300 p-1 text-center text-xs text-gray-300 opacity-80"
 			onclick={() => (open = true)}
 		>
 			+ Suggest a property
