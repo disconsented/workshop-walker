@@ -3912,7 +3912,7 @@ checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 
 [[package]]
 name = "macros"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "paste",
  "proc-macros",
@@ -3991,7 +3991,7 @@ checksum = "6b947ae49db0d222b1dbc6b113ce7248a3fc3a6ca21b696717bfc000ba4484d8"
 
 [[package]]
 name = "migrations-tool"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-stream",
  "blake2 0.11.0",
@@ -4846,7 +4846,7 @@ dependencies = [
 
 [[package]]
 name = "proc-macros"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "quote",
  "salvo",
@@ -6023,7 +6023,7 @@ dependencies = [
 
 [[package]]
 name = "serde-hack"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde-content",
@@ -8259,7 +8259,7 @@ dependencies = [
 
 [[package]]
 name = "workshop-walker"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "bbscope",
  "biscuit-auth",
