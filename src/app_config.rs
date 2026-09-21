@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use biscuit_auth::PrivateKey;
 use serde::{Deserialize, Deserializer};
@@ -14,6 +14,29 @@ pub struct Config {
     pub base_url: Arc<String>,
     pub biscuit: Arc<BiscuitConfig>,
     pub admin_users: Vec<i64>,
+    #[serde(default)]
+    pub security_options: SecurityOptions,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SecurityOptions {
+    pub trusted_proxies: Vec<IpAddr>,
+    pub maximum_concurrency: usize,
+    pub global_timeout_secs: u64,
+    pub quota_limit: usize,
+    pub quota_seconds: i64,
+}
+
+impl Default for SecurityOptions {
+    fn default() -> Self {
+        SecurityOptions {
+            trusted_proxies: vec![],
+            maximum_concurrency: 20,
+            global_timeout_secs: 5,
+            quota_limit: 20,
+            quota_seconds: 10,
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]

@@ -44,11 +44,14 @@ ractor = { features = ["async-trait", "monitors"], version = "0.16" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
   "affix-state",
+  "concurrency-limiter",
   "cookie",
   "logging",
   "oapi",
+  "rate-limiter",
   "serve-static",
   "size-limiter",
+  "timeout",
 ], version = "0.96" }
 serde = { features = ["derive"], version = "1.0" }
 serde-content = "0.1"

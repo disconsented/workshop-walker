@@ -6,12 +6,13 @@ pub mod item;
 pub mod properties;
 mod query;
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use salvo::{
     Router,
     oapi::{Components, Operation},
-    prelude::*,
+    prelude::{max_concurrency, *},
+    rate_limiter::{BasicQuota, FixedGuard, MokaStore, RateLimiter, TrustedProxyIssuer},
 };
 use snafu::Whatever;
 use surrealdb::{Surreal, engine::local::Db};
@@ -24,9 +25,26 @@ static DB_POOL: OnceCell<Surreal<Db>> = OnceCell::const_new();
 ///  Start the webserver returning once it exists
 pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let _ = DB_POOL.get_or_init(|| async { db }).await.clone();
+
+    let global_limiter = RateLimiter::new(
+        FixedGuard::new(),
+        MokaStore::new(),
+        TrustedProxyIssuer::new(config.security_options.trusted_proxies.clone()),
+        BasicQuota::set_seconds(
+            config.security_options.quota_limit,
+            config.security_options.quota_seconds,
+        ),
+    )
+    .add_headers(true);
+
     let router = Router::new().push(
         Router::with_path("api")
             .hoop(max_size(1024 * 1024))
+            .hoop(max_concurrency(config.security_options.maximum_concurrency))
+            .hoop(Timeout::new(Duration::from_secs(
+                config.security_options.global_timeout_secs,
+            )))
+            .hoop(global_limiter)
             .push(
                 Router::with_path("list")
                     .hoop(auth::validate_opt)
