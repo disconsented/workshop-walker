@@ -40,11 +40,11 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     let router = Router::new().push(
         Router::with_path("api")
             .hoop(max_size(1024 * 1024))
+            .hoop(global_limiter)
             .hoop(max_concurrency(config.security_options.maximum_concurrency))
             .hoop(Timeout::new(Duration::from_secs(
                 config.security_options.global_timeout_secs,
             )))
-            .hoop(global_limiter)
             .push(
                 Router::with_path("list")
                     .hoop(auth::validate_opt)
