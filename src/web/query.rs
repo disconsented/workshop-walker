@@ -1,7 +1,11 @@
 use salvo::{
     Depot, Request, Writer,
-    oapi::{endpoint, extract::QueryParam},
+    oapi::{ToSchema, endpoint, extract::QueryParam},
     prelude::Json,
+};
+use serde::{
+    Deserialize, Deserializer,
+    de::{Error, IntoDeserializer},
 };
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
@@ -21,13 +25,32 @@ use tracing::{Instrument, debug, info_span, instrument, trace};
 
 use crate::{
     db::{
-        IAppID, ITagID, IUserID,
-        model::{ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Status},
+        IAppID, IPropertyID, ITagID, IUserID,
+        model::{Class, ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Property, Status},
     },
     processing::language_actor::DetectedLanguage,
     web,
     web::{DB_POOL, auth},
 };
+
+#[derive(ToSchema)]
+struct PropertyParam(pub Property);
+impl<'de> Deserialize<'de> for PropertyParam {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        let (class, value) = raw
+            .split_once(":")
+            .ok_or(D::Error::custom("expected `:` found none"))?;
+        let class = Class::deserialize(class.into_deserializer())?;
+        Ok(Self(Property {
+            class,
+            value: value.to_string(),
+        }))
+    }
+}
 
 // ToDo: Seperate out filtering to its own struct
 // And, handle pagination based on the last element for performance
@@ -45,11 +68,21 @@ pub async fn list(
     updated_before: QueryParam<i64, false>,
     updated_after: QueryParam<i64, false>,
     mut order_by: QueryParam<OrderBy, false>,
+    positive_props: QueryParam<Vec<PropertyParam>, false>,
+    negative_props: QueryParam<Vec<PropertyParam>, false>,
 ) -> web::Result<Json<Vec<ExternalWorkshopItem>>> {
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     let user = auth::get_user_from_depot(depot);
+    let positive_props = {
+        let mut props = positive_props.into_inner().unwrap_or_default();
+        props.drain(..props.len().min(5)).collect()
+    };
+    let negative_props = {
+        let mut props = negative_props.into_inner().unwrap_or_default();
+        props.drain(..props.len().min(5)).collect()
+    };
 
     let results = query_inner(
         app.into_inner(),
@@ -61,6 +94,8 @@ pub async fn list(
         *updated_before,
         *updated_after,
         order_by.take(),
+        positive_props,
+        negative_props,
         db,
         user,
     )
@@ -81,6 +116,8 @@ async fn query_inner(
     updated_before: Option<i64>,
     updated_after: Option<i64>,
     order_by: Option<OrderBy>,
+    positive_props: Vec<PropertyParam>,
+    negative_props: Vec<PropertyParam>,
     db: &Surreal<Db>,
     user: Option<IUserID>,
 ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
@@ -396,9 +433,23 @@ mod test {
         db: &Surreal<Db>,
         user: Option<IUserID>,
     ) -> Vec<(String, Status)> {
-        let items = query_inner(1, 0, 100, None, vec![], None, None, None, None, db, user)
-            .await
-            .expect("query should succeed");
+        let items = query_inner(
+            1,
+            0,
+            100,
+            None,
+            vec![],
+            None,
+            None,
+            None,
+            None,
+            vec![],
+            vec![],
+            db,
+            user,
+        )
+        .await
+        .expect("query should succeed");
         let item = items.first().expect("item 100 should be returned");
         let mut props: Vec<(String, Status)> = item
             .properties
@@ -492,6 +543,8 @@ mod test {
             updated_before,
             updated_after,
             None,
+            vec![],
+            vec![],
             db,
             None,
         )
@@ -556,6 +609,8 @@ mod test {
             None,
             None,
             None,
+            vec![],
+            vec![],
             &db,
             Some(IUserID::from(2i64)),
         )
@@ -610,6 +665,8 @@ mod test {
             None,
             None,
             None,
+            vec![],
+            vec![],
             db,
             None,
         )
@@ -713,6 +770,8 @@ mod test {
             None,
             None,
             None,
+            vec![],
+            vec![],
             &db,
             None,
         )
