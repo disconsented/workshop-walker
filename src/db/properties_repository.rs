@@ -240,10 +240,6 @@ impl PropertiesPort for PropertiesSilo {
         &self,
         search_query: InternalSearchProperty,
     ) -> Result<Vec<Property>, PropertiesError> {
-        // SELECT out.id().class AS class, out.id().value as value FROM
-        // workshop_item_properties WHERE in.*.app = apps:294100 AND
-        // upvote_count >= 1 AND status = 1 AND prop_value @@ 'exp' GROUP BY
-        // class, value LIMIT 10;
         let results = self
             .db
             .query(
