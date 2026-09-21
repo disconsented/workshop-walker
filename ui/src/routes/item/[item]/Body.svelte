@@ -57,7 +57,7 @@
 				class="absolute h-[6lh] w-full bg-linear-to-t from-black to-[transparent]"
 				class:hidden={open}
 			></div>
-			<div class="overflow-hidden" class:max-h-[6lh]={!open}>
+			<div class="prose dark:prose-invert overflow-hidden" class:max-h-[6lh]={!open}>
 				{@html item.description}
 			</div>
 		</div>
