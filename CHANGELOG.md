@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/disconsented/workshop-walker/compare/v0.3.0...v0.4.0) - 2026-09-21
+
+### Added
+
+- *(web)* limit the request rate, concurrency and duration
+
+### Fixed
+
+- *(item)* stop the item query after two seconds
+- *(web)* reject over-quota requests before the concurrency permit
+
+### Other
+
+- *(web)* assert the list and item queries keep their timeouts
+
 ## [0.2.0](https://github.com/disconsented/workshop-walker/releases/tag/workshop-walker-v0.2.0) - 2025-07-15
 
 ### Added
