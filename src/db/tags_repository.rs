@@ -110,6 +110,7 @@ mod test {
         DEFINE TABLE tags TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD app_id ON tags TYPE int PERMISSIONS FULL;
         DEFINE FIELD display_name ON tags TYPE string PERMISSIONS FULL;
+        DEFINE FIELD known_members ON tags TYPE int DEFAULT 0 PERMISSIONS FULL;
         DEFINE FIELD id ON tags TYPE string PERMISSIONS FULL;
         DEFINE INDEX field_app_id_tag ON tags FIELDS app_id, display_name;
 
