@@ -15,6 +15,7 @@ impl<R: UserNamesPort> UserNamesService<R> {
         Self { repo }
     }
 
+    #[tracing::instrument(level = "debug", skip(self, id, name))]
     pub async fn update_user_name(
         &self,
         id: IUsernameID,
@@ -39,6 +40,7 @@ impl<R: UserNamesPort> UserNamesService<R> {
         Ok(())
     }
 
+    #[tracing::instrument(level = "debug", skip(self, id))]
     pub async fn should_update_user(&self, id: IUsernameID) -> Result<bool, UserNameError> {
         match self.repo.get_by_id(id).await? {
             Some(existing) => {

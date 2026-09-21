@@ -22,6 +22,7 @@ impl TagsSilo {
 }
 
 impl TagsPort for TagsSilo {
+    #[tracing::instrument(level = "debug", skip(self, app, tags))]
     async fn upsert_tags(&self, app: IAppID, tags: Vec<InternalTag>) -> Result<(), TagError> {
         let tag_ids = tags
             .iter()
@@ -71,6 +72,7 @@ impl TagsPort for TagsSilo {
         Ok(())
     }
 
+    #[tracing::instrument(level = "debug", skip(self, tag, members))]
     async fn set_tag_known_members(&self, tag: ITagID, members: i64) -> Result<(), TagError> {
         let query = self
             .db

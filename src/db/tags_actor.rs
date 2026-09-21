@@ -8,7 +8,7 @@ use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use tracing::{debug, error};
+use tracing::{Instrument, debug, debug_span, error};
 
 use crate::{
     application::tags_service::TagsService,
@@ -82,6 +82,7 @@ impl Actor for TagsActor {
     type Msg = TagsMsg;
     type State = TagsState;
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -106,6 +107,13 @@ impl Actor for TagsActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             TagsMsg::AddTagToApp(appid, tags) => {
+                let span = debug_span!(
+                    parent: None,
+                    "tags add to app",
+                    app.id = ?appid.key,
+                    tags.offered = tags.len(),
+                    tags.new = tracing::field::Empty,
+                );
                 let entry = state.tags_cache.entry(appid.clone()).or_default();
                 let new_tags = tags.into_iter().fold(vec![], |mut acc, tag| {
                     if entry.insert(tag.clone()) {
@@ -114,15 +122,32 @@ impl Actor for TagsActor {
                     }
                     acc
                 });
+                span.record("tags.new", new_tags.len());
                 if !new_tags.is_empty()
-                    && let Err(error) = state.service.update_tags(appid.clone(), new_tags).await
+                    && let Err(error) = state
+                        .service
+                        .update_tags(appid.clone(), new_tags)
+                        .instrument(span)
+                        .await
                 {
                     error!(?error, ?appid, "Failed to update tags");
                 }
             }
-            TagsMsg::Clear => state.tags_cache.clear(),
+            TagsMsg::Clear => {
+                let _entered = debug_span!(parent: None, "tags clear").entered();
+                state.tags_cache.clear();
+            }
             TagsMsg::UpdateCount(appid, tag) => {
-                if let Err(error) = Self::run_get_count(state, appid, tag).await {
+                let span = debug_span!(
+                    parent: None,
+                    "tags update count",
+                    app.id = ?appid.key,
+                    tag.id = ?tag.key,
+                );
+                if let Err(error) = Self::run_get_count(state, appid, tag)
+                    .instrument(span)
+                    .await
+                {
                     error!(?error, "Failed to update known members count");
                 }
             }
@@ -135,6 +160,7 @@ impl TagsActor {
     // N.B. there's a possible bug here, because steam does weird things with
     // totals when you _dont_ specify an app, we may get incorrect tag counts
     // for an app
+    #[tracing::instrument(level = "debug", skip(state, app, tag))]
     async fn run_get_count(
         state: &mut TagsState,
         app: IAppID,
@@ -148,14 +174,19 @@ impl TagsActor {
         }
         .into_request(&state.client, &state.steam_token)
         .whatever_context("into_request")?;
+        // reqwest carries no spans of its own, so without these the call is a
+        // gap in the trace.
+        let call = debug_span!("steam get tag count", url = %request.url().path());
         let response = state
             .client
             .execute(request)
+            .instrument(call)
             .await
             .whatever_context("Sending get page request")?;
 
         let json = response
             .json::<SteamRoot<GetTagCountResponse>>()
+            .instrument(debug_span!("decode tag count"))
             .await
             .whatever_context("request body")?;
 

@@ -67,8 +67,6 @@ async fn run_migration<C: Connection>(
     table: &str,
     migration: &Migration,
 ) -> Result<std::time::Duration, Error> {
-    let span = info_span!("migration", id = %migration.id);
-
     async {
         trace!(content = %migration.content, "executing migration");
 
@@ -125,6 +123,6 @@ async fn run_migration<C: Connection>(
 
         Ok(duration)
     }
-    .instrument(span)
+    .instrument(info_span!("migration", id = %migration.id))
     .await
 }

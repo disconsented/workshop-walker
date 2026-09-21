@@ -1,16 +1,16 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use tracing::{debug, error, info};
+use tracing::{Instrument, debug, debug_span, error, info};
 
 use crate::{
     db::{
         IItemID,
         model::{Class, InternalSource, Status},
-        properties_actor::PropertiesMsg,
+        properties_actor::{PropertiesMsg, PropertiesRequest},
     },
     domain::properties::{InternalNewProperty, PropertiesError},
-    processing::llama_actor::LlamaMsg,
+    processing::llama_actor::{LlamaMsg, LlamaRequest},
 };
 
 pub struct MLQueueActor;
@@ -38,6 +38,7 @@ impl Actor for MLQueueActor {
     type Msg = MLQueueMsg;
     type State = MLQueueState;
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -58,7 +59,13 @@ impl Actor for MLQueueActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             MLQueueMsg::Process(id) => {
-                if let Err(e) = process_one(state, id.clone()).await {
+                // A root of its own. Extraction takes far longer than the item
+                // pipeline that queued it, so it does not belong in that trace.
+                // The item id is the field to search on instead.
+                if let Err(e) = process_one(state, id.clone())
+                    .instrument(debug_span!(parent: None, "ml queue process", item.id = ?id.key))
+                    .await
+                {
                     error!(?e, record=?id, "processing ML extraction");
                 }
             }
@@ -67,6 +74,7 @@ impl Actor for MLQueueActor {
     }
 }
 
+#[tracing::instrument(level = "debug", skip(state, workshop_item))]
 async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result<(), Whatever> {
     // Load minimal fields needed
     let mut resp = state
@@ -90,7 +98,7 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
     };
 
     // Call the extractor via RPC using ractor::call! macro
-    match call!(state.extractor, |reply| LlamaMsg::Process {
+    match call!(state.extractor, |reply| LlamaRequest::Process {
         title,
         description,
         rpc_reply_port: reply
@@ -106,17 +114,20 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
                 .chain(props.types.into_iter().map(|v| (Class::Type, v)))
                 .chain(props.features.into_iter().map(|v| (Class::Feature, v)))
             {
-                match call!(state.property_actor, |reply| PropertiesMsg::NewProperty(
-                    InternalNewProperty {
-                        workshop_item: workshop_item.clone(),
-                        class: class.clone(),
-                        value: value.clone(),
-                        note: None,
-                    },
-                    InternalSource::System,
-                    Status::Accepted,
-                    reply
-                )) {
+                match call!(
+                    state.property_actor,
+                    |reply| PropertiesRequest::NewProperty(
+                        InternalNewProperty {
+                            workshop_item: workshop_item.clone(),
+                            class: class.clone(),
+                            value: value.clone(),
+                            note: None,
+                        },
+                        InternalSource::System,
+                        Status::Accepted,
+                        reply
+                    )
+                ) {
                     Ok(Ok(..)) => {
                         debug!(?workshop_item, %class, %value, "Inserted new property");
                     }

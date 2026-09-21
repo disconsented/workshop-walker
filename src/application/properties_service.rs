@@ -18,6 +18,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         Self { repo }
     }
 
+    #[tracing::instrument(level = "debug", skip(self, new_property, source, status))]
     pub async fn new_property(
         &self,
         mut new_property: InternalNewProperty,
@@ -53,6 +54,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
             .await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, vote, userid))]
     pub async fn vote(
         &self,
         vote: InternalVoteData,
@@ -64,6 +66,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         self.repo.vote(vote, userid).await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, vote, userid))]
     pub async fn remove_vote(
         &self,
         vote: InternalVoteData,
@@ -72,6 +75,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         self.repo.remove_vote(vote, userid).await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, search_query))]
     pub async fn search_property(
         &self,
         search_query: InternalSearchProperty,
@@ -104,6 +108,10 @@ mod tests {
         remove_calls: AtomicUsize,
     }
 
+    #[allow(
+        clippy::unused_async_trait_impl,
+        reason = "the port is async; the spy has nothing to await"
+    )]
     impl PropertiesPort for SpyRepo {
         async fn create_or_link_property(
             &self,

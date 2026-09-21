@@ -25,6 +25,7 @@ impl PropertiesSilo {
 }
 
 impl PropertiesPort for PropertiesSilo {
+    #[tracing::instrument(level = "debug", skip(self, new_property, source, status))]
     async fn create_or_link_property(
         &self,
         new_property: InternalNewProperty,
@@ -143,6 +144,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
+    #[tracing::instrument(level = "debug", skip(self, vote_data, user))]
     async fn vote(
         &self,
         vote_data: InternalVoteData,
@@ -196,6 +198,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
+    #[tracing::instrument(level = "debug", skip(self, vote_data, user))]
     async fn remove_vote(
         &self,
         vote_data: InternalVoteData,
@@ -236,6 +239,7 @@ impl PropertiesPort for PropertiesSilo {
         }
     }
 
+    #[tracing::instrument(level = "debug", skip(self, search_query))]
     async fn search_property(
         &self,
         search_query: InternalSearchProperty,

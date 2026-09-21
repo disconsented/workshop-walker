@@ -69,7 +69,7 @@ struct Parameters {
 
 // ToDo: Seperate out filtering to its own struct
 // And, handle pagination based on the last element for performance
-#[instrument(skip_all)]
+#[instrument(level = "debug", name = "GET /api/list", skip_all, fields(app.id = parameters.app))]
 #[endpoint]
 pub async fn list(
     _: &mut Request,

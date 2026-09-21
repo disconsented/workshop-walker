@@ -2,6 +2,7 @@ use std::sync::OnceLock;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use surrealdb::{Surreal, engine::local::Db};
+use tracing::{Instrument, debug_span};
 
 use crate::{
     application::properties_service::PropertiesService,
@@ -29,8 +30,10 @@ pub struct PropertiesState {
     service: PropertiesService<PropertiesSilo>,
 }
 
-/// Messages handled by `PropertiesActor`.
-pub enum PropertiesMsg {
+/// What the actor takes.
+pub type PropertiesMsg = PropertiesRequest;
+
+pub enum PropertiesRequest {
     NewProperty(
         InternalNewProperty,
         InternalSource,
@@ -55,6 +58,7 @@ impl Actor for PropertiesActor {
     type Msg = PropertiesMsg;
     type State = PropertiesState;
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -73,16 +77,26 @@ impl Actor for PropertiesActor {
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            PropertiesMsg::NewProperty(prop, source, status, reply) => {
-                let res = state.service.new_property(prop, source, status).await;
+            PropertiesRequest::NewProperty(prop, source, status, reply) => {
+                let res = state
+                    .service
+                    .new_property(prop, source, status)
+                    .instrument(debug_span!("properties new", ?status))
+                    .await;
                 let _ = reply.send(res);
             }
-            PropertiesMsg::Vote(vote, userid, reply) => {
-                let res = state.service.vote(vote, userid).await;
+            PropertiesRequest::Vote(vote, userid, reply) => {
+                let span = debug_span!("properties vote", user.id = ?userid.key);
+                let res = state.service.vote(vote, userid).instrument(span).await;
                 let _ = reply.send(res);
             }
-            PropertiesMsg::Remove(vote, userid, reply) => {
-                let res = state.service.remove_vote(vote, userid).await;
+            PropertiesRequest::Remove(vote, userid, reply) => {
+                let span = debug_span!("properties remove vote", user.id = ?userid.key);
+                let res = state
+                    .service
+                    .remove_vote(vote, userid)
+                    .instrument(span)
+                    .await;
                 let _ = reply.send(res);
             }
         }

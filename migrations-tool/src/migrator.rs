@@ -33,6 +33,7 @@ pub struct Migrator<S = Unvalidated> {
 }
 
 impl Migrator<Unvalidated> {
+    #[tracing::instrument(level = "debug", skip(dir))]
     /// Load every `*.surql` file from `dir`, sorted lexicographically by
     /// filename.
     ///
@@ -157,16 +158,15 @@ impl Migrator<Validated> {
     /// Returns [`Error::ChecksumMismatch`] if a migration's content has changed
     /// and `ignore_checksum_changes` is `false`.
     pub async fn plan<C: Connection>(&self, db: &Surreal<C>) -> Result<Plan, Error> {
-        let span = info_span!("plan", table = %self.table);
-
         async {
             let applied = self.fetch_applied(db).await?;
             self.classify(applied)
         }
-        .instrument(span)
+        .instrument(info_span!("plan", table = %self.table))
         .await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, db))]
     async fn fetch_applied<C: Connection>(
         &self,
         db: &Surreal<C>,

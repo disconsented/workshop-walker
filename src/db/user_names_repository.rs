@@ -17,6 +17,7 @@ impl UserNamesSilo {
 }
 
 impl UserNamesPort for UserNamesSilo {
+    #[tracing::instrument(level = "debug", skip(self, username))]
     async fn upsert(&self, username: UserName) -> Result<(), UserNameError> {
         match self
             .db
@@ -35,6 +36,7 @@ impl UserNamesPort for UserNamesSilo {
         }
     }
 
+    #[tracing::instrument(level = "debug", skip(self, id))]
     async fn get_by_id(&self, id: IUsernameID) -> Result<Option<UserName>, UserNameError> {
         match self
             .db

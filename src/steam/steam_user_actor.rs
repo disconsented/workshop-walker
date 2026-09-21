@@ -9,7 +9,7 @@ use tokio::{
     task::JoinHandle,
     time::{sleep, timeout},
 };
-use tracing::{debug, error};
+use tracing::{Instrument, debug, debug_span, error};
 
 use crate::{
     application::user_names_service::UserNamesService,
@@ -73,7 +73,9 @@ impl Actor for SteamUserActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             SteamUserMsg::Fetch(id) => {
-                if let Err(error) = state.sender.send(id).await {
+                let span = debug_span!(parent: None, "steam user fetch", user.id = ?id.key);
+                let _entered = span.enter();
+                if let Err(error) = state.sender.send(id.clone()).await {
                     error!(?error, "Failed to send steam ID to worker task");
                     panic!("Failed to send steam ID to worker task");
                 }
@@ -140,10 +142,13 @@ impl SteamUserActor {
             debug!(%total_processed, batch_size, cached_usernames, "Fetching player summaries from Steam");
             // Retry up to 3 times
             for _ in 0..3 {
+                // The url carries the api token, so it stays out of the
+                // span. reqwest has no spans of its own.
                 match args
                     .client
                     .get(&url)
                     .send()
+                    .instrument(debug_span!("steam get player summaries", batch_size))
                     .await
                     .and_then(Response::error_for_status)
                 {
@@ -181,6 +186,7 @@ impl SteamUserActor {
     }
 }
 
+#[tracing::instrument(level = "debug", skip(user_names_service, id))]
 async fn should_update_user(
     user_names_service: &UserNamesService<UserNamesSilo>,
     id: IUsernameID,

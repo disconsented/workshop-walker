@@ -9,6 +9,7 @@ use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
 use salvo::prelude::ToSchema;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{Error, Kind, SurrealValue, Value};
+use tracing::debug_span;
 
 // The threshold of total words a language must be, to be considered valid for
 // detection.
@@ -95,6 +96,7 @@ impl SurrealValue for DetectedLanguage {
 
 pub struct LanguageActor {}
 
+#[derive(Debug)]
 pub struct LanguageArgs {}
 pub struct LanguageState {
     detector: LanguageDetector,
@@ -109,6 +111,7 @@ impl Actor for LanguageActor {
     type Msg = LanguageMsg;
     type State = LanguageState;
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -131,6 +134,8 @@ impl Actor for LanguageActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             LanguageMsg::Detect(text, reply) => {
+                // Nothing awaits here, so entering the span is safe.
+                let _entered = debug_span!("detect languages", bytes = text.len()).entered();
                 let _ = reply.send(detect(&text, &state.detector));
             }
         }
@@ -139,6 +144,7 @@ impl Actor for LanguageActor {
     }
 }
 
+#[tracing::instrument(level = "debug", skip(text, language_detector))]
 /// Using heuristics, determine what languages are likely present in the text.
 /// I'd noticed that mods sometimes have translated descriptions, hence, the
 /// need to return N langs.

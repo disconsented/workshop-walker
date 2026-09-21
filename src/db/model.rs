@@ -8,7 +8,7 @@ use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{Number, Object, RecordIdKey, SurrealValue};
-use tracing::{error, warn};
+use tracing::error;
 
 use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, IUsernameID, ItemID, TagID, UserID, UsernameID},
@@ -630,7 +630,6 @@ impl SurrealValue for Status {
     }
 
     fn is_value(value: &::surrealdb::types::Value) -> bool {
-        warn!("{:?}", value);
         if let ::surrealdb::types::Value::Object(map) = value {
             {
                 if map

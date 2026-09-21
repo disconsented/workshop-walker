@@ -10,7 +10,7 @@ use reqwest::Client;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
 use tokio::task::JoinHandle;
-use tracing::{Instrument, debug, error, info, info_span};
+use tracing::{Instrument, debug, debug_span, error, info, info_span};
 
 use crate::{
     db::{IAppID, item_update_actor::ItemUpdateMsg},
@@ -47,6 +47,7 @@ impl Actor for SteamDownloadActor {
     type Msg = SteamDownloadMsg;
     type State = SteamDownloadState;
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         myself: ActorRef<Self::Msg>,
@@ -89,17 +90,24 @@ impl Actor for SteamDownloadActor {
                     first_page,
                     state.item_processing_actor_ref.clone(),
                 )
+                .instrument(debug_span!(parent: None, "steam download", app.id = ?app.key))
                 .await
                 {
                     error!(?app, ?error, "Downloading workshop items");
                 }
             }
             SteamDownloadMsg::AddApp(app) => {
+                let span = debug_span!(parent: None, "steam download add app", app.id = ?app.key);
                 if !state.apps.contains_key(&app) {
-                    start_downloader(&myself, state, app, false).await;
+                    start_downloader(&myself, state, app, false)
+                        .instrument(span)
+                        .await;
                 }
             }
             SteamDownloadMsg::RemoveApp(app) => {
+                let _entered =
+                    debug_span!(parent: None, "steam download remove app", app.id = ?app.key)
+                        .entered();
                 if let Some(handle) = state.apps.remove(&app) {
                     handle.abort();
                     info!(?app, "Stopped downloading workshop items");
@@ -111,6 +119,7 @@ impl Actor for SteamDownloadActor {
     }
 }
 
+#[tracing::instrument(level = "debug", skip(state, app, page, database_writer_actor_ref))]
 async fn download(
     state: &mut SteamDownloadState,
     app: IAppID,
@@ -129,13 +138,18 @@ async fn download(
         let request = page
             .into_request(&state.client, &state.steam_token)
             .whatever_context("building download request")?;
+        // reqwest carries no spans of its own, so without these the call is a
+        // gap in the trace.
+        let call = debug_span!("steam get page", url = %request.url().path(), downloaded);
         let response = state
             .client
             .execute(request)
+            .instrument(call)
             .await
             .whatever_context("Sending get page request")?;
         let json = response
             .json::<SteamRoot<IPublishedResponse>>()
+            .instrument(debug_span!("decode page"))
             .await
             .whatever_context("request body")?;
 
@@ -161,6 +175,7 @@ async fn download(
     Ok(())
 }
 
+#[tracing::instrument(level = "debug", skip(myself, state, app, force))]
 async fn start_downloader(
     myself: &ActorRef<SteamDownloadMsg>,
     state: &mut SteamDownloadState,

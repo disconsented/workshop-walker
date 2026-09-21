@@ -1,8 +1,10 @@
 use bbscope::{BBCode, BBCodeTagConfig};
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, async_trait};
+use tracing::debug_span;
 
 pub struct BBActor {}
 
+#[derive(Debug)]
 pub struct BBArgs {}
 pub struct BBState {
     bb: BBCode,
@@ -17,6 +19,7 @@ impl Actor for BBActor {
     type Msg = BBMsg;
     type State = BBState;
 
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn pre_start(
         &self,
         _: ActorRef<Self::Msg>,
@@ -35,6 +38,8 @@ impl Actor for BBActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             BBMsg::Process(data, reply) => {
+                // Nothing awaits here, so entering the span is safe.
+                let _entered = debug_span!("bb parse", bytes = data.len()).entered();
                 reply.send(state.bb.parse(&data))?;
             }
         }

@@ -12,22 +12,27 @@ impl<R: AppsPort> AppsService<R> {
         Self { repo }
     }
 
+    #[tracing::instrument(level = "debug", skip(self))]
     pub async fn list_available(&self) -> Result<Vec<InternalApp>, AppError> {
         self.repo.list_available().await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, app))]
     pub async fn upsert(&self, app: InternalApp) -> Result<(), AppError> {
         self.repo.upsert(app).await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, id))]
     pub async fn remove(&self, id: IAppID) -> Result<(), AppError> {
         self.repo.remove(id).await
     }
 
+    #[tracing::instrument(level = "debug", skip(self))]
     pub async fn list(&self) -> Result<Vec<InternalApp>, AppError> {
         self.repo.list().await
     }
 
+    #[tracing::instrument(level = "debug", skip(self, id))]
     pub async fn get(&self, id: IAppID) -> Result<InternalApp, AppError> {
         self.repo.get(id).await
     }

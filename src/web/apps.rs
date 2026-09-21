@@ -13,7 +13,7 @@ use snafu::{ErrorCompat, Snafu};
 use crate::{
     db::{
         AppID,
-        apps_actor::{APPS_ACTOR, AppsMsg},
+        apps_actor::{APPS_ACTOR, AppsRequest},
         model::ExternalApp,
     },
     domain::apps::AppError,
@@ -84,10 +84,11 @@ impl From<AppError> for InnerError {
     }
 }
 
+#[tracing::instrument(level = "debug", name = "GET /api/apps")]
 #[endpoint]
 pub async fn list_available() -> Result<Json<Vec<ExternalApp>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    let apps = call!(actor, AppsMsg::ListAvailable)
+    let apps = call!(actor, AppsRequest::ListAvailable)
         .map_err(InnerError::from)?
         .map_err(InnerError::from)?;
     let apps: Vec<ExternalApp> = apps
@@ -98,18 +99,20 @@ pub async fn list_available() -> Result<Json<Vec<ExternalApp>>> {
     Ok(Json(apps))
 }
 
+#[tracing::instrument(level = "debug", name = "POST /api/admin/apps", skip(app))]
 #[endpoint]
 pub async fn upsert(app: JsonBody<ExternalApp>) -> Result<()> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    call!(actor, |reply| AppsMsg::Upsert(app.0.into(), reply))
+    call!(actor, |reply| AppsRequest::Upsert(app.0.into(), reply))
         .map_err(InnerError::from)?
         .map_err(InnerError::from)?;
     Ok(())
 }
+#[tracing::instrument(level = "debug", name = "DELETE /api/admin/app", skip(id), fields(app.id = ?*id))]
 #[endpoint]
 pub async fn remove(id: QueryParam<AppID, true>) -> Result<()> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    call!(actor, |reply| AppsMsg::Remove(
+    call!(actor, |reply| AppsRequest::Remove(
         id.into_inner().into(),
         reply
     ))
@@ -118,10 +121,11 @@ pub async fn remove(id: QueryParam<AppID, true>) -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "debug", name = "GET /api/admin/apps")]
 #[endpoint]
 pub async fn list() -> Result<Json<Vec<ExternalApp>>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    let apps = call!(actor, AppsMsg::List)
+    let apps = call!(actor, AppsRequest::List)
         .map_err(InnerError::from)?
         .map_err(InnerError::from)?;
     let apps: Vec<ExternalApp> = apps
@@ -132,12 +136,16 @@ pub async fn list() -> Result<Json<Vec<ExternalApp>>> {
     Ok(Json(apps))
 }
 
+#[tracing::instrument(level = "debug", name = "GET /api/app/{id}", skip(id), fields(app.id = ?*id))]
 #[endpoint]
 pub async fn get(id: PathParam<AppID>) -> Result<Json<ExternalApp>> {
     let actor = APPS_ACTOR.get().ok_or(InnerError::Unavailable)?;
-    let app = call!(actor, |reply| AppsMsg::Get(id.into_inner().into(), reply))
-        .map_err(InnerError::from)?
-        .map_err(InnerError::from)?;
+    let app = call!(actor, |reply| AppsRequest::Get(
+        id.into_inner().into(),
+        reply
+    ))
+    .map_err(InnerError::from)?
+    .map_err(InnerError::from)?;
     let app = app.try_into().map_err(|_| InnerError::InternalError)?;
     Ok(Json(app))
 }
