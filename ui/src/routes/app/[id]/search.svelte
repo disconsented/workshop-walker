@@ -191,8 +191,6 @@
 			itemToString: (item) => `${item.class}:${item.value}`
 		})
 	);
-
-	$inspect(searchProps.v);
 </script>
 
 <form
