@@ -377,7 +377,7 @@
 			<div class="flex flex-col">
 				<div class="flex flex-row items-center justify-between">
 					Properties
-					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
+					<SegmentedControl value="or" onValueChange={(details) => (value = details.value)} disabled>
 						<SegmentedControl.Control class="gap-0 p-0">
 							<SegmentedControl.Indicator />
 							<SegmentedControl.Item value="and">
