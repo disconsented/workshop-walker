@@ -29,7 +29,7 @@
 		updatedAfter,
 		updatedBefore
 	} from './store.svelte';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteMap, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import Property from '../../item/[item]/Property.svelte';
 
@@ -169,19 +169,23 @@
 	}
 
 	let foundProps = $state(null);
-	let searchQuery: Promise<Response> = $state(null);
+	let searchQuery: Promise<void | Response> | null = $state(null);
+	let searchTimer: number = 0;
 	let query = $state('');
 
 	function searchSuggestProps(term: string) {
-		searchQuery = fetch('/api/properties/search', {
-			method: 'post',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ app: appID, search_term: term })
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				foundProps = data;
-			});
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(() => {
+			searchQuery = fetch('/api/properties/search', {
+				method: 'post',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ app: appID, search_term: term })
+			})
+				.then((response) => response.json())
+				.then((data) => {
+					foundProps = data;
+				});
+		}, 750);
 	}
 
 	const collection = $derived(
@@ -374,7 +378,7 @@
 		<div class="flex w-full flex-col gap-2">
 			<div class="flex flex-col">
 				<div class="flex flex-row items-center justify-between">
-					Properties
+					Properties (Maximum 5)
 					<SegmentedControl
 						value="or"
 						onValueChange={(details) => (value = details.value)}
@@ -407,6 +411,13 @@
 								property: { class: prop[0], value: prop[1] },
 								positive: true
 							});
+							if (searchProps.v.size > 5) {
+								const truncated_props = searchProps.v
+									.entries()
+									.drop(searchProps.v.size - 5)
+									.toArray();
+								searchProps.v = new SvelteMap(truncated_props);
+							}
 						}}
 						value={undefined}
 					>
@@ -435,7 +446,7 @@
 					</Combobox>
 				</div>
 			</div>
-			<div class="flex flex-row gap-1">
+			<div class="flex flex-row flex-wrap gap-1">
 				{#each searchProps.v as item (item[0])}
 					{@const property = item[1].property}
 					{@const key = item[0]}
