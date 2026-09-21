@@ -20,7 +20,7 @@ use surrealdb_core::sql::{
     part::DestructurePart,
     statements::SelectStatement,
 };
-use surrealdb_types::{RecordId, SurrealValue, ToSql};
+use surrealdb_types::{Duration, RecordId, SurrealValue, ToSql};
 use tracing::{Instrument, debug, info_span, instrument, trace};
 
 use crate::{
@@ -217,6 +217,7 @@ async fn query_inner(
     let app = IAppID::from(app);
     let mut stmt = SelectStatement {
         what: vec![Expr::Table("workshop_items".into())],
+        timeout: Expr::Literal(Literal::Duration(Duration::from_secs(5))),
         ..Default::default()
     };
     {
