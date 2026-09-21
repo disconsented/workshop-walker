@@ -437,6 +437,7 @@ mod test {
             DEFINE TABLE tags TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
             DEFINE FIELD id ON tags TYPE string PERMISSIONS FULL;
             DEFINE FIELD display_name ON tags TYPE string PERMISSIONS FULL;
+            DEFINE FIELD known_members ON tags TYPE int DEFAULT 0 PERMISSIONS FULL;
 
             DEFINE TABLE properties TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
             DEFINE FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;
