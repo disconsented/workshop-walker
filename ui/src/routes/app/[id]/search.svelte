@@ -257,7 +257,7 @@
 	</div>
 	<div
 		class="bg-surface-50-950/50 flex flex-wrap gap-4 p-4 lg:grid lg:grid-cols-2"
-		class:hidden={!showAdvanced}
+		class:!hidden={!showAdvanced}
 	>
 		<div class="flex w-full flex-col gap-2">
 			<div class="flex flex-col gap-2">
