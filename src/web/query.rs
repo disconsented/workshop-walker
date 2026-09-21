@@ -269,6 +269,18 @@ async fn query_inner(
         }
 
         if !positive_props.is_empty() {
+            let idiom = Expr::Idiom(Idiom(vec![
+                Part::Graph(Box::from(Lookup {
+                    kind: LookupKind::Graph(Dir::Out),
+                    what: vec![LookupSubject::Table {
+                        table: "workshop_item_properties".into(),
+                        referencing_field: None,
+                    }],
+                    cond: Some(Cond(properties_condition.clone())),
+                    ..Default::default()
+                })),
+                Part::Field("out".into()),
+            ]));
             conditions.push(Expr::Binary {
                 left: Box::new(idiom),
                 op: BinaryOperator::ContainAll,
@@ -282,6 +294,18 @@ async fn query_inner(
         }
 
         if !negative_props.is_empty() {
+            let idiom = Expr::Idiom(Idiom(vec![
+                Part::Graph(Box::from(Lookup {
+                    kind: LookupKind::Graph(Dir::Out),
+                    what: vec![LookupSubject::Table {
+                        table: "workshop_item_properties".into(),
+                        referencing_field: None,
+                    }],
+                    cond: Some(Cond(properties_condition.clone())),
+                    ..Default::default()
+                })),
+                Part::Field("out".into()),
+            ]));
             conditions.push(Expr::Binary {
                 left: Box::new(idiom),
                 op: BinaryOperator::ContainNone,
