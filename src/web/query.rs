@@ -1,7 +1,7 @@
 use salvo::{
     Depot, Request, Writer,
-    oapi::{ToSchema, endpoint, extract::QueryParam},
-    prelude::Json,
+    oapi::{ToSchema, endpoint},
+    prelude::{Json, ToParameters},
 };
 use serde::{
     Deserialize, Deserializer,
@@ -33,7 +33,7 @@ use crate::{
     web::{DB_POOL, auth},
 };
 
-#[derive(ToSchema)]
+#[derive(ToSchema, Debug)]
 struct PropertyParam(pub Property);
 impl<'de> Deserialize<'de> for PropertyParam {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -42,7 +42,7 @@ impl<'de> Deserialize<'de> for PropertyParam {
     {
         let raw = String::deserialize(deserializer)?;
         let (class, value) = raw
-            .split_once(":")
+            .split_once(':')
             .ok_or(D::Error::custom("expected `:` found none"))?;
         let class = Class::deserialize(class.into_deserializer())?;
         Ok(Self(Property {
@@ -52,6 +52,21 @@ impl<'de> Deserialize<'de> for PropertyParam {
     }
 }
 
+#[derive(Deserialize, ToParameters, Debug)]
+struct Parameters {
+    app: i64,
+    page: Option<u64>,
+    limit: Option<u64>,
+    language: Option<DetectedLanguage>,
+    tags: Option<Vec<String>>,
+    title: Option<String>,
+    updated_before: Option<i64>,
+    updated_after: Option<i64>,
+    order_by: Option<OrderBy>,
+    positive_props: Option<Vec<PropertyParam>>,
+    negative_props: Option<Vec<PropertyParam>>,
+}
+
 // ToDo: Seperate out filtering to its own struct
 // And, handle pagination based on the last element for performance
 #[instrument(skip_all)]
@@ -59,40 +74,49 @@ impl<'de> Deserialize<'de> for PropertyParam {
 pub async fn list(
     _: &mut Request,
     depot: &mut Depot,
-    app: QueryParam<i64, true>,
-    page: QueryParam<u64, false>,
-    limit: QueryParam<u64, false>,
-    language: QueryParam<DetectedLanguage, false>,
-    mut tags: QueryParam<Vec<String>, false>,
-    mut title: QueryParam<String, false>,
-    updated_before: QueryParam<i64, false>,
-    updated_after: QueryParam<i64, false>,
-    mut order_by: QueryParam<OrderBy, false>,
-    positive_props: QueryParam<Vec<PropertyParam>, false>,
-    negative_props: QueryParam<Vec<PropertyParam>, false>,
+    parameters: Parameters,
 ) -> web::Result<Json<Vec<ExternalWorkshopItem>>> {
+    let Parameters {
+        app,
+        page,
+        limit,
+        language,
+        mut tags,
+        mut title,
+        updated_before,
+        updated_after,
+        mut order_by,
+        positive_props,
+        negative_props,
+    } = parameters;
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     let user = auth::get_user_from_depot(depot);
     let positive_props = {
-        let mut props = positive_props.into_inner().unwrap_or_default();
-        props.drain(..props.len().min(5)).collect()
+        let mut props = positive_props.unwrap_or_default();
+        props
+            .drain(..props.len().min(5))
+            .map(|param| param.0)
+            .collect()
     };
     let negative_props = {
-        let mut props = negative_props.into_inner().unwrap_or_default();
-        props.drain(..props.len().min(5)).collect()
+        let mut props = negative_props.unwrap_or_default();
+        props
+            .drain(..props.len().min(5))
+            .map(|param| param.0)
+            .collect()
     };
 
     let results = query_inner(
-        app.into_inner(),
+        app,
         page,
         limit,
-        *language,
+        language,
         tags.take().unwrap_or_default(),
         title.take(),
-        *updated_before,
-        *updated_after,
+        updated_before,
+        updated_after,
         order_by.take(),
         positive_props,
         negative_props,
@@ -116,8 +140,8 @@ async fn query_inner(
     updated_before: Option<i64>,
     updated_after: Option<i64>,
     order_by: Option<OrderBy>,
-    positive_props: Vec<PropertyParam>,
-    negative_props: Vec<PropertyParam>,
+    positive_props: Vec<Property>,
+    negative_props: Vec<Property>,
     db: &Surreal<Db>,
     user: Option<IUserID>,
 ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
@@ -191,8 +215,10 @@ async fn query_inner(
     };
 
     let app = IAppID::from(app);
-    let mut stmt = SelectStatement::default();
-    stmt.what = vec![Expr::Table("workshop_items".into())];
+    let mut stmt = SelectStatement {
+        what: vec![Expr::Table("workshop_items".into())],
+        ..Default::default()
+    };
     {
         stmt.fields = Fields::Select(vec![
             Field::All,
@@ -287,7 +313,7 @@ async fn query_inner(
                 right: Box::new(Expr::Literal(Literal::Array(
                     positive_props
                         .into_iter()
-                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop.0).into_value()))
+                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
                         .collect::<Vec<_>>(),
                 ))),
             });
@@ -312,7 +338,7 @@ async fn query_inner(
                 right: Box::new(Expr::Literal(Literal::Array(
                     negative_props
                         .into_iter()
-                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop.0).into_value()))
+                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
                         .collect::<Vec<_>>(),
                 ))),
             });
