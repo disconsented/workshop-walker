@@ -16,7 +16,7 @@ use surrealdb_core::sql::{
     part::DestructurePart,
     statements::SelectStatement,
 };
-use surrealdb_types::{RecordId, SurrealValue, ToSql};
+use surrealdb_types::{Duration, RecordId, SurrealValue, ToSql};
 use tracing::{debug, error, instrument};
 
 use crate::{
@@ -195,11 +195,13 @@ async fn get_item(
             ]),
         ),
     ];
-    let mut stmt = SelectStatement::default();
-    stmt.what = vec![Expr::from_public_value(
-        RecordId::from(id.clone()).into_value(),
-    )];
-
+    let mut stmt = SelectStatement {
+        what: vec![Expr::from_public_value(
+            RecordId::from(id.clone()).into_value(),
+        )],
+        timeout: Expr::Literal(Literal::Duration(Duration::from_secs(2))),
+        ..Default::default()
+    };
     // Keep accepted properties, plus (for a signed-in user) their own submitted
     // ones regardless of status. The condition goes on the graph lookup itself:
     // a `.filter()` after the lookup binds to each edge rather than to the
