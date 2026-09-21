@@ -1,12 +1,13 @@
 use crate::{
     db::{
         IUserID,
-        model::{InternalSource, Status},
+        model::{InternalSource, Property, Status},
     },
-    domain::properties::{InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort},
+    domain::properties::{
+        InternalNewProperty, InternalSearchProperty, InternalVoteData, PropertiesError,
+        PropertiesPort,
+    },
 };
-use crate::db::model::Property;
-use crate::domain::properties::InternalSearchProperty;
 
 pub struct PropertiesService<R: PropertiesPort> {
     repo: R,
@@ -74,10 +75,9 @@ impl<R: PropertiesPort> PropertiesService<R> {
     pub async fn search_property(
         &self,
         search_query: InternalSearchProperty,
-    ) -> Result<Vec<Property>, PropertiesError>{
+    ) -> Result<Vec<Property>, PropertiesError> {
         self.repo.search_property(search_query).await
     }
-
 }
 
 #[cfg(test)]
@@ -86,13 +86,15 @@ mod tests {
 
     use super::PropertiesService;
     use crate::{
-        db::{IItemID, IUserID, model::Class},
+        db::{
+            IItemID, IUserID,
+            model::{Class, Property},
+        },
         domain::properties::{
-            InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort,
+            InternalNewProperty, InternalSearchProperty, InternalVoteData, PropertiesError,
+            PropertiesPort,
         },
     };
-    use crate::db::model::Property;
-    use crate::domain::properties::InternalSearchProperty;
 
     /// A `PropertiesPort` that records how many times each method was called so
     /// tests can assert whether the service delegated to the repository.
@@ -126,7 +128,10 @@ mod tests {
             Ok(())
         }
 
-        async fn search_property(&self, search_query: InternalSearchProperty) -> Result<Vec<Property>, PropertiesError> {
+        async fn search_property(
+            &self,
+            search_query: InternalSearchProperty,
+        ) -> Result<Vec<Property>, PropertiesError> {
             todo!()
         }
     }

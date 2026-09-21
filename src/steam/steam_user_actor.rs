@@ -83,9 +83,7 @@ impl Actor for SteamUserActor {
     }
 }
 
-
 impl SteamUserActor {
-    
     async fn run_batched(
         args: SteamUserArgs,
         mut rx: Receiver<IUsernameID>,

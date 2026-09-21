@@ -2,9 +2,8 @@ use ractor::{ActorProcessingErr, RactorErr, call};
 use salvo::{
     Depot, Writer,
     oapi::extract::JsonBody,
-    prelude::{StatusCode, StatusError, endpoint},
+    prelude::{Json, StatusCode, StatusError, endpoint},
 };
-use salvo::prelude::Json;
 use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
 
@@ -161,7 +160,9 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
 /// lookahead search for properties, doesn't discriminate by type just by value.
 /// Will only return results that are approved, and have a score of at least 0.
 #[endpoint]
-pub async fn search_properties(search_property: JsonBody<ExternalSearchProperty>) -> Result<Json<Vec<Property>>> {
+pub async fn search_properties(
+    search_property: JsonBody<ExternalSearchProperty>,
+) -> Result<Json<Vec<Property>>> {
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     let silo = PropertiesService::new(PropertiesSilo::new(db.clone()));
     let properties = silo

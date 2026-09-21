@@ -41,9 +41,10 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                 Router::with_path("property")
                     .hoop(auth::validate_biscuit_token)
                     .post(properties::new),
-            )            .push(
+            )
+            .push(
                 Router::with_path("properties")
-                    .push(Router::with_path("search").post(search_properties))
+                    .push(Router::with_path("search").post(search_properties)),
             )
             .push(
                 Router::with_path("vote")
@@ -61,7 +62,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                     .push(
                         Router::with_path("properties")
                             .put(admin::patch_workshop_item_properties)
-                            .get(admin::get_workshop_item_properties)
+                            .get(admin::get_workshop_item_properties),
                     )
                     .push(
                         Router::with_path("users")
