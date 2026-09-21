@@ -129,8 +129,10 @@ pub async fn list(
     Ok(Json(results))
 }
 
-#[instrument(skip_all)]
-async fn query_inner(
+/// Builds the `SELECT` behind the list endpoint. It stays apart from
+/// [`query_inner`] so that a test can read the rendered SQL without a
+/// database.
+fn build_query(
     app: i64,
     page: u64,
     limit: u64,
@@ -142,9 +144,8 @@ async fn query_inner(
     order_by: Option<OrderBy>,
     positive_props: Vec<Property>,
     negative_props: Vec<Property>,
-    db: &Surreal<Db>,
-    user: Option<IUserID>,
-) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
+    user: Option<&IUserID>,
+) -> SelectStatement {
     let mut prop_fields = vec![
         DestructurePart::Field("in".into()),
         DestructurePart::Field("id".into()),
@@ -167,7 +168,7 @@ async fn query_inner(
     // link, user, item }. `.score` on a record id that doesn't exist yields
     // NONE, so un-voted properties come back as `None`. Only computable
     // with a user.
-    if let Some(user) = &user {
+    if let Some(user) = user {
         prop_fields.push(DestructurePart::Aliased(
             "vote_state".into(),
             Idiom(vec![
@@ -200,7 +201,7 @@ async fn query_inner(
         op: BinaryOperator::ExactEqual,
         right: Box::new(Expr::Literal(Literal::Integer(Status::Accepted as i64))),
     };
-    let properties_condition = if let Some(user) = &user {
+    let properties_condition = if let Some(user) = user {
         Expr::Binary {
             left: Box::new(status_accepted),
             op: BinaryOperator::Or,
@@ -393,6 +394,39 @@ async fn query_inner(
         }]))
     });
 
+    stmt
+}
+
+#[instrument(skip_all)]
+async fn query_inner(
+    app: i64,
+    page: u64,
+    limit: u64,
+    language: Option<DetectedLanguage>,
+    tags: Vec<String>,
+    title: Option<String>,
+    updated_before: Option<i64>,
+    updated_after: Option<i64>,
+    order_by: Option<OrderBy>,
+    positive_props: Vec<Property>,
+    negative_props: Vec<Property>,
+    db: &Surreal<Db>,
+    user: Option<IUserID>,
+) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
+    let stmt = build_query(
+        app,
+        page,
+        limit,
+        language,
+        tags,
+        title,
+        updated_before,
+        updated_after,
+        order_by,
+        positive_props,
+        negative_props,
+        user.as_ref(),
+    );
     debug!(sql = stmt.to_sql(), "running big query");
     let mut results = db.query(stmt).await.whatever_context("querying")?;
 
@@ -411,7 +445,7 @@ async fn query_inner(
 mod test {
     use surrealdb::{Surreal, engine::local::Mem};
 
-    use super::{Db, query_inner};
+    use super::{Db, OrderBy, Property, ToSql, build_query, query_inner};
     use crate::db::{
         IUserID,
         model::{Class, ExternalSource, Status},
@@ -898,6 +932,63 @@ mod test {
         assert!(
             list_ids_for_tags(&db, &["1.6", "test"]).await.is_empty(),
             "item 700 does not carry tags:test, item 100 does not carry tags:⟨1.6⟩"
+        );
+    }
+
+    /// The list query must keep its `TIMEOUT`, so that the database aborts a
+    /// slow scan itself instead of leaving the request middleware to time out
+    /// while the work continues.
+    #[test]
+    fn list_statement_carries_a_timeout() {
+        let sql = build_query(
+            1,
+            0,
+            10,
+            None,
+            vec![],
+            None,
+            None,
+            None,
+            None,
+            vec![],
+            vec![],
+            None,
+        )
+        .to_sql();
+
+        assert!(
+            sql.contains("TIMEOUT 5s"),
+            "the list query lost its TIMEOUT clause: {sql}"
+        );
+    }
+
+    /// Filters, an order and a signed-in user each rewrite parts of the
+    /// statement. The timeout must survive all of them together.
+    #[test]
+    fn filtered_list_statement_carries_a_timeout() {
+        let positive = vec![Property {
+            class: Class::Type,
+            value: "accepted".to_string(),
+        }];
+        let sql = build_query(
+            1,
+            0,
+            10,
+            None,
+            vec!["test".to_string()],
+            Some("item".to_string()),
+            Some(200),
+            Some(0),
+            Some(OrderBy::LastUpdated),
+            positive,
+            vec![],
+            Some(&IUserID::from(2i64)),
+        )
+        .to_sql();
+
+        assert!(
+            sql.contains("TIMEOUT 5s"),
+            "the filtered list query lost its TIMEOUT clause: {sql}"
         );
     }
 }
