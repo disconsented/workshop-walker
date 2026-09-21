@@ -46,10 +46,8 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 		paramList.push(['updated_after', updatedAfter.v / 1000]);
 	}
 
-	console.log('??', searchProps);
 	if (searchProps.v) {
-		searchProps.v.forEach((positive, property) => {
-			const prop_string = property.class + ':' + property.value;
+		searchProps.v.forEach(({ positive }, prop_string) => {
 			if (positive) {
 				paramList.push(['positive_props', prop_string]);
 			} else {
@@ -154,15 +152,21 @@ function loadParams(params: URLSearchParams) {
 	if (paramPositiveProps.length > 0) {
 		paramPositiveProps.forEach((prop) => {
 			const prop_split = prop.split(':');
-			searchProps.v.set({ class: prop_split[0], value: prop_split[1] }, true);
+			searchProps.v.set(prop, {
+				property: { class: prop_split[0], value: prop_split[1] },
+				positive: true
+			});
 		});
 	}
 
-	const paramnegativeProps = params.getAll('negative_props');
-	if (paramnegativeProps.length > 0) {
-		paramnegativeProps.forEach((prop) => {
+	const paramNegativeProps = params.getAll('negative_props');
+	if (paramNegativeProps.length > 0) {
+		paramNegativeProps.forEach((prop) => {
 			const prop_split = prop.split(':');
-			searchProps.v.set({ class: prop_split[0], value: prop_split[1] }, false);
+			searchProps.v.set(prop, {
+				property: { class: prop_split[0], value: prop_split[1] },
+				positive: false
+			});
 		});
 	}
 }

@@ -90,9 +90,9 @@
 	$effect(() => {
 		if (searchProps.v) {
 			params.delete('positive_props');
-			searchProps.v.forEach((positive, v) => {
+			searchProps.v.forEach(({ positive }, v) => {
 				if (positive) {
-					params.append('positive_props', v.class + ':' + v.value);
+					params.append('positive_props', v);
 				}
 			});
 		} else {
@@ -103,9 +103,9 @@
 	$effect(() => {
 		if (searchProps.v) {
 			params.delete('negative_props');
-			searchProps.v.forEach((positive, v) => {
+			searchProps.v.forEach(({ positive }, v) => {
 				if (!positive) {
-					params.append('negative_props', v.class + ':' + v.value);
+					params.append('negative_props', v);
 				}
 			});
 		} else {
@@ -400,7 +400,11 @@
 						{collection}
 						selectionBehavior="clear"
 						onValueChange={(details) => {
-							searchProps.v.set(details.items[0], true);
+							let prop = details.value[0].split(':');
+							searchProps.v.set(details.value[0], {
+								property: { class: prop[0], value: prop[1] },
+								positive: true
+							});
 						}}
 						value={undefined}
 					>
@@ -430,9 +434,10 @@
 				</div>
 			</div>
 			<div class="flex flex-row gap-1">
-				{#each searchProps.v as item}
-					{@const property = item[0]}
-					{@const positive = item[1]}
+				{#each searchProps.v as item (item[0])}
+					{@const property = item[1].property}
+					{@const key = item[0]}
+					{@const positive = item[1].positive}
 					<div
 						class="grid cursor-pointer place-items-center gap-1 pl-1"
 						class:grid-cols-[auto_1fr_auto]={!positive}
@@ -448,11 +453,19 @@
 							type="button"
 							class="flex cursor-pointer"
 							onclick={() => {
-								console.debug(item[0], searchProps.v.get(property));
-								searchProps.v.set(property, !positive);
+								searchProps.v.set(key, { property: property, positive: !positive });
 							}}
 						>
-							<Property loggedIn={false} {property} hideVote={true} subtle={true} />
+							<Property
+								loggedIn={false}
+								property={{
+									class: property.class,
+									value: property.value,
+									...{ vote_state: 0, vote_count: 0, upvote_count: 0, status: 1 }
+								}}
+								hideVote={true}
+								subtle={true}
+							/>
 						</button>
 						<button
 							class="btn cursor-pointer"
@@ -460,7 +473,7 @@
 							class:preset-tonal-error={!positive}
 							type="button"
 							onclick={() => {
-								searchProps.v.delete(property);
+								searchProps.v.delete(key);
 							}}
 						>
 							<Icon data={faClose} class="fa-fw" />
