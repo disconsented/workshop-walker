@@ -113,11 +113,10 @@ impl Actor for ItemActor {
     }
 }
 
-async fn get_item(
-    db: &Surreal<Db>,
-    id: IItemID,
-    user: Option<IUserID>,
-) -> Result<InternalFullWorkshopItem> {
+/// Builds the `SELECT` for one item with its properties, dependencies and
+/// dependants. It stays apart from [`get_item`] so that a test can read the
+/// rendered SQL without a database.
+fn build_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectStatement {
     let mut prop_fields = vec![
         DestructurePart::Field("in".into()),
         DestructurePart::Field("id".into()),
@@ -307,6 +306,15 @@ async fn get_item(
         }),
     ]);
 
+    stmt
+}
+
+async fn get_item(
+    db: &Surreal<Db>,
+    id: IItemID,
+    user: Option<IUserID>,
+) -> Result<InternalFullWorkshopItem> {
+    let stmt = build_item_statement(&id, user);
     debug!(sql = stmt.to_sql(), "item query");
     let mut thing = db
         .query(stmt)
@@ -343,7 +351,7 @@ pub async fn get(id: PathParam<i64>, depot: &mut Depot) -> Result<Json<ExternalF
 mod test {
     use surrealdb::{Surreal, engine::local::Mem};
 
-    use super::{Db, InternalFullWorkshopItem, get_item};
+    use super::{Db, InternalFullWorkshopItem, ToSql, build_item_statement, get_item};
     use crate::db::{IItemID, IUserID};
 
     /// Stand up an in-memory database with just enough schema for `get_item`,
@@ -627,5 +635,30 @@ mod test {
             .collect();
         values.sort();
         values
+    }
+
+    /// The item query must keep its `TIMEOUT`. Without it a slow graph
+    /// traversal holds the item actor mailbox and blocks every other item
+    /// request, and the request middleware cannot shed the queued work.
+    #[test]
+    fn item_statement_carries_a_timeout() {
+        let sql = build_item_statement(&IItemID::from(100i64), None).to_sql();
+
+        assert!(
+            sql.contains("TIMEOUT 2s"),
+            "the item query lost its TIMEOUT clause: {sql}"
+        );
+    }
+
+    /// A signed-in caller adds a `source` term to the property condition, which
+    /// rewrites the statement. The timeout must survive that branch.
+    #[test]
+    fn item_statement_keeps_the_timeout_for_a_signed_in_user() {
+        let sql = build_item_statement(&IItemID::from(100i64), Some(IUserID::from(2i64))).to_sql();
+
+        assert!(
+            sql.contains("TIMEOUT 2s"),
+            "the signed-in item query lost its TIMEOUT clause: {sql}"
+        );
     }
 }
