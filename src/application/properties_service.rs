@@ -71,7 +71,7 @@ impl<R: PropertiesPort> PropertiesService<R> {
         self.repo.remove_vote(vote, userid).await
     }
 
-    async fn search_property(
+    pub async fn search_property(
         &self,
         search_query: InternalSearchProperty,
     ) -> Result<Vec<Property>, PropertiesError>{

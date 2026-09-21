@@ -9,6 +9,7 @@ use snafu::{ErrorCompat, prelude::*};
 use surrealdb::{Surreal, engine::local::Db};
 
 use crate::{
+    application::properties_service::PropertiesService,
     db::{
         model::{ExternalSource, Property, Status},
         properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
@@ -16,7 +17,6 @@ use crate::{
     },
     domain::properties::{
         ExternalNewProperty, ExternalSearchProperty, ExternalVoteData, PropertiesError,
-        PropertiesPort,
     },
     web::{DB_POOL, auth},
 };
@@ -163,7 +163,7 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
 #[endpoint]
 pub async fn search_properties(search_property: JsonBody<ExternalSearchProperty>) -> Result<Json<Vec<Property>>> {
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
-    let silo = PropertiesSilo::new(db.clone());
+    let silo = PropertiesService::new(PropertiesSilo::new(db.clone()));
     let properties = silo
         .search_property(search_property.0.into())
         .await
