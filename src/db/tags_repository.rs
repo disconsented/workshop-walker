@@ -45,10 +45,12 @@ impl TagsPort for TagsSilo {
             if let Value::Object(obj) = &mut value {
                 obj.insert("app_id", app_id);
             }
-            let mut stmt = InsertStatement::default();
-            stmt.ignore = true;
-            stmt.data = Data::SingleExpression(Expr::from_public_value(value));
-            stmt.into = Some(Expr::Table(TableName::from("tags".to_string())));
+            let stmt = InsertStatement {
+                ignore: true,
+                data: Data::SingleExpression(Expr::from_public_value(value)),
+                into: Some(Expr::Table(TableName::from("tags".to_string()))),
+                ..Default::default()
+            };
             query = query.query(stmt);
         }
 
