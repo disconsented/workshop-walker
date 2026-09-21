@@ -204,7 +204,7 @@ async fn query_inner(
                             table: "workshop_item_properties".into(),
                             referencing_field: None,
                         }],
-                        cond: Some(Cond(properties_condition)),
+                        cond: Some(Cond(properties_condition.clone())),
                         ..Default::default()
                     })),
                     Part::Destructure(prop_fields.clone()),
@@ -263,6 +263,32 @@ async fn query_inner(
                 right: Box::new(Expr::Literal(Literal::Array(
                     tags.into_iter()
                         .map(|tag| Expr::from_public_value(ITagID::from(tag).into_value()))
+                        .collect::<Vec<_>>(),
+                ))),
+            });
+        }
+
+        if !positive_props.is_empty() {
+            conditions.push(Expr::Binary {
+                left: Box::new(idiom),
+                op: BinaryOperator::ContainAll,
+                right: Box::new(Expr::Literal(Literal::Array(
+                    positive_props
+                        .into_iter()
+                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop.0).into_value()))
+                        .collect::<Vec<_>>(),
+                ))),
+            });
+        }
+
+        if !negative_props.is_empty() {
+            conditions.push(Expr::Binary {
+                left: Box::new(idiom),
+                op: BinaryOperator::ContainNone,
+                right: Box::new(Expr::Literal(Literal::Array(
+                    negative_props
+                        .into_iter()
+                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop.0).into_value()))
                         .collect::<Vec<_>>(),
                 ))),
             });
