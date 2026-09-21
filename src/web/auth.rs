@@ -103,7 +103,7 @@ impl From<InnerError> for StatusError {
     }
 }
 
-/// Rejects an OpenID response nonce whose timestamp is not close to now.
+/// Rejects an `OpenID` response nonce whose timestamp is not close to now.
 ///
 /// Without this, a captured `/api/verify` query string stays a valid
 /// credential forever, because the signature over it does not expire.
@@ -116,7 +116,7 @@ fn validate_nonce(nonce: &str, now: NaiveDateTime) -> Result<()> {
 
     // Five minutes either side, to allow for clock drift.
     if (now - timestamp).abs() > TimeDelta::minutes(5) {
-        return Err(InnerError::SelfValidationFailed)?;
+        Err(InnerError::SelfValidationFailed)?;
     }
     Ok(())
 }
@@ -393,7 +393,7 @@ impl AuthActor {
 
         if let Err(e) = authorizer.authorize() {
             debug!(error = ?e, "Failed to authorize");
-            return Err(InnerError::Unauthorized)?;
+            Err(InnerError::Unauthorized)?;
         }
         Ok(authorizer)
     }
@@ -458,11 +458,11 @@ impl AuthActor {
                         .saturating_sub(b"/server".len())],
                 ))
             {
-                return Err(InnerError::SelfValidationFailed)?;
+                Err(InnerError::SelfValidationFailed)?;
             }
 
             if (map.get("openid.op_endpoint")) != (Some(&state.open_id_info.uri)) {
-                return Err(InnerError::SelfValidationFailed)?;
+                Err(InnerError::SelfValidationFailed)?;
             }
             validate_nonce(
                 map.get("openid.response_nonce")
@@ -505,7 +505,7 @@ impl AuthActor {
             .map_err(|_| InnerError::PeerValidationFailed)?;
 
         if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
-            return Err(InnerError::PeerValidationFailed)?;
+            Err(InnerError::PeerValidationFailed)?;
         }
 
         let user_id = map

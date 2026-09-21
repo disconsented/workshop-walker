@@ -22,7 +22,7 @@ pub static TAGS_ACTOR: OnceLock<ActorRef<TagsMsg>> = OnceLock::new();
 /// by delegating to the hexagonal `TagsService`.
 ///
 /// The tag set this actor builds is the union of the tags on every item, so it
-/// gets much larger than the tag list on the Steam workshop page. RimWorld
+/// gets much larger than the tag list on the Steam workshop page. `RimWorld`
 /// (294100) declares 16 tags, but its items also carry version tags that are
 /// not declared (1.7, 1.8, 1.9) and free-form ones (Gameplay, Royalty, Utility,
 /// Vanilla Expanded, Factions).
@@ -70,12 +70,12 @@ pub enum TagsMsg {
     UpdateCount(IAppID, ITagID),
 }
 
-/// TagsActor keeps an internal cache of tags, updating the database when it
+/// `TagsActor` keeps an internal cache of tags, updating the database when it
 /// thinks there are any new ones. This is intentionally not perfect, for the
 /// sake of performance, I'm making a deliberate trade-off to sometimes upsert
 /// redundantly instead of adding an extra query for _every_ item.
 ///
-/// https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/?key=YOUR_KEY&query_type=1&cursor=*&numperpage=1&appid=294100&requiredtags[0]=Translation&totalonly=true
+/// <https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/?key=YOUR_KEY&query_type=1&cursor>=*&numperpage=1&appid=294100&requiredtags[0]=Translation&totalonly=true
 #[async_trait]
 impl Actor for TagsActor {
     type Arguments = TagsArgs;
