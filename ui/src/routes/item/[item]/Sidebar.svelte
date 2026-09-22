@@ -55,8 +55,18 @@
 	</div>
 	<hr class="hr border-b-surface-200-800" />
 	<div class="flex flex-col gap-2">
+		<div class="flex flex-row justify-between">
+			<span class="uppercase opacity-50">Created</span>
+			<span class="capitalize"><TimeAgo date={item.created} /></span>
+		</div>
+
+		<div class="flex flex-row justify-between">
+			<span class="uppercase opacity-50">Updated</span>
+			<span class="capitalize"><TimeAgo date={item.last_updated} /></span>
+		</div>
+
 		<div>
-			<span> {Math.trunc(item.score * 100)}% Upvoted</span>
+			<span> {progress}% Upvoted</span>
 			<Progress value={progress}>
 				<Progress.Track class="bg-primary-50-950 h-1">
 					<Progress.Range class="bg-primary-500" />
@@ -65,15 +75,29 @@
 		</div>
 
 		<div class="flex flex-row justify-between">
-			<span class="opacity-50">Updated</span>
-			<TimeAgo date={item.last_updated} />
+			<span class="uppercase opacity-50">Conversions</span>
+			<span>{Math.trunc(item.conversions * 100)}%</span>
+		</div>
+
+		<div class="flex flex-row justify-between">
+			<span class="uppercase opacity-50">Retention</span>
+			<span>{Math.trunc(item.retention * 100)}%</span>
+		</div>
+
+		<div class="flex flex-row justify-between">
+			<span class="uppercase opacity-50">Dependencies</span>
+			<span>{item.dependencies.length}</span>
+		</div>
+		<div class="flex flex-row justify-between">
+			<span class="uppercase opacity-50">Dependants</span>
+			<span>{item.dependants.length}</span>
 		</div>
 	</div>
 	<hr class="hr border-b-surface-200-800" />
 	<div class="flex flex-col">
-		<span class="uppercase opacity-50">Popularity · 12 months · (Placeholder)</span>
+		<span class="uppercase opacity-50">Popularity · 12 months</span>
 		<div>
-			<PopularityChart />
+			<PopularityChart data={item.subscription_history ?? []} />
 		</div>
 	</div>
 	<hr class="hr border-b-surface-200-800" />

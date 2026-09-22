@@ -224,9 +224,9 @@
 							{:else}
 								<span class="badge preset-outlined">-</span>
 							{/each}
-							<span class="prose dark:prose-invert line-clamp-1 h-[1lh] min-w-0"
-								>{@html item.description}</span
-							>
+							<article class="prose dark:prose-invert line-clamp-1 h-[1lh] min-w-0">
+								{@html item.description}
+							</article>
 						</div>
 					</div>
 					<div role="cell" class="flex place-items-center">

@@ -46,7 +46,7 @@
 
 <div class="flex flex-col gap-4">
 	<div class="flex flex-col">
-		<div>
+		<div class="relative">
 			<button
 				class="btn preset-outlined-surface-200-800"
 				class:invisible={!open}
@@ -54,12 +54,14 @@
 				>Show Less
 			</button>
 			<div
-				class="absolute h-[6lh] w-full bg-linear-to-t from-black to-[transparent]"
+				class="pointer-events-none absolute inset-x-0 bottom-0 h-[6lh] bg-linear-to-t from-black to-[transparent]"
 				class:hidden={open}
 			></div>
-			<div class="prose dark:prose-invert overflow-hidden" class:max-h-[6lh]={!open}>
+			<article
+				class={['prose dark:prose-invert max-w-none overflow-hidden', !open && 'max-h-[6lh]']}
+			>
 				{@html item.description}
-			</div>
+			</article>
 		</div>
 		<button class="btn preset-outlined-surface-200-800 w-fit" onclick={() => (open = !open)}>
 			Show {open ? 'Less' : 'More'}</button

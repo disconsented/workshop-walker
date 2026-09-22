@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{collections::VecDeque, num::ParseIntError};
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use snafu::{ResultExt, Whatever};
@@ -14,7 +14,7 @@ use tracing::{debug, error};
 use crate::{
     db::{
         IItemID,
-        model::{InsertableWorkshopItem, InternalWorkshopItem},
+        model::{HistoryPair, InsertableWorkshopItem, InternalWorkshopItem},
         tags_actor::TagsMsg,
     },
     processing::{
@@ -29,6 +29,7 @@ use crate::{
     },
 };
 
+const HISTORY_LIMIT: usize = 365 * 2;
 pub struct ItemUpdateActor {}
 
 pub struct ItemUpdateArgs {
@@ -173,7 +174,8 @@ async fn maybe_queue_ml(
         let outdated = old_last_updated != Some(item.last_updated);
         let description_changed = old_description != item.description;
         let viable_language = item.languages.contains(&DetectedLanguage::English);
-        // We don't want to waste our resources on extracting
+        // We don't want to waste our resources on extracting out of items that
+        // the model wont support
         if viable_language && outdated && description_changed {
             debug!(
                 name = item.title,
@@ -223,6 +225,29 @@ async fn insert_data(
             .whatever_context("parsing publishedfileids")?
     };
 
+    let history: Option<HistoryPair> = db
+        .query("SELECT view_history, subscription_history FROM $id")
+        .bind(("id", item.id.clone()))
+        .await
+        .whatever_context("querying history")?
+        .take(0)
+        .whatever_context("taking history")?;
+    // New items are missing all the things so nothing to query
+    let history = history.unwrap_or_default();
+    // Keep up to a year
+
+    let mut view_history = VecDeque::from(history.view_history);
+    while view_history.len() >= HISTORY_LIMIT {
+        view_history.pop_front();
+    }
+    view_history.push_back(item.views);
+
+    let mut subscription_history = VecDeque::from(history.subscription_history);
+    while subscription_history.len() >= HISTORY_LIMIT {
+        subscription_history.pop_front();
+    }
+    subscription_history.push_back(item.subscriptions);
+
     let upsert_item = UpsertStatement {
         data: Some(Data::ReplaceExpression(Expr::from_public_value(
             InsertableWorkshopItem {
@@ -236,6 +261,14 @@ async fn insert_data(
                 title: item.title,
                 score: item.score,
                 tags: tags.into_iter().map(|tag| tag.id).collect::<Vec<_>>(),
+                lifetime_subscriptions: item.lifetime_subscriptions,
+                subscriptions: item.subscriptions,
+                views: item.views,
+                view_history: view_history.into(),
+                subscription_history: subscription_history.into(),
+                retention: item.retention,
+                created: item.created,
+                conversions: item.conversions,
             }
             .into_value(),
         ))),

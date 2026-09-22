@@ -6,7 +6,6 @@
 	import { faExternalLink, faGamepad, faTag } from '@fortawesome/free-solid-svg-icons';
 
 	let { data } = $props();
-	console.log(data);
 </script>
 
 <svelte:head>

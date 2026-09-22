@@ -1,70 +1,25 @@
-<script module lang="ts">
-	const data = [
-		{
-			date: new Date('2012-04-17T07:00:00.000Z'),
-			value: 609.7
-		},
-		{
-			date: new Date('2012-04-18T07:00:00.000Z'),
-			value: 608.34
-		},
-		{
-			date: new Date('2012-04-19T07:00:00.000Z'),
-			value: 587.44
-		},
-		{
-			date: new Date('2012-04-20T07:00:00.000Z'),
-			value: 572.98
-		},
-		{
-			date: new Date('2012-04-23T07:00:00.000Z'),
-			value: 571.7
-		},
-		{
-			date: new Date('2012-04-24T07:00:00.000Z'),
-			value: 560.28
-		},
-		{
-			date: new Date('2012-04-25T07:00:00.000Z'),
-			value: 610
-		},
-		{
-			date: new Date('2012-04-26T07:00:00.000Z'),
-			value: 607.7
-		},
-		{
-			date: new Date('2012-04-27T07:00:00.000Z'),
-			value: 603
-		},
-		{
-			date: new Date('2012-04-30T07:00:00.000Z'),
-			value: 583.98
-		},
-		{
-			date: new Date('2012-05-01T07:00:00.000Z'),
-			value: 582.13
-		}
-	];
-	import {
-		Area,
-		Axis,
-		Chart,
-		Highlight,
-		Layer,
-		LinearGradient,
-		RectClipPath,
-		Tooltip
-	} from 'layerchart';
+<script lang="ts">
+	import { Area, Chart, Highlight, Layer, LinearGradient, RectClipPath, Tooltip } from 'layerchart';
 	import { format } from '@layerstack/utils';
+
+	interface Props {
+		data: number[];
+	}
+
+	let { data }: Props = $props();
+
+	// LayerChart accessors take the datum alone, never an index, so a bare
+	// number[] has no x channel. Pair each value with its position first.
+	let series = $derived(data.map((value, index) => ({ index, value })));
 </script>
 
 <Chart
-	{data}
-	x="date"
+	data={series}
+	x="index"
 	y="value"
 	yDomain={[0, null]}
 	yNice
-	padding={{ top: 20, bottom: 20 }}
+	padding={{ top: 20, bottom: 4 }}
 	tooltipContext={{ mode: 'quadtree-x' }}
 	height={150}
 >
@@ -85,7 +40,6 @@
 				{/snippet}
 			</LinearGradient>
 			<Highlight points lines={{ class: 'stroke-primary [dark:stroke-dasharray:unset]' }} />
-			<Axis placement="bottom" />
 		</Layer>
 
 		<Tooltip.Root
@@ -95,25 +49,7 @@
 			class="text-primary text-sm leading-3 font-semibold"
 		>
 			{#snippet children({ data })}
-				{format(data.value, 'currency')}
-			{/snippet}
-		</Tooltip.Root>
-
-		<Tooltip.Root x={4} y={4} variant="none" class="text-sm leading-3 font-semibold">
-			{#snippet children({ data })}
-				{format(data.date, 'day')}
-			{/snippet}
-		</Tooltip.Root>
-
-		<Tooltip.Root
-			x="data"
-			y={context.height + context.padding.top + 2}
-			anchor="top"
-			variant="none"
-			class="bg-primary text-primary-content rounded-sm px-2 py-1 text-sm leading-3 font-semibold whitespace-nowrap"
-		>
-			{#snippet children({ data })}
-				{format(data.date, 'day')}
+				{format(data.value, 'integer')}
 			{/snippet}
 		</Tooltip.Root>
 	{/snippet}
