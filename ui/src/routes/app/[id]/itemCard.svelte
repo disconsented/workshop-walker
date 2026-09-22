@@ -76,13 +76,13 @@
 		</div>
 	</header>
 	<article class="flex grow flex-col justify-between space-y-4 p-4">
-		<div
+		<article
 			class="prose dark:prose-invert mb-2 max-h-[4lh] overflow-hidden text-sm
 						text-wrap text-ellipsis text-gray-600 transition-[height] duration-150 ease-in-out
 						hover:max-h-[10lh] hover:overflow-scroll"
 		>
 			{@html item.description}
-		</div>
+		</article>
 		<div class="flex flex-wrap gap-1">
 			{#each item.tags as tag (tag.id)}
 				<span class="badge preset-outlined">{tag.display_name}</span>

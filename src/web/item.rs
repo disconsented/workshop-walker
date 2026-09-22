@@ -176,6 +176,14 @@ async fn get_item(
         DestructurePart::Field("preview_url".into()),
         DestructurePart::Field("score".into()),
         DestructurePart::Field("title".into()),
+        DestructurePart::Field("created".into()),
+        DestructurePart::Field("lifetime_subscriptions".into()),
+        DestructurePart::Field("subscriptions".into()),
+        DestructurePart::Field("views".into()),
+        DestructurePart::Field("view_history".into()),
+        DestructurePart::Field("subscription_history".into()),
+        DestructurePart::Field("retention".into()),
+        DestructurePart::Field("conversions".into()),
         DestructurePart::Aliased(
             "tags".into(),
             Idiom(vec![
@@ -306,14 +314,14 @@ async fn get_item(
     ]);
 
     debug!(sql = stmt.to_sql(), "item query");
-    let mut thing = db
+    let mut results = db
         .query(stmt)
         .bind(("id", RecordId::from(id)))
         .await
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to query database"))
         .map_err(|_| InnerError::InternalError)?;
 
-    let result: Option<InternalFullWorkshopItem> = thing
+    let result: Option<InternalFullWorkshopItem> = results
         .take(0)
         .inspect_err(|error| error!(message = "get_item", ?error, "Failed to take result"))
         .map_err(|_| InnerError::InternalError)?;

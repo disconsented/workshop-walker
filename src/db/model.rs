@@ -79,6 +79,7 @@ pub struct WorkshopItem {
     pub id: ItemID,
     pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
+    pub created: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
     pub title: String,
@@ -89,6 +90,18 @@ pub struct WorkshopItem {
     #[dual_type(Vec<InternalWorkshopItemProperties>, to_external = to_external_props, to_internal = to_internal_props, surreal(wrap))]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub properties: Vec<ExternalWorkshopItemProperties>,
+    // Raw metrics
+    pub lifetime_subscriptions: u64,
+    pub subscriptions: u64,
+    pub views: u64,
+    // Historical metrics
+    pub view_history: Vec<u64>,
+    pub subscription_history: Vec<u64>,
+    // Calculations
+    // subscriptions/lifetime_subscriptions
+    pub retention: f32,
+    // Subscriptions/Views
+    pub conversions: f32,
 }
 
 // Gave up trying to work around errors with missing fields (tags & properties)
@@ -101,10 +114,24 @@ pub struct InsertableWorkshopItem {
     pub id: IItemID,
     pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
+    pub created: u64,
     pub preview_url: Option<String>,
     pub title: String,
     pub score: f32,
     pub tags: Vec<ITagID>,
+
+    // Raw metrics
+    pub lifetime_subscriptions: u64,
+    pub subscriptions: u64,
+    pub views: u64,
+    // Historical metrics
+    pub view_history: Vec<u64>,
+    pub subscription_history: Vec<u64>,
+    // Calculations
+    // subscriptions/lifetime_subscriptions
+    pub retention: f32,
+    // Subscriptions/Views
+    pub conversions: f32,
 }
 // Read-only, dual still needed for ID conversion
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -134,6 +161,7 @@ pub struct FullWorkshopItem {
     #[dual_type(Option<InternalUsername>, to_external = to_external_username, to_internal = to_internal_username)]
     pub author: Option<ExternalUsername>, // Authors steam ID
     pub last_updated: u64, // Timestamp in milliseconds
+    pub created: u64,      // Timestamp in milliseconds
 
     // Localization
     #[serde(default)]
@@ -146,6 +174,19 @@ pub struct FullWorkshopItem {
     #[dual_type(Vec<InternalFullWorkshopItem>, to_external = to_external_full_item, to_internal = to_internal_full_item, surreal(wrap))]
     #[serde(default)]
     pub dependants: Vec<ExternalFullWorkshopItem>, // A list of dependants found
+
+    // Raw metrics
+    pub lifetime_subscriptions: u64,
+    pub subscriptions: u64,
+    pub views: u64,
+    // Historical metrics
+    pub view_history: Vec<u64>,
+    pub subscription_history: Vec<u64>,
+    // Calculations
+    // subscriptions/lifetime_subscriptions
+    pub retention: f32,
+    // Subscriptions/Views
+    pub conversions: f32,
 }
 
 fn to_external_username(
@@ -208,6 +249,15 @@ fn to_external_tag_id(internal: Vec<ITagID>) -> Result<Vec<TagID>, surrealdb_typ
 
 fn to_internal_tag_id(external: Vec<TagID>) -> Vec<ITagID> {
     external.into_iter().map(ITagID::from).collect()
+}
+
+// I'd love for this to be a VecDeque but surreal breaks and deserialize an
+// array to it. Silly little struct for yanking history out of the DB for
+// updating.
+#[derive(SurrealValue, Default)]
+pub struct HistoryPair {
+    pub view_history: Vec<u64>,
+    pub subscription_history: Vec<u64>,
 }
 
 /// A workshop walker user

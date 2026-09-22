@@ -153,7 +153,9 @@ opt-level = 3
 opt-level = 2
 
 [lints.clippy]
-allow-dbg-in-tests = { level = "allow", priority = 9 }
+cast_sign_loss = { level = "allow", priority = 9 }
+cast_precision_loss = { level = "allow", priority = 9 }
+cast_possible_wrap = { level = "allow", priority = 9 }
 complexity = { level = "warn", priority = 7 }
 correctness = { level = "deny", priority = 6 }
 dbg_macro = { level = "deny", priority = 8 }

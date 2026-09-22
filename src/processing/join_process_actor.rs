@@ -61,9 +61,8 @@ impl Actor for JoinProcessActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             JoinProcessMsg::Process(mut data) => {
-                // Sometimes we'll find items that are missing this and they're
-                // effectively empty, so, just skip them and
-                // carry on
+                // Sometimes we'll find items that are missing this, and they're
+                // effectively empty, so, just skip them and carry on
                 if data.consumer_appid.is_none() {
                     myself.stop(None);
                     return Ok(());
@@ -108,6 +107,9 @@ impl InternalWorkshopItem {
                 .parse::<i64>()
                 .whatever_context("Invalid author format")?,
         );
+        let subscriptions = data.subscriptions.unwrap_or_default() as u64;
+        let views = data.views.unwrap_or_default() as u64;
+        let lifetime_subscriptions = data.lifetime_subscriptions.unwrap_or_default() as u64;
         Ok(Self {
             app: app.clone(),
             // Name gets updated later in theory
@@ -126,7 +128,7 @@ impl InternalWorkshopItem {
             preview_url: data
                 .preview_url
                 .or_else(|| data.previews.first().map(|preview| preview.url.clone())),
-            last_updated: data.time_updated.unwrap_or_default() as _,
+            last_updated: data.time_updated.unwrap_or_default() as u64,
             tags: data
                 .tags
                 .iter()
@@ -138,6 +140,14 @@ impl InternalWorkshopItem {
                 .collect::<Vec<_>>(),
             score: data.vote_data.map(|votes| votes.score).unwrap_or_default(),
             properties: vec![],
+            lifetime_subscriptions,
+            subscriptions,
+            views,
+            view_history: vec![],
+            subscription_history: vec![],
+            retention: subscriptions as f32 / lifetime_subscriptions.max(1) as f32,
+            created: data.time_created.unwrap_or_default() as u64,
+            conversions: subscriptions as f32 / views.max(1) as f32,
         })
     }
 }
