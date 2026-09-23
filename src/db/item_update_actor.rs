@@ -250,12 +250,16 @@ async fn insert_data(
     subscription_history.push_back(item.subscriptions);
     let subs_len = subscription_history.len();
     // Calculate trends
-    let trend_week = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 7)..]);
-    let trend_month = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 30)..]);
+    let trend_week =
+        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 7)..]);
+    let trend_month =
+        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 30)..]);
     let trend_quarter =
         calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 90)..]);
-    let trend_half = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 180)..]);
-    let trend_year = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 365)..]);
+    let trend_half =
+        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 180)..]);
+    let trend_year =
+        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 365)..]);
 
     let upsert_item = UpsertStatement {
         data: Some(Data::ReplaceExpression(Expr::from_public_value(
@@ -278,7 +282,8 @@ async fn insert_data(
                 retention: item.retention,
                 created: item.created,
                 conversions: item.conversions,
-                // Trying weight subscriptions against age, last_updated just raises huge mods back up
+                // Trying weight subscriptions against age, last_updated just raises huge mods back
+                // up
                 hotness: f32::log10(item.subscriptions.max(1) as f32)
                     + item.created as f32 / HOTNESS_MODIFIER,
                 trend_week,
