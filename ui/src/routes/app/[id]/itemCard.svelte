@@ -82,9 +82,9 @@
 	</header>
 	<article class="flex grow flex-col justify-between space-y-4 p-4">
 		<article
-			class="prose dark:prose-invert mb-2 line-clamp-4 truncate
+			class="prose dark:prose-invert mb-2 line-clamp-4 max-h-[4lh] truncate
 						overflow-hidden text-sm text-wrap text-ellipsis transition-all
-						duration-150 ease-in-out hover:line-clamp-10 hover:overflow-scroll"
+						duration-150 ease-in-out hover:line-clamp-15 hover:max-h-[15lh] hover:overflow-scroll"
 		>
 			{@html item.description}
 		</article>
