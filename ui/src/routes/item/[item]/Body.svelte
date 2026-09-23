@@ -6,8 +6,8 @@
 	import BodyTab from './BodyTab.svelte';
 
 	interface Props {
-		item: any;
-		app: any;
+		item: unknown;
+		app: unknown;
 	}
 
 	let { item, app }: Props = $props();
