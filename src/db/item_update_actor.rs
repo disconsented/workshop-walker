@@ -278,8 +278,9 @@ async fn insert_data(
                 retention: item.retention,
                 created: item.created,
                 conversions: item.conversions,
+                // Trying weight subscriptions against age, last_updated just raises huge mods back up
                 hotness: f32::log10(item.subscriptions.max(1) as f32)
-                    + item.last_updated as f32 / HOTNESS_MODIFIER,
+                    + item.created as f32 / HOTNESS_MODIFIER,
                 trend_week,
                 trend_month,
                 trend_quarter,
