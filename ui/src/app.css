@@ -19,3 +19,16 @@
 		var(--color-surface-800) 50%
 	);
 }
+
+.lc-root-container {
+	/* Default marks color when not using explicit color or color scale */
+	--color-primary: var(--color-blue-500);
+
+	/* Progressively darker shades representing surfaces (backgrounds). */
+	--color-surface-100: var(--color-white);
+	--color-surface-200: var(--color-gray-100);
+	--color-surface-300: var(--color-gray-300);
+
+	/* Content (text) color */
+	--color-surface-content: var(--color-gray-900);
+}
