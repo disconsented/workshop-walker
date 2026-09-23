@@ -148,6 +148,12 @@ impl InternalWorkshopItem {
             retention: subscriptions as f32 / lifetime_subscriptions.max(1) as f32,
             created: data.time_created.unwrap_or_default() as u64,
             conversions: subscriptions as f32 / views.max(1) as f32,
+            hotness: 0.0,
+            trend_week: 0.0,
+            trend_month: 0.0,
+            trend_quarter: 0.0,
+            trend_half: 0.0,
+            trend_year: 0.0,
         })
     }
 }

@@ -17,16 +17,28 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
 pub enum OrderBy {
-    Alphabetical,
+    Hotness,
+    Subscriptions,
+    TrendWeek,
     #[default]
+    TrendMonth,
+    TrendQuarter,
+    TrendHalf,
+    TrendYear,
     LastUpdated,
 }
 
 impl OrderBy {
     pub fn column_name(&self) -> &str {
         match self {
-            OrderBy::Alphabetical => "title",
             OrderBy::LastUpdated => "last_updated",
+            OrderBy::Hotness => "hotness",
+            OrderBy::Subscriptions => "subscriptions",
+            OrderBy::TrendWeek => "trend_week",
+            OrderBy::TrendMonth => "trend_month",
+            OrderBy::TrendQuarter => "trend_quarter",
+            OrderBy::TrendHalf => "trend_half",
+            OrderBy::TrendYear => "trend_year",
         }
     }
 }
@@ -102,6 +114,13 @@ pub struct WorkshopItem {
     pub retention: f32,
     // Subscriptions/Views
     pub conversions: f32,
+    // Calculated
+    pub hotness: f32,
+    pub trend_week: f32,
+    pub trend_month: f32,
+    pub trend_quarter: f32,
+    pub trend_half: f32,
+    pub trend_year: f32,
 }
 
 // Gave up trying to work around errors with missing fields (tags & properties)
@@ -132,6 +151,14 @@ pub struct InsertableWorkshopItem {
     pub retention: f32,
     // Subscriptions/Views
     pub conversions: f32,
+    // Calculated
+    pub hotness: f32,
+    pub trend_week: f32,
+    pub trend_month: f32,
+    pub trend_quarter: f32,
+    pub trend_half: f32,
+    pub trend_year: f32,
+
 }
 // Read-only, dual still needed for ID conversion
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
@@ -187,6 +214,14 @@ pub struct FullWorkshopItem {
     pub retention: f32,
     // Subscriptions/Views
     pub conversions: f32,
+
+    // Calculated
+    pub hotness: f32,
+    pub trend_week: f32,
+    pub trend_month: f32,
+    pub trend_quarter: f32,
+    pub trend_half: f32,
+    pub trend_year: f32,
 }
 
 fn to_external_username(

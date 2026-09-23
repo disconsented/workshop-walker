@@ -243,10 +243,14 @@
 				<Icon data={faArrowDownWideShort} class="fa-fw" />
 			</label>
 			<select class="select rounded-r-lg" bind:value={orderBy.v}>
+				<option value="Hotness">Hotness</option>
+				<option value="TrendWeek">Trending - Week</option>
+				<option value="TrendMonth">Trending - Month</option>
+				<option value="TrendQuarter">Trending - Quarter</option>
+				<option value="TrendHalf">Trending - Half Year</option>
+				<option value="TrendYear">Trending - Year</option>
 				<option value="LastUpdated">Last Updated</option>
-				<option value="PopularWeek" disabled>Popular - One Week</option>
-				<option value="PopularQuarter" disabled>Popular - Three Months</option>
-				<option value="PopularQuarter" disabled>Popular - All Time</option>
+				<option value="Subscriptions">Subscriptions</option>
 			</select>
 		</div>
 		<button class="btn preset-tonal" type="button" onclick={() => (showAdvanced = !showAdvanced)}>
