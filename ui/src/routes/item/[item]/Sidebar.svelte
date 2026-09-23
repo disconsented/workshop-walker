@@ -27,14 +27,14 @@
 		/>
 		<h3 class="h3">{item.title}</h3>
 		{#if item.author}
-			<span>
+			<span class="text-nowrap">
 				by
 				<a
 					href="https://steamcommunity.com/profiles/{item.author
 						.id}/myworkshopfiles/?appid={item.app}"
 					target="_self"
 					rel="noopener noreferrer"
-					class="anchor"
+					class="anchor truncate"
 				>
 					{item.author?.name ?? 'Unknown'}</a
 				>

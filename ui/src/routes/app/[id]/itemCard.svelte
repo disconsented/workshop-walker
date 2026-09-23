@@ -46,27 +46,32 @@
 			<!--Bottom (Title, author, updated-->
 			<div class="flex w-full flex-col">
 				<div class="w-full">
-					<h6 class="h6">
-						<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class="card p-1">
+					<h6 class="h6 p-1">
+						<a
+							href="/item/{item.id}"
+							target="_self"
+							rel="noopener noreferrer"
+							class="card place-items-center text-balance inline-block"
+						>
 							{item.title}
-							<Icon data={faLink} class="fa-fw"></Icon>
+							<Icon data={faLink} class="fa-fw" />
 						</a>
 					</h6>
 				</div>
-				<div class="flex w-full items-center justify-between p-1">
+				<div class="flex w-full place-items-center justify-between gap-2 p-1">
 					{#if item.author}
 						<a
 							href="https://steamcommunity.com/profiles/{item.author
 								.id}/myworkshopfiles/?appid={item.app}"
 							target="_self"
 							rel="noopener noreferrer"
-							class="anchor flex items-center gap-1"
+							class="anchor flex min-w-0 items-center gap-1"
 						>
-							<Icon data={faSteam} class="fa-fw" />
-							{item.author?.name ?? 'Unknown'}</a
+							<Icon data={faSteam} class="fa-fw shrink-0" />
+							<span class="truncate">{item.author?.name ?? 'Unknown'}</span></a
 						>
 					{/if}
-					<div class="mb-2 flex items-center">
+					<div class="flex w-fit items-center text-nowrap">
 						<span class="text-[0.5rem] text-gray-500">
 							Updated: <TimeAgo date={item.last_updated}></TimeAgo></span
 						>
@@ -77,9 +82,9 @@
 	</header>
 	<article class="flex grow flex-col justify-between space-y-4 p-4">
 		<article
-			class="prose dark:prose-invert mb-2 max-h-[4lh] overflow-hidden text-sm
-						text-wrap text-ellipsis text-gray-600 transition-[height] duration-150 ease-in-out
-						hover:max-h-[10lh] hover:overflow-scroll"
+			class="prose dark:prose-invert mb-2 overflow-hidden text-sm
+						text-wrap text-ellipsis transition-all duration-150 ease-in-out
+						hover:overflow-scroll truncate line-clamp-4 hover:line-clamp-10"
 		>
 			{@html item.description}
 		</article>
