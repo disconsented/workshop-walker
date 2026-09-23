@@ -131,33 +131,33 @@
 					break;
 				case 'today':
 					date.setDate(date.getDate() - 1);
-					updatedAfter.v = date;
-					updatedBefore.v = undefined;
+					updatedAfter.v = undefined;
+					updatedBefore.v = date;
 					break;
 				case 'week':
 					date.setDate(date.getDate() - 7);
-					updatedAfter.v = date;
-					updatedBefore.v = undefined;
+					updatedAfter.v = undefined;
+					updatedBefore.v = date;
 					break;
 				case 'month':
 					date.setDate(date.getDate() - 30);
-					updatedAfter.v = date;
-					updatedBefore.v = undefined;
+					updatedAfter.v = undefined;
+					updatedBefore.v = date;
 					break;
 				case 'quarter':
 					date.setDate(date.getDate() - 90);
-					updatedAfter.v = date;
-					updatedBefore.v = undefined;
+					updatedAfter.v = undefined;
+					updatedBefore.v = date;
 					break;
 				case 'half':
 					date.setDate(date.getDate() - 180);
-					updatedAfter.v = date;
-					updatedBefore.v = undefined;
+					updatedAfter.v = undefined;
+					updatedBefore.v = date;
 					break;
 				case 'year':
 					date.setDate(date.getDate() - 365);
-					updatedAfter.v = date;
-					updatedBefore.v = undefined;
+					updatedAfter.v = undefined;
+					updatedBefore.v = date;
 					break;
 			}
 		}

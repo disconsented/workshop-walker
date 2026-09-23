@@ -358,7 +358,7 @@ async fn query_inner(
         if let Some(last_updated) = updated_before {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
-                op: BinaryOperator::LessThan,
+                op: BinaryOperator::MoreThan,
                 right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
             });
         }
@@ -366,7 +366,7 @@ async fn query_inner(
         if let Some(last_updated) = updated_after {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
-                op: BinaryOperator::MoreThan,
+                op: BinaryOperator::LessThan,
                 right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
             });
         }
