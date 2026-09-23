@@ -30,6 +30,7 @@ use crate::{
 };
 
 const HISTORY_LIMIT: usize = 365 * 2;
+const HOTNESS_MODIFIER: f32 = 60.0 * 60.0 * 24.0 * 30.0 * 3.0;
 pub struct ItemUpdateActor {}
 
 pub struct ItemUpdateArgs {
@@ -234,8 +235,8 @@ async fn insert_data(
         .whatever_context("taking history")?;
     // New items are missing all the things so nothing to query
     let history = history.unwrap_or_default();
-    // Keep up to a year
 
+    // Keep up to a year
     let mut view_history = VecDeque::from(history.view_history);
     while view_history.len() >= HISTORY_LIMIT {
         view_history.pop_front();
@@ -247,6 +248,14 @@ async fn insert_data(
         subscription_history.pop_front();
     }
     subscription_history.push_back(item.subscriptions);
+    let subs_len = subscription_history.len();
+    // Calculate trends
+    let trend_week = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 7)..]);
+    let trend_month = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 30)..]);
+    let trend_quarter =
+        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 90)..]);
+    let trend_half = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 180)..]);
+    let trend_year = calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 365)..]);
 
     let upsert_item = UpsertStatement {
         data: Some(Data::ReplaceExpression(Expr::from_public_value(
@@ -269,6 +278,13 @@ async fn insert_data(
                 retention: item.retention,
                 created: item.created,
                 conversions: item.conversions,
+                hotness: f32::log10(item.subscriptions.max(1) as f32)
+                    + item.last_updated as f32 / HOTNESS_MODIFIER,
+                trend_week,
+                trend_month,
+                trend_quarter,
+                trend_half,
+                trend_year,
             }
             .into_value(),
         ))),
@@ -290,4 +306,18 @@ async fn insert_data(
     }
 
     Ok(())
+}
+
+fn calculate_relative_wma(slice: &[u64]) -> f32 {
+    let (weighted, total) = slice.windows(2).zip(1u32..).fold(
+        (0.0f32, 0.0f32),
+        |(weighted, total), (window, weight)| {
+            let previous = window[0].max(1) as f32;
+            let change = (window[1] as f32 - window[0] as f32) / previous;
+            let weight = weight as f32;
+            (weight.mul_add(change, weighted), total + weight)
+        },
+    );
+
+    if total == 0.0 { 0.0 } else { weighted / total }
 }
