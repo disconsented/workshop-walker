@@ -11,8 +11,8 @@
 	// LayerChart accessors take the datum alone, never an index, so a bare
 	// number[] has no x channel. Pair each value with its position first.
 	let series = $derived(data.map((value, index) => ({ index, value })));
-
 </script>
+
 <Chart
 	data={series}
 	x="index"
