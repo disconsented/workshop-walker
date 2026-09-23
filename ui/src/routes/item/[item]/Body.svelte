@@ -57,9 +57,7 @@
 				class="pointer-events-none absolute inset-x-0 bottom-0 h-full max-h-[6lh] bg-linear-to-t from-black to-[transparent]"
 				class:hidden={open}
 			></div>
-			<article
-				class='prose dark:prose-invert max-w-none overflow-hidden' class:max-h-[6lh]={!open}
-			>
+			<article class="prose dark:prose-invert max-w-none overflow-hidden" class:max-h-[6lh]={!open}>
 				{@html item.description}
 			</article>
 		</div>

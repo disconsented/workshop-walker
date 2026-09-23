@@ -51,7 +51,7 @@
 							href="/item/{item.id}"
 							target="_self"
 							rel="noopener noreferrer"
-							class="card place-items-center text-balance inline-block"
+							class="card inline-block place-items-center text-balance"
 						>
 							{item.title}
 							<Icon data={faLink} class="fa-fw" />
@@ -82,9 +82,9 @@
 	</header>
 	<article class="flex grow flex-col justify-between space-y-4 p-4">
 		<article
-			class="prose dark:prose-invert mb-2 overflow-hidden text-sm
-						text-wrap text-ellipsis transition-all duration-150 ease-in-out
-						hover:overflow-scroll truncate line-clamp-4 hover:line-clamp-10"
+			class="prose dark:prose-invert mb-2 line-clamp-4 truncate
+						overflow-hidden text-sm text-wrap text-ellipsis transition-all
+						duration-150 ease-in-out hover:line-clamp-10 hover:overflow-scroll"
 		>
 			{@html item.description}
 		</article>
