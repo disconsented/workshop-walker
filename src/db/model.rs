@@ -158,7 +158,6 @@ pub struct InsertableWorkshopItem {
     pub trend_quarter: f32,
     pub trend_half: f32,
     pub trend_year: f32,
-
 }
 // Read-only, dual still needed for ID conversion
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
