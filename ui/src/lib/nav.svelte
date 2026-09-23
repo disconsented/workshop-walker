@@ -27,49 +27,49 @@
 	{/each}
 {/snippet}
 
-<header class="">
-	<AppBar>
-		<AppBar.Toolbar class="grid-cols-[1fr_1fr]">
-			<AppBar.Lead>
-				<ol class="flex items-center gap-4" aria-label="Breadcrumb">
-					<li class="flex">
-						<a href="/" aria-label="Workshop Walker"><Logotype></Logotype></a>
-					</li>
-					{#if Array.isArray(segments)}
-						{@render trail(segments)}
-					{:else}
-						{#await segments then resolved}
-							{@render trail(resolved)}
-						{/await}
-					{/if}
-				</ol>
-			</AppBar.Lead>
-			<AppBar.Trail class="justify-end">
+<AppBar>
+	<AppBar.Toolbar class="grid-cols-[1fr_1fr]">
+		<AppBar.Lead>
+			<ol class="flex items-center gap-4" aria-label="Breadcrumb">
+				<li class="flex">
+					<a href="/" aria-label="Workshop Walker">
+						<Logotype></Logotype>
+					</a>
+				</li>
+				{#if Array.isArray(segments)}
+					{@render trail(segments)}
+				{:else}
+					{#await segments then resolved}
+						{@render trail(resolved)}
+					{/await}
+				{/if}
+			</ol>
+		</AppBar.Lead>
+		<AppBar.Trail class="justify-end">
+			<a
+				href="https://github.com/disconsented/workshop-walker"
+				class="btn preset-outlined-primary-100-900"
+			>
+				<Icon data={faGithub} class="fa-fw"></Icon>
+			</a>
+			{#if loggedIn}
 				<a
-					href="https://github.com/disconsented/workshop-walker"
+					href="/api/logout?location={location}"
+					aria-label="Sign Out"
 					class="btn preset-outlined-primary-100-900"
 				>
-					<Icon data={faGithub} class="fa-fw"></Icon>
+					Sign Out
 				</a>
-				{#if loggedIn}
-					<a
-						href="/api/logout?location={location}"
-						aria-label="Sign Out"
-						class="btn preset-outlined-primary-100-900"
-					>
-						Sign Out
-					</a>
-				{:else}
-					<a
-						href="/api/login?location={location}"
-						aria-label="Sign In Through Steam"
-						class="btn preset-outlined-primary-100-900"
-					>
-						<Icon data={faSteam} class="fa-fw" />
-						Sign in with Steam
-					</a>
-				{/if}
-			</AppBar.Trail>
-		</AppBar.Toolbar>
-	</AppBar>
-</header>
+			{:else}
+				<a
+					href="/api/login?location={location}"
+					aria-label="Sign In Through Steam"
+					class="btn preset-outlined-primary-100-900"
+				>
+					<Icon data={faSteam} class="fa-fw" />
+					Sign in with Steam
+				</a>
+			{/if}
+		</AppBar.Trail>
+	</AppBar.Toolbar>
+</AppBar>
