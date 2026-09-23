@@ -7,7 +7,6 @@
 	import Body from './Body.svelte';
 
 	let { data }: { data: PageData } = $props();
-	console.log(data);
 
 	const loggedIn = document.cookie.includes('token_set=');
 </script>
@@ -26,11 +25,13 @@
 	{/await}
 </svelte:head>
 
-{#await data.data}
+{#await Promise.all([data.data, data.app])}
 	<div class="flex h-full w-full place-content-center">
 		<Shadow></Shadow>
 	</div>
-{:then item}
+{:then promise}
+	{@const item = promise[0]}
+	{@const app = promise[1]}
 	{#if item.status}
 		{@render errorCard(item)}
 	{:else}
@@ -39,7 +40,7 @@
 				<Sidebar {loggedIn} {item} />
 			</div>
 			<div class="w-full max-w-6xl">
-				<Body {item} />
+				<Body {item} {app} />
 			</div>
 		</div>
 	{/if}

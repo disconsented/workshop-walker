@@ -6,15 +6,16 @@ export const load = async ({ fetch, params }) => {
 		.then((res) => res.text())
 		.then(parseSafeJSON);
 
+	const app = await fetch(`/api/app/${item.app}`)
+		.then((res) => res.text())
+		.then(parseSafeJSON);
+
 	return {
 		data: item,
-		// The parent app crumb is streamed so its name does not hold up the page.
-		breadcrumbs: fetch(`/api/app/${item.app}`)
-			.then((res) => (res.ok ? res.json() : undefined))
-			.catch(() => undefined)
-			.then((parent) => [
-				{ title: parent?.name ?? String(item.app), href: `/app/${item.app}` },
-				{ title: item.title, href: `/item/${params.item}` }
-			])
+		app: app,
+		breadcrumbs: [
+			{ title: app?.name ?? String(item.app), href: `/app/${item.app}` },
+			{ title: item.title, href: `/item/${params.item}` }
+		]
 	};
 };

@@ -184,6 +184,12 @@ async fn get_item(
         DestructurePart::Field("subscription_history".into()),
         DestructurePart::Field("retention".into()),
         DestructurePart::Field("conversions".into()),
+        DestructurePart::Field("hotness".into()),
+        DestructurePart::Field("trend_week".into()),
+        DestructurePart::Field("trend_month".into()),
+        DestructurePart::Field("trend_quarter".into()),
+        DestructurePart::Field("trend_half".into()),
+        DestructurePart::Field("trend_year".into()),
         DestructurePart::Aliased(
             "tags".into(),
             Idiom(vec![

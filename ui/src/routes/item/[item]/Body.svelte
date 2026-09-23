@@ -7,13 +7,14 @@
 
 	interface Props {
 		item: any;
+		app: any;
 	}
 
-	let { item }: Props = $props();
+	let { item, app }: Props = $props();
 	let open = $state(false);
 	let accordionFilter = $state(['open']);
 
-	let selectedTags = $state([]);
+	let selectedTags = $state(app.default_tags);
 	let selectedLangs = $state(['English']);
 
 	function mapTags(item) {
@@ -40,7 +41,6 @@
 		)
 	];
 	all_langs.sort();
-	$inspect(all_langs, all_tags);
 	let tab = $state(undefined);
 </script>
 
