@@ -28,6 +28,7 @@ use crate::{
         steam_user_actor::SteamUserMsg,
     },
 };
+use crate::steam::model::EResult;
 
 const HISTORY_LIMIT: usize = 365 * 2;
 const HOTNESS_MODIFIER: f32 = 60.0 * 60.0 * 24.0 * 30.0 * 3.0;
@@ -86,9 +87,11 @@ impl Actor for ItemUpdateActor {
         match message {
             ItemUpdateMsg::DeserializeRawFiles(steam_root) => {
                 for file in steam_root.response.publishedfiledetails {
-                    match serde_json::from_value(file) {
+                    match serde_json::from_value::<IPublishedStruct>(file) {
                         Ok(file) => {
-                            myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
+                            if file.result == EResult::OK as i32{
+                                myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
+                            }
                         }
                         Err(error) => {
                             error!(?error, "deserializing raw file");
