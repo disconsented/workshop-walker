@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/disconsented/workshop-walker/compare/v0.4.0...v0.5.0) - 2026-09-24
+
+### Added
+
+- *(properties)* search properties that hold no upvotes
+- *(item)* return the popularity fields and seed the tag filter
+- *(items)* [**breaking**] rank items by hotness and subscription trends
+- *(items)* record subscription and view metrics
+
+### Fixed
+
+- *(items)* calculate the trends from the history that it stores
+- *(items)* drop items that Steam did not mark as OK
+- *(items)* score hotness against the creation date
+- *(query)* correct the inverted date range operators
+- *(ui)* truncate long titles and author names
+- *(ui)* set explicit colours on the popularity chart
+
+### Other
+
+- *(docker)* compile the full workspace in the image
+- *(ui)* raise the item description clamp on large screens
+- *(query)* rename the last updated filters to gte and lte
+- *(ci)* give the code review a usable pull request target
+- *(ui)* type the item and app props as unknown
+- *(db)* apply rustfmt
+- *(ui)* cap the card description height on hover
+- *(ui)* apply prettier
+- *(ui)* remove the empty header wrapper from the nav
+
 ## [0.4.0](https://github.com/disconsented/workshop-walker/compare/v0.3.0...v0.4.0) - 2026-09-21
 
 ### Added
