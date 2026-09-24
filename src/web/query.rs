@@ -60,8 +60,8 @@ struct Parameters {
     language: Option<DetectedLanguage>,
     tags: Option<Vec<String>>,
     title: Option<String>,
-    updated_before: Option<i64>,
-    updated_after: Option<i64>,
+    last_updated_gte: Option<i64>,
+    last_updated_lte: Option<i64>,
     order_by: Option<OrderBy>,
     positive_props: Option<Vec<PropertyParam>>,
     negative_props: Option<Vec<PropertyParam>>,
@@ -83,8 +83,8 @@ pub async fn list(
         language,
         mut tags,
         mut title,
-        updated_before,
-        updated_after,
+        last_updated_gte,
+        last_updated_lte,
         mut order_by,
         positive_props,
         negative_props,
@@ -115,8 +115,8 @@ pub async fn list(
         language,
         tags.take().unwrap_or_default(),
         title.take(),
-        updated_before,
-        updated_after,
+        last_updated_gte,
+        last_updated_lte,
         order_by.take(),
         positive_props,
         negative_props,
@@ -139,8 +139,8 @@ fn build_query(
     language: Option<DetectedLanguage>,
     tags: Vec<String>,
     title: Option<String>,
-    updated_before: Option<i64>,
-    updated_after: Option<i64>,
+    last_updated_gte: Option<i64>,
+    last_updated_lte: Option<i64>,
     order_by: Option<OrderBy>,
     positive_props: Vec<Property>,
     negative_props: Vec<Property>,
@@ -357,19 +357,19 @@ fn build_query(
             });
         }
 
-        if let Some(last_updated) = updated_before {
+        if let Some(last_updated_gte) = last_updated_gte {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
-                op: BinaryOperator::MoreThan,
-                right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
+                op: BinaryOperator::MoreThanEqual,
+                right: Box::new(Expr::Literal(Literal::Integer(last_updated_gte))),
             });
         }
 
-        if let Some(last_updated) = updated_after {
+        if let Some(last_updated_lte) = last_updated_lte {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
-                op: BinaryOperator::LessThan,
-                right: Box::new(Expr::Literal(Literal::Integer(last_updated))),
+                op: BinaryOperator::LessThanEqual,
+                right: Box::new(Expr::Literal(Literal::Integer(last_updated_lte))),
             });
         }
 

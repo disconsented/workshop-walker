@@ -26,8 +26,8 @@
 		searchProps,
 		tags,
 		title,
-		updatedAfter,
-		updatedBefore
+		lastUpdatedLte,
+		lastUpdatedGte
 	} from './store.svelte';
 	import { SvelteMap, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -41,7 +41,7 @@
 	let { appTags, appID }: Props = $props();
 	let value = $state<string | null>('and');
 	let showAdvanced = $state(true);
-	let updatedDate = $state(updatedBefore.v || updatedAfter.v ? 'custom' : 'all');
+	let updatedDate = $state(lastUpdatedGte.v || lastUpdatedLte.v ? 'custom' : 'all');
 
 	const params = new SvelteURLSearchParams();
 	$effect(() => {
@@ -61,18 +61,18 @@
 	});
 
 	$effect(() => {
-		if (updatedBefore.v) {
-			params.set('updated_before', Math.trunc(updatedBefore.v.getTime() / 1000).toString());
+		if (lastUpdatedGte.v) {
+			params.set('last_updated_gte', Math.trunc(lastUpdatedGte.v.getTime() / 1000).toString());
 		} else {
-			params.delete('updated_before');
+			params.delete('last_updated_gte');
 		}
 	});
 
 	$effect(() => {
-		if (updatedAfter.v) {
-			params.set('updated_after', Math.trunc(updatedAfter.v.getTime() / 1000).toString());
+		if (lastUpdatedLte.v) {
+			params.set('last_updated_lte', Math.trunc(lastUpdatedLte.v.getTime() / 1000).toString());
 		} else {
-			params.delete('updated_after');
+			params.delete('last_updated_lte');
 		}
 	});
 
@@ -126,38 +126,38 @@
 			const date = new Date();
 			switch (event.target.value) {
 				case 'all':
-					updatedAfter.v = undefined;
-					updatedBefore.v = undefined;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = undefined;
 					break;
 				case 'today':
 					date.setDate(date.getDate() - 1);
-					updatedAfter.v = undefined;
-					updatedBefore.v = date;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = date;
 					break;
 				case 'week':
 					date.setDate(date.getDate() - 7);
-					updatedAfter.v = undefined;
-					updatedBefore.v = date;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = date;
 					break;
 				case 'month':
 					date.setDate(date.getDate() - 30);
-					updatedAfter.v = undefined;
-					updatedBefore.v = date;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = date;
 					break;
 				case 'quarter':
 					date.setDate(date.getDate() - 90);
-					updatedAfter.v = undefined;
-					updatedBefore.v = date;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = date;
 					break;
 				case 'half':
 					date.setDate(date.getDate() - 180);
-					updatedAfter.v = undefined;
-					updatedBefore.v = date;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = date;
 					break;
 				case 'year':
 					date.setDate(date.getDate() - 365);
-					updatedAfter.v = undefined;
-					updatedBefore.v = date;
+					lastUpdatedLte.v = undefined;
+					lastUpdatedGte.v = date;
 					break;
 			}
 		}
@@ -243,7 +243,7 @@
 				<Icon data={faArrowDownWideShort} class="fa-fw" />
 			</label>
 			<select class="select rounded-r-lg" bind:value={orderBy.v}>
-				<option value="Hotness">Hotness</option>
+				<option value="Hotness">Popular</option>
 				<option value="TrendWeek">Trending - Week</option>
 				<option value="TrendMonth">Trending - Month</option>
 				<option value="TrendQuarter">Trending - Quarter</option>
@@ -292,15 +292,15 @@
 					<div class="field-group grid-cols-[auto_1fr] gap-0">
 						<label class="label label-text preset-tonal gap-1" for="url">
 							<Icon data={faRightFromBracket} class="fa-fw" />
-							Before
+							From
 						</label>
 						<input
 							class="input"
 							type="date"
 							disabled={updatedDate != 'custom'}
 							bind:value={
-								() => updatedBefore.v?.toISOString().slice(0, 10) ?? '',
-								(v) => (updatedBefore.v = v ? new Date(v + 'T00:00:00Z') : undefined)
+								() => lastUpdatedGte.v?.toISOString().slice(0, 10) ?? '',
+								(v) => (lastUpdatedGte.v = v ? new Date(v + 'T00:00:00Z') : undefined)
 							}
 						/>
 					</div>
@@ -308,15 +308,15 @@
 					<div class="field-group grid-cols-[auto_1fr] gap-0">
 						<label class="label label-text preset-tonal gap-1" for="url">
 							<Icon data={faRightToBracket} class="fa-fw" />
-							After
+							To
 						</label>
 						<input
 							class="input"
 							type="date"
 							disabled={updatedDate != 'custom'}
 							bind:value={
-								() => updatedAfter.v?.toISOString().slice(0, 10) ?? '',
-								(v) => (updatedAfter.v = v ? new Date(v + 'T00:00:00Z') : undefined)
+								() => lastUpdatedLte.v?.toISOString().slice(0, 10) ?? '',
+								(v) => (lastUpdatedLte.v = v ? new Date(v + 'T00:00:00Z') : undefined)
 							}
 						/>
 					</div>
