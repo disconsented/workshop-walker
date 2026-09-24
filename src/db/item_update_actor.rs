@@ -24,11 +24,10 @@ use crate::{
         ml_queue_actor::MLQueueMsg,
     },
     steam::{
-        model::{Child, IPublishedResponse, IPublishedStruct, SteamRoot},
+        model::{Child, EResult, IPublishedResponse, IPublishedStruct, SteamRoot},
         steam_user_actor::SteamUserMsg,
     },
 };
-use crate::steam::model::EResult;
 
 const HISTORY_LIMIT: usize = 365 * 2;
 const HOTNESS_MODIFIER: f32 = 60.0 * 60.0 * 24.0 * 30.0 * 3.0;
@@ -89,7 +88,7 @@ impl Actor for ItemUpdateActor {
                 for file in steam_root.response.publishedfiledetails {
                     match serde_json::from_value::<IPublishedStruct>(file) {
                         Ok(file) => {
-                            if file.result == EResult::OK as i32{
+                            if file.result == EResult::OK as i32 {
                                 myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
                             }
                         }
@@ -240,29 +239,19 @@ async fn insert_data(
     let history = history.unwrap_or_default();
 
     // Keep up to a year
-    let mut view_history = VecDeque::from(history.view_history);
-    while view_history.len() >= HISTORY_LIMIT {
-        view_history.pop_front();
-    }
-    view_history.push_back(item.views);
+    let view_history = History::from(history.view_history).push(item.views);
 
-    let mut subscription_history = VecDeque::from(history.subscription_history);
-    while subscription_history.len() >= HISTORY_LIMIT {
-        subscription_history.pop_front();
-    }
-    subscription_history.push_back(item.subscriptions);
-    let subs_len = subscription_history.len();
+    let mut subscription_history =
+        History::from(history.subscription_history).push(item.subscriptions);
+
     // Calculate trends
-    let trend_week =
-        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 7)..]);
-    let trend_month =
-        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 30)..]);
-    let trend_quarter =
-        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 90)..]);
-    let trend_half =
-        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 180)..]);
-    let trend_year =
-        calculate_relative_wma(&item.subscription_history[subs_len.saturating_sub(2 * 365)..]);
+    let trend_week = subscription_history.calculate_wma(2 * 7);
+    let trend_month = subscription_history.calculate_wma(2 * 30);
+    let trend_quarter = subscription_history.calculate_wma(2 * 90);
+    let trend_half = subscription_history.calculate_wma(2 * 180);
+    let trend_year = subscription_history.calculate_wma(2 * 365);
+
+    let subscription_history = subscription_history.into();
 
     let upsert_item = UpsertStatement {
         data: Some(Data::ReplaceExpression(Expr::from_public_value(
@@ -281,7 +270,7 @@ async fn insert_data(
                 subscriptions: item.subscriptions,
                 views: item.views,
                 view_history: view_history.into(),
-                subscription_history: subscription_history.into(),
+                subscription_history,
                 retention: item.retention,
                 created: item.created,
                 conversions: item.conversions,
@@ -317,16 +306,70 @@ async fn insert_data(
     Ok(())
 }
 
-fn calculate_relative_wma(slice: &[u64]) -> f32 {
-    let (weighted, total) = slice.windows(2).zip(1u32..).fold(
-        (0.0f32, 0.0f32),
-        |(weighted, total), (window, weight)| {
-            let previous = window[0].max(1) as f32;
-            let change = (window[1] as f32 - window[0] as f32) / previous;
-            let weight = weight as f32;
-            (weight.mul_add(change, weighted), total + weight)
-        },
-    );
+struct History(VecDeque<u64>);
 
-    if total == 0.0 { 0.0 } else { weighted / total }
+impl History {
+    fn push(mut self, item: u64) -> Self {
+        while self.0.len() >= HISTORY_LIMIT {
+            self.0.pop_front();
+        }
+        self.0.push_back(item);
+
+        self
+    }
+
+    fn calculate_wma(&mut self, period: usize) -> f32 {
+        let slice = self.0.make_contiguous();
+        Self::calculate_relative_wma(&slice[slice.len().saturating_sub(period)..])
+    }
+
+    fn calculate_relative_wma(slice: &[u64]) -> f32 {
+        let (weighted, total) = slice.windows(2).zip(1u32..).fold(
+            (0.0f32, 0.0f32),
+            |(weighted, total), (window, weight)| {
+                let previous = window[0].max(1) as f32;
+                let change = (window[1] as f32 - window[0] as f32) / previous;
+                let weight = weight as f32;
+                (weight.mul_add(change, weighted), total + weight)
+            },
+        );
+
+        if total == 0.0 { 0.0 } else { weighted / total }
+    }
+}
+
+impl From<Vec<u64>> for History {
+    fn from(value: Vec<u64>) -> Self {
+        Self(VecDeque::from(value))
+    }
+}
+
+impl From<History> for Vec<u64> {
+    fn from(value: History) -> Self {
+        value.0.into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db::item_update_actor::{HISTORY_LIMIT, History};
+
+    #[test]
+    fn test_bounds_wma() {
+        let mut empty = History::from(vec![]);
+        assert_eq!(empty.0.len(), 0);
+        let _ = empty.calculate_wma(7 * 2);
+
+        let mut partial = History::from(vec![]).push(1);
+        assert_eq!(partial.0.len(), 1);
+        let _ = partial.calculate_wma(7 * 2);
+
+        let mut full = History::from(vec![0u64; HISTORY_LIMIT])
+            .push(1)
+            .push(1)
+            .push(1);
+
+        assert_eq!(full.0.len(), HISTORY_LIMIT);
+        let _ = full.calculate_wma(7 * 2);
+    }
 }
