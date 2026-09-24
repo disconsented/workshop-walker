@@ -6,8 +6,8 @@ import {
 	searchProps,
 	tags,
 	title,
-	updatedAfter,
-	updatedBefore
+	lastUpdatedLte,
+	lastUpdatedGte
 } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
 import { parseSafeJSON } from '$lib/parser';
@@ -38,12 +38,12 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 		paramList.push(['title', title.v]);
 	}
 
-	if (updatedBefore.v) {
-		paramList.push(['updated_before', updatedBefore.v / 1000]);
+	if (lastUpdatedGte.v) {
+		paramList.push(['last_updated_gte', lastUpdatedGte.v / 1000]);
 	}
 
-	if (updatedAfter.v) {
-		paramList.push(['updated_after', updatedAfter.v / 1000]);
+	if (lastUpdatedLte.v) {
+		paramList.push(['last_updated_lte', lastUpdatedLte.v / 1000]);
 	}
 
 	if (searchProps.v) {
@@ -126,18 +126,18 @@ function loadParams(params: URLSearchParams) {
 		title.v = undefined;
 	}
 
-	const paramUpdatedBefore = params.get('updated_before');
+	const paramUpdatedBefore = params.get('last_updated_gte');
 	if (paramUpdatedBefore) {
-		updatedBefore.v = new Date(Number(paramUpdatedBefore) * 1000);
+		lastUpdatedGte.v = new Date(Number(paramUpdatedBefore) * 1000);
 	} else {
-		updatedBefore.v = undefined;
+		lastUpdatedGte.v = undefined;
 	}
 
-	const paramUpdatedAfter = params.get('updated_after');
+	const paramUpdatedAfter = params.get('last_updated_lte');
 	if (paramUpdatedAfter) {
-		updatedAfter.v = new Date(Number(paramUpdatedAfter) * 1000);
+		lastUpdatedLte.v = new Date(Number(paramUpdatedAfter) * 1000);
 	} else {
-		updatedAfter.v = undefined;
+		lastUpdatedLte.v = undefined;
 	}
 
 	const paramTags = params.getAll('tags');
