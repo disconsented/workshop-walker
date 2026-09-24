@@ -1,9 +1,8 @@
 -- Copy to new table
 DEFINE TABLE workshop_item_properties_temp TYPE RELATION SCHEMALESS PERMISSIONS NONE;
-FOR $record IN (
-    SELECT *
-    FROM workshop_item_properties
-) {
+
+LET $rows =  SELECT * FROM workshop_item_properties;
+FOR $record IN $rows {
     LET $in = $record.in;
     LET $out = $record.out;
     RELATE $in -> workshop_item_properties_temp -> $out SET
@@ -28,10 +27,8 @@ DEFINE INDEX unique_workshop_item_properties ON workshop_item_properties FIELDS 
 
 -- Copy back and mutate
 
-FOR $record IN (
-    SELECT *
-    FROM workshop_item_properties_temp
-) {
+LET $rows =  SELECT * FROM workshop_item_properties_temp;
+FOR $record IN $rows {
     LET $in = type::record("workshop_items", type::number($record.in.id()));
     LET $out = $record.out;
     RELATE $in -> workshop_item_properties -> $out SET
