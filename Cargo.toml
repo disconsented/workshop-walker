@@ -77,6 +77,13 @@ tracing = "0.1"
 tracing-subscriber = { features = ["env-filter"], version = "0.3.19" }
 veil = "0.3"
 
+# Patched versions because SurrealDB makes silly design decisions sometimes
+[patch.crates-io]
+surrealdb = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
+surrealdb-core = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
+surrealdb-types = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
+
+
 [package]
 edition.workspace = true
 license.workspace = true
@@ -146,6 +153,7 @@ tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
 veil.workspace = true
 
+
 [features]
 
 [profile.release]
@@ -156,9 +164,9 @@ opt-level = 3
 opt-level = 2
 
 [lints.clippy]
-cast_sign_loss = { level = "allow", priority = 9 }
-cast_precision_loss = { level = "allow", priority = 9 }
 cast_possible_wrap = { level = "allow", priority = 9 }
+cast_precision_loss = { level = "allow", priority = 9 }
+cast_sign_loss = { level = "allow", priority = 9 }
 complexity = { level = "warn", priority = 7 }
 correctness = { level = "deny", priority = 6 }
 dbg_macro = { level = "deny", priority = 8 }
