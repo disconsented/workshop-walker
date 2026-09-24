@@ -2,10 +2,8 @@
 
 -- Copy to new table
 DEFINE TABLE item_dependencies_temp TYPE RELATION SCHEMALESS PERMISSIONS NONE;
-FOR $record IN (
-    SELECT *
-    FROM item_dependencies
-) {
+LET $rows = SELECT * FROM item_dependencies;
+FOR $record IN $rows {
     LET $in = $record.in;
     LET $out = $record.out;
     RELATE $in -> item_dependencies_temp -> $out;
@@ -20,10 +18,8 @@ DEFINE INDEX unique_item_dependencies ON item_dependencies FIELDS in, out UNIQUE
 
 -- Copy back and mutate
 
-FOR $record IN (
-    SELECT *
-    FROM item_dependencies_temp
-) {
+LET $rows = SELECT * FROM item_dependencies_temp;
+FOR $record IN $rows {
     LET $in = type::record("workshop_items", type::number($record.in.id()));
     LET $out = type::record("workshop_items", type::number($record.out.id()));
     RELATE $in -> item_dependencies -> $out;
