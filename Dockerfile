@@ -15,7 +15,7 @@ FROM node:26 AS build-node
 COPY ui/ /usr/src/workshop-walker/ui/
 RUN cd /usr/src/workshop-walker/ui && npm i && npm run build && ls -lah
 
-FROM  gcr.io/distroless/cc-debian12:latest
+FROM  gcr.io/distroless/cc-debian13:latest
 COPY --from=build-rust  /usr/src/workshop-walker/target/release/workshop-walker /
 COPY --from=build-node /usr/src/workshop-walker/ui/build/ /ui/build/
 COPY migrations/ /migrations/
