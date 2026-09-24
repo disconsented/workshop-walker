@@ -130,7 +130,7 @@ mod tests {
 
         async fn search_property(
             &self,
-            search_query: InternalSearchProperty,
+            _: InternalSearchProperty,
         ) -> Result<Vec<Property>, PropertiesError> {
             todo!()
         }
