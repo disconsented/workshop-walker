@@ -17,6 +17,7 @@ use crate::{
         bb_actor::{BBActor, BBArgs},
         language_actor::{LanguageActor, LanguageArgs},
         llama_actor::{LlamaActor, LlamaArgs},
+        ml_activity_actor::{MLActivityActor, MLActivityArgs},
         ml_queue_actor::{MLQueueActor, MLQueueArgs},
     },
     steam::{
@@ -73,7 +74,6 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         Some("/ml_queue".to_string()),
         MLQueueActor,
         MLQueueArgs {
-            database: db.clone(),
             extractor: extraction_actor,
             property_actor,
         },
@@ -123,6 +123,17 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     .instrument(info_span!("spawn::item_update"))
     .await
     .whatever_context("Spawning item_update actor")?;
+
+    let (ml_activity_actor, _) = Actor::spawn(
+        Some("/ml_activity".to_string()),
+        MLActivityActor,
+        MLActivityArgs {
+            item_update_actor: item_update_actor.clone(),
+        },
+    )
+    .instrument(info_span!("spawn::ml_queue"))
+    .await
+    .whatever_context("Spawning ML queue actor")?;
 
     let (..) = Actor::spawn(
         Some("/admin".to_string()),
@@ -185,6 +196,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         ItemActor,
         ItemArgs {
             database: db.clone(),
+            ml_activity_actor,
         },
     )
     .instrument(info_span!("spawn::item"))
