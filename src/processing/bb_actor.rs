@@ -23,6 +23,7 @@ impl Actor for BBActor {
         _: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(Self::State {
+            // [hr][/hr]
             bb: BBCode::from_config(BBCodeTagConfig::extended(), None)?,
         })
     }

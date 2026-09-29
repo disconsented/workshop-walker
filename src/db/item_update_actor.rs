@@ -1,26 +1,14 @@
-use std::{collections::VecDeque, num::ParseIntError};
-
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
-use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use surrealdb_core::sql::{
-    Expr,
-    data::Data,
-    statements::{InsertStatement, UpsertStatement},
-};
-use surrealdb_types::{SurrealValue, Value};
-use tracing::{debug, error};
+use tracing::error;
 
 use crate::{
-    db::{
-        IItemID,
-        model::{HistoryPair, InsertableWorkshopItem, InternalWorkshopItem},
-        tags_actor::TagsMsg,
-    },
+    application::items_service::ItemsService,
+    db::{IItemID, items_repository::ItemsSilo, model::InternalWorkshopItem, tags_actor::TagsMsg},
     processing::{
         bb_actor::BBMsg,
         join_process_actor::{JoinProcessActor, JoinProcessArgs, JoinProcessMsg},
-        language_actor::{DetectedLanguage, LanguageMsg},
+        language_actor::LanguageMsg,
         ml_queue_actor::MLQueueMsg,
     },
     steam::{
@@ -29,8 +17,6 @@ use crate::{
     },
 };
 
-const HISTORY_LIMIT: usize = 365 * 2;
-const HOTNESS_MODIFIER: f32 = 60.0 * 60.0 * 24.0 * 30.0 * 3.0;
 pub struct ItemUpdateActor {}
 
 pub struct ItemUpdateArgs {
@@ -45,7 +31,7 @@ pub struct ItemUpdateState {
     language_actor: ActorRef<LanguageMsg>,
     bb_actor: ActorRef<BBMsg>,
     steam_user_actor: ActorRef<SteamUserMsg>,
-    database: Surreal<Db>,
+    items_service: ItemsService<ItemsSilo>,
     ml_queue: Option<ActorRef<MLQueueMsg>>,
     tags_actor: ActorRef<TagsMsg>,
 }
@@ -54,7 +40,8 @@ pub enum ItemUpdateMsg {
     DeserializeRawFiles(SteamRoot<IPublishedResponse>),
     MainlineProcessing(IPublishedStruct),
     Upsert((InternalWorkshopItem, Vec<Child>)),
-    MaybeQueueMl((InternalWorkshopItem, Vec<Child>)),
+    /// Intended to be invoked from user intent signals
+    MaybeQueue(IItemID),
 }
 #[async_trait]
 impl Actor for ItemUpdateActor {
@@ -68,7 +55,7 @@ impl Actor for ItemUpdateActor {
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(Self::State {
-            database: args.database,
+            items_service: ItemsService::new(ItemsSilo::new(args.database)),
             language_actor: args.language_actor,
             bb_actor: args.bb_actor,
             steam_user_actor: args.steam_user_actor,
@@ -112,19 +99,6 @@ impl Actor for ItemUpdateActor {
 
                 join_process_actor.send_message(JoinProcessMsg::Process(data))?;
             }
-            ItemUpdateMsg::MaybeQueueMl((item, children)) => {
-                if let Err(error) =
-                    maybe_queue_ml(&state.database, state.ml_queue.as_ref(), &item).await
-                {
-                    error!(?error, id = ?item.id, "queuing ML work (message)");
-                }
-                if myself
-                    .send_message(ItemUpdateMsg::Upsert((item, children)))
-                    .is_err()
-                {
-                    error!("forwarding work to upsert");
-                }
-            }
             ItemUpdateMsg::Upsert((item, children)) => {
                 let title = item.title.clone();
                 let item_id = item.id.clone();
@@ -137,239 +111,47 @@ impl Actor for ItemUpdateActor {
                     .steam_user_actor
                     .send_message(SteamUserMsg::Fetch(item.author.id.clone()));
 
-                if let Err(error) = insert_data(&state.database, item, children).await {
+                if let Some(ml_queue) = &state.ml_queue
+                    && let Ok(true) = state.items_service.should_queue_ml(&item).await
+                {
+                    let _ = ml_queue.send_message(MLQueueMsg::Queue(
+                        item.id.clone(),
+                        item.title.clone(),
+                        item.description.clone(),
+                    ));
+                }
+
+                if let Err(error) = state.items_service.insert_data(item, children).await {
                     error!(?error, title, ?item_id, "upserting item");
+                }
+            }
+            ItemUpdateMsg::MaybeQueue(id) => {
+                if let Some(ml_queue) = &state.ml_queue {
+                    match state.items_service.get_item(id.clone()).await {
+                        Ok(item) => {
+                            if let Ok(true) = state
+                                .items_service
+                                .should_queue_ml(&item)
+                                .await
+                                .inspect_err(|error| {
+                                    error!(?error, "checking if should queue ML for hint");
+                                })
+                            {
+                                let _ = ml_queue.send_message(MLQueueMsg::Queue(
+                                    item.id.clone(),
+                                    item.title.clone(),
+                                    item.description.clone(),
+                                ));
+                            }
+                        }
+                        Err(error) => {
+                            error!(?error, "getting item");
+                        }
+                    }
                 }
             }
         }
 
         Ok(())
-    }
-}
-/// Attempt to extract data from posts text using an LLM under the following
-/// conditions:
-///
-/// 1. We've enabled the functionality
-/// 2. The detected languages include english, as the model doesn't work well
-///    otherwise
-/// 3. The item's `last_updated` has changed, using this as a cheap proxy for
-///    detecting changes
-/// 4. Finally, the description has changed, we'll likely get the same result
-///    for the same input
-async fn maybe_queue_ml(
-    db: &Surreal<Db>,
-    ml_queue: Option<&ActorRef<MLQueueMsg>>,
-    item: &InternalWorkshopItem,
-) -> crate::Result<(), Whatever> {
-    if let Some(queue) = ml_queue {
-        let mut resp = db
-            .query("SELECT last_updated, description FROM $id")
-            .bind(("id", item.id.clone()))
-            .await
-            .whatever_context("querying last_updated for ML queue check")?;
-        let old_last_updated: Option<u64> = resp
-            .take((0, "last_updated"))
-            .whatever_context("taking last_updated for ML queue check")?;
-        let old_description: Option<String> = resp
-            .take((0, "description"))
-            .whatever_context("taking description for ML queue check")?;
-        let old_description = old_description.unwrap_or_default();
-        let outdated = old_last_updated != Some(item.last_updated);
-        let description_changed = old_description != item.description;
-        let viable_language = item.languages.contains(&DetectedLanguage::English);
-        // We don't want to waste our resources on extracting out of items that
-        // the model wont support
-        if viable_language && outdated && description_changed {
-            debug!(
-                name = item.title,
-                outdated, description_changed, "Item is being processed for extraction"
-            );
-            let _ = queue.send_message(MLQueueMsg::Process(item.id.clone()));
-        }
-    }
-    Ok(())
-}
-
-async fn insert_data(
-    db: &Surreal<Db>,
-    mut item: InternalWorkshopItem,
-    children: Vec<Child>,
-) -> crate::Result<(), Whatever> {
-    let tags = std::mem::take(&mut item.tags);
-    let id = item.id.clone();
-
-    let insert_item_deps = {
-        children
-            .into_iter()
-            .map(|child| {
-                let dep_id = IItemID::from(child.publishedfileid.parse::<i64>()?);
-                Ok(InsertStatement {
-                    into: Some(Expr::Table("item_dependencies".into())),
-                    data: Data::SingleExpression(Expr::from_public_value(Value::Object(
-                        vec![
-                            // Another "fun" surreal detail, insert does conflict on the ID... not
-                            // the actual relation despite their being a unique index
-                            (
-                                "id".into(),
-                                [id.clone().into_value(), dep_id.clone().into_value()].into_value(),
-                            ),
-                            ("in".into(), item.id.clone().into_value()),
-                            ("out".into(), dep_id.into_value()),
-                        ]
-                        .into_iter()
-                        .collect(),
-                    ))),
-                    ignore: true,
-                    relation: true,
-                    ..Default::default()
-                })
-            })
-            .collect::<Result<Vec<_>, ParseIntError>>()
-            .whatever_context("parsing publishedfileids")?
-    };
-
-    let history: Option<HistoryPair> = db
-        .query("SELECT view_history, subscription_history FROM $id")
-        .bind(("id", item.id.clone()))
-        .await
-        .whatever_context("querying history")?
-        .take(0)
-        .whatever_context("taking history")?;
-    // New items are missing all the things so nothing to query
-    let history = history.unwrap_or_default();
-
-    // Keep up to a year
-    let view_history = History::from(history.view_history).push(item.views);
-
-    let mut subscription_history =
-        History::from(history.subscription_history).push(item.subscriptions);
-
-    // Calculate trends
-    let trend_week = subscription_history.calculate_wma(2 * 7);
-    let trend_month = subscription_history.calculate_wma(2 * 30);
-    let trend_quarter = subscription_history.calculate_wma(2 * 90);
-    let trend_half = subscription_history.calculate_wma(2 * 180);
-    let trend_year = subscription_history.calculate_wma(2 * 365);
-
-    let subscription_history = subscription_history.into();
-
-    let upsert_item = UpsertStatement {
-        data: Some(Data::ReplaceExpression(Expr::from_public_value(
-            InsertableWorkshopItem {
-                app: item.app,
-                author: item.author.id,
-                description: item.description,
-                id: item.id,
-                languages: item.languages,
-                last_updated: item.last_updated,
-                preview_url: item.preview_url,
-                title: item.title,
-                score: item.score,
-                tags: tags.into_iter().map(|tag| tag.id).collect::<Vec<_>>(),
-                lifetime_subscriptions: item.lifetime_subscriptions,
-                subscriptions: item.subscriptions,
-                views: item.views,
-                view_history: view_history.into(),
-                subscription_history,
-                retention: item.retention,
-                created: item.created,
-                conversions: item.conversions,
-                // Trying weight subscriptions against age, last_updated just raises huge mods back
-                // up
-                hotness: f32::log10(item.subscriptions.max(1) as f32)
-                    + item.created as f32 / HOTNESS_MODIFIER,
-                trend_week,
-                trend_month,
-                trend_quarter,
-                trend_half,
-                trend_year,
-            }
-            .into_value(),
-        ))),
-        what: vec![Expr::Table("workshop_items".into())],
-        ..Default::default()
-    };
-
-    let mut query = db.query("BEGIN").query(upsert_item);
-    for insert_dep in insert_item_deps {
-        query = query.query(insert_dep);
-    }
-    let query = query.bind(("id", id)).query("COMMIT");
-    let sql = format!("{query:?}");
-    let mut response = query.await.whatever_context("big insert query")?;
-
-    let errors = response.take_errors();
-    if !errors.is_empty() {
-        error!(?errors, sql, "inserting data");
-    }
-
-    Ok(())
-}
-
-struct History(VecDeque<u64>);
-
-impl History {
-    fn push(mut self, item: u64) -> Self {
-        while self.0.len() >= HISTORY_LIMIT {
-            self.0.pop_front();
-        }
-        self.0.push_back(item);
-
-        self
-    }
-
-    fn calculate_wma(&mut self, period: usize) -> f32 {
-        let slice = self.0.make_contiguous();
-        Self::calculate_relative_wma(&slice[slice.len().saturating_sub(period)..])
-    }
-
-    fn calculate_relative_wma(slice: &[u64]) -> f32 {
-        let (weighted, total) = slice.windows(2).zip(1u32..).fold(
-            (0.0f32, 0.0f32),
-            |(weighted, total), (window, weight)| {
-                let previous = window[0].max(1) as f32;
-                let change = (window[1] as f32 - window[0] as f32) / previous;
-                let weight = weight as f32;
-                (weight.mul_add(change, weighted), total + weight)
-            },
-        );
-
-        if total == 0.0 { 0.0 } else { weighted / total }
-    }
-}
-
-impl From<Vec<u64>> for History {
-    fn from(value: Vec<u64>) -> Self {
-        Self(VecDeque::from(value))
-    }
-}
-
-impl From<History> for Vec<u64> {
-    fn from(value: History) -> Self {
-        value.0.into()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::db::item_update_actor::{HISTORY_LIMIT, History};
-
-    #[test]
-    fn test_bounds_wma() {
-        let mut empty = History::from(vec![]);
-        assert_eq!(empty.0.len(), 0);
-        let _ = empty.calculate_wma(7 * 2);
-
-        let mut partial = History::from(vec![]).push(1);
-        assert_eq!(partial.0.len(), 1);
-        let _ = partial.calculate_wma(7 * 2);
-
-        let mut full = History::from(vec![0u64; HISTORY_LIMIT])
-            .push(1)
-            .push(1)
-            .push(1);
-
-        assert_eq!(full.0.len(), HISTORY_LIMIT);
-        let _ = full.calculate_wma(7 * 2);
     }
 }

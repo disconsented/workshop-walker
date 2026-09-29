@@ -7,7 +7,7 @@ use serde::{
     Deserialize, Deserializer,
     de::{Error, IntoDeserializer},
 };
-use snafu::{ResultExt, Whatever};
+use snafu::{OptionExt, ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
     BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields, Idiom, Kind, Limit, Literal, Lookup,
@@ -28,7 +28,10 @@ use crate::{
         IAppID, IPropertyID, ITagID, IUserID,
         model::{Class, ExternalWorkshopItem, InternalWorkshopItem, OrderBy, Property, Status},
     },
-    processing::language_actor::DetectedLanguage,
+    processing::{
+        language_actor::DetectedLanguage,
+        ml_activity_actor::{ML_ACTIVITY_ACTOR, MLActivityMsg},
+    },
     web,
     web::{DB_POOL, auth},
 };
@@ -438,6 +441,19 @@ async fn query_inner(
     trace!(?results, "results");
 
     let results: Vec<InternalWorkshopItem> = results.take(0).whatever_context("taking result")?;
+
+    {
+        let ids = results
+            .iter()
+            .map(|item| &item.id)
+            .cloned()
+            .collect::<Vec<_>>();
+        let actor = ML_ACTIVITY_ACTOR
+            .get()
+            .cloned()
+            .whatever_context("missing activity actor")?;
+        let _ = actor.send_message(MLActivityMsg::SignalBatch(ids));
+    }
 
     results
         .into_iter()

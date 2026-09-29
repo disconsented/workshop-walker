@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
-use snafu::{ResultExt, Whatever};
-use surrealdb::{Surreal, engine::local::Db};
-use tracing::{debug, error, info};
+use snafu::Whatever;
+use tokio::{task, task::JoinHandle};
+use tracing::{debug, error, info, trace};
 
 use crate::{
     db::{
@@ -16,20 +18,21 @@ use crate::{
 pub struct MLQueueActor;
 
 pub struct MLQueueArgs {
-    pub database: Surreal<Db>,
     pub extractor: ActorRef<LlamaMsg>,
     pub property_actor: ActorRef<PropertiesMsg>,
 }
 
 pub struct MLQueueState {
-    database: Surreal<Db>,
     extractor: ActorRef<LlamaMsg>,
     property_actor: ActorRef<PropertiesMsg>,
+    task: Option<JoinHandle<()>>,
+    queue: HashMap<IItemID, (String, String)>,
 }
 
 pub enum MLQueueMsg {
     /// Enqueue a workshop item id (record id) to be sent to the ML extractor
-    Process(IItemID),
+    Queue(IItemID, String, String),
+    Finished(Result<(), Whatever>),
 }
 
 #[async_trait]
@@ -44,59 +47,84 @@ impl Actor for MLQueueActor {
         args: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
         Ok(MLQueueState {
-            database: args.database,
             extractor: args.extractor,
             property_actor: args.property_actor,
+            task: None,
+            queue: HashMap::default(),
         })
     }
 
     async fn handle(
         &self,
-        _: ActorRef<Self::Msg>,
+        myself: ActorRef<Self::Msg>,
         message: Self::Msg,
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            MLQueueMsg::Process(id) => {
-                if let Err(e) = process_one(state, id.clone()).await {
-                    error!(?e, record=?id, "processing ML extraction");
+            MLQueueMsg::Queue(id, title, description) => {
+                trace!(
+                    running_task = state.task.is_some(),
+                    "Queue message received"
+                );
+                if state.task.is_some() {
+                    state.queue.insert(id, (title, description));
+                } else {
+                    queue(myself, state, id, title, description);
                 }
+            }
+            MLQueueMsg::Finished(result) => {
+                if let Err(error) = result {
+                    error!(?error, "Error occurred processing ML");
+                }
+                state.task = None;
+                queue_next(myself, state);
+                debug!(items = state.queue.len(), "Items queued for ML");
             }
         }
         Ok(())
     }
 }
 
-async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result<(), Whatever> {
-    // Load minimal fields needed
-    let mut resp = state
-        .database
-        .query("SELECT title, description FROM $id")
-        .bind(("id", workshop_item.clone()))
-        .await
-        .whatever_context("Querying item for ML extraction")?;
-    let title: Option<String> = resp
-        .take((0, "title"))
-        .whatever_context("Taking title from response")?;
-    let description: Option<String> = resp
-        .take((0, "description"))
-        .whatever_context("Taking description from response")?;
-    let (Some(title), Some(description)) = (title, description) else {
-        debug!(
-            ?workshop_item,
-            "No item found or missing fields for ML extraction"
-        );
-        return Ok(());
-    };
+fn queue(
+    myself: ActorRef<MLQueueMsg>,
+    state: &mut MLQueueState,
+    id: IItemID,
+    title: String,
+    description: String,
+) {
+    let extractor = state.extractor.clone();
+    let property_actor = state.property_actor.clone();
+    let task = task::spawn(async move {
+        debug!(?id, "starting ML task");
+        let result = process_one(extractor, property_actor, id, title, description).await;
+        let _ = myself.send_message(MLQueueMsg::Finished(result));
+    });
 
+    state.task = Some(task);
+}
+fn queue_next(myself: ActorRef<MLQueueMsg>, state: &mut MLQueueState) {
+    if let Some(id) = state.queue.iter().next().map(|(id, _)| id.clone())
+        && let Some((title, description)) = state.queue.remove(&id)
+    {
+        queue(myself, state, id, title, description);
+    }
+}
+
+async fn process_one(
+    extractor: ActorRef<LlamaMsg>,
+    property_actor: ActorRef<PropertiesMsg>,
+    workshop_item_id: IItemID,
+    title: String,
+    description: String,
+) -> Result<(), Whatever> {
     // Call the extractor via RPC using ractor::call! macro
-    match call!(state.extractor, |reply| LlamaMsg::Process {
+    match call!(extractor, |reply| LlamaMsg::Process {
         title,
         description,
         rpc_reply_port: reply
     }) {
         Ok(Ok(props)) => {
-            info!(?workshop_item, ?props, "ML extraction completed");
+            debug!(?workshop_item_id, ?props, "ML extraction completed");
 
             for (class, value) in props
                 .genres
@@ -106,9 +134,9 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
                 .chain(props.types.into_iter().map(|v| (Class::Type, v)))
                 .chain(props.features.into_iter().map(|v| (Class::Feature, v)))
             {
-                match call!(state.property_actor, |reply| PropertiesMsg::NewProperty(
+                match call!(property_actor, |reply| PropertiesMsg::NewProperty(
                     InternalNewProperty {
-                        workshop_item: workshop_item.clone(),
+                        workshop_item: workshop_item_id.clone(),
                         class: class.clone(),
                         value: value.clone(),
                         note: None,
@@ -118,23 +146,23 @@ async fn process_one(state: &mut MLQueueState, workshop_item: IItemID) -> Result
                     reply
                 )) {
                     Ok(Ok(..)) => {
-                        debug!(?workshop_item, %class, %value, "Inserted new property");
+                        debug!(?workshop_item_id, %class, %value, "Inserted new property");
                     }
                     Ok(Err(PropertiesError::Conflict)) => {
-                        debug!(?workshop_item, %class, %value, "Property conflict");
+                        debug!(?workshop_item_id, %class, %value, "Property conflict");
                     }
                     Ok(Err(error)) => {
-                        error!(?error, ?workshop_item,  %class, %value,  "Inserting new property");
+                        error!(?error, ?workshop_item_id,  %class, %value,  "Inserting new property");
                     }
                     Err(_) => (),
                 }
             }
         }
-        Ok(Err(err)) => {
-            error!(record=?workshop_item, ?err, "ML extraction failed");
+        Ok(Err(error)) => {
+            error!(?error, ?workshop_item_id,  "ML extraction failed");
         }
-        Err(err) => {
-            error!(record=?workshop_item, ?err, "ML extractor RPC failed");
+        Err(error) => {
+            error!(?error, ?workshop_item_id, "ML extractor RPC failed");
         }
     }
     Ok(())

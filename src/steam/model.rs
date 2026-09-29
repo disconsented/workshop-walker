@@ -312,7 +312,7 @@ pub struct SteamUser {
 pub struct SteamUserResponse {
     pub players: Vec<SteamUser>,
 }
-
+#[expect(dead_code, reason = "here for completeness if needed in the future")]
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EResult {
