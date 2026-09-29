@@ -67,7 +67,7 @@ struct Parameters {
     negative_props: Option<Vec<PropertyParam>>,
 }
 
-// ToDo: Seperate out filtering to its own struct
+// ToDo: Separate out filtering to its own struct
 // And, handle pagination based on the last element for performance
 #[instrument(skip_all)]
 #[endpoint]
@@ -273,6 +273,11 @@ fn build_query(
             op: BinaryOperator::Equal,
             right: Box::new(Expr::from_public_value(RecordId::from(app).into_value())),
         });
+
+        conditions.push(Expr::Idiom(Idiom(vec![
+            Part::Start(Expr::Idiom(Idiom::field("author".to_string()))),
+            Part::Method("exists".into(), vec![]),
+        ])));
 
         if let Some(language) = language {
             // If we got back to supporting multiple languages this needs to go
