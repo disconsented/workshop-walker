@@ -14,10 +14,6 @@ use crate::{
     },
 };
 
-/// How many upvotes a property must have for it to be considered valid,
-/// currently set to 0 to avoid the bootstrapping problem.
-const UPVOTE_THRESHOLD: u64 = 0;
-
 pub struct PropertiesSilo {
     pub db: Surreal<Db>,
 }
@@ -243,6 +239,8 @@ impl PropertiesPort for PropertiesSilo {
     async fn search_property(
         &self,
         search_query: InternalSearchProperty,
+        limit: usize,
+        upvote_threshold: usize,
     ) -> Result<Vec<Property>, PropertiesError> {
         let results = self
             .db
@@ -250,9 +248,10 @@ impl PropertiesPort for PropertiesSilo {
                 "SELECT out.id().class AS class, out.id().value as value FROM \
                  workshop_item_properties WHERE in.*.app = $app AND upvote_count >= \
                  $upvote_threshold AND status = 1 AND prop_value @@ $term GROUP BY class, value \
-                 LIMIT 10;",
+                 LIMIT $limit;",
             )
-            .bind(("upvote_threshold", UPVOTE_THRESHOLD))
+            .bind(("upvote_threshold", upvote_threshold))
+            .bind(("limit", limit))
             .bind(("app", search_query.app))
             .bind(("term", search_query.search_term))
             .await;

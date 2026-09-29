@@ -69,5 +69,7 @@ pub trait PropertiesPort: Send + Sync + 'static {
     async fn search_property(
         &self,
         search_query: InternalSearchProperty,
+        limit: usize,
+        upvote_threshold: usize,
     ) -> Result<Vec<Property>, PropertiesError>;
 }

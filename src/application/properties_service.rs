@@ -9,6 +9,13 @@ use crate::{
     },
 };
 
+/// How many upvotes a property must have for it to be considered valid,
+/// currently set to 0 to avoid the bootstrapping problem.
+const UPVOTE_THRESHOLD: usize = 0;
+
+/// Finger in the air number, acts to cap it, probably needs CLASS narrowing
+const SEARCH_PROPERTY_LIMIT: usize = 30;
+
 pub struct PropertiesService<R: PropertiesPort> {
     repo: R,
 }
@@ -76,7 +83,9 @@ impl<R: PropertiesPort> PropertiesService<R> {
         &self,
         search_query: InternalSearchProperty,
     ) -> Result<Vec<Property>, PropertiesError> {
-        self.repo.search_property(search_query).await
+        self.repo
+            .search_property(search_query, SEARCH_PROPERTY_LIMIT, UPVOTE_THRESHOLD)
+            .await
     }
 }
 
@@ -131,6 +140,8 @@ mod tests {
         async fn search_property(
             &self,
             _: InternalSearchProperty,
+            _: usize,
+            _: usize,
         ) -> Result<Vec<Property>, PropertiesError> {
             todo!()
         }
