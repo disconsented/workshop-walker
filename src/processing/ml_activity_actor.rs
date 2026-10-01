@@ -57,11 +57,13 @@ impl Actor for MLActivityActor {
         match message {
             Self::Msg::Signal(id) => {
                 debug!(?id, "got hint");
-                self.check_or_push(state, id);
+                MLActivityActor::check_or_push(state, id);
             }
             Self::Msg::SignalBatch(ids) => {
                 debug!("got bulk hint");
-                ids.into_iter().for_each(|id| self.check_or_push(state, id));
+                for id in ids {
+                    MLActivityActor::check_or_push(state, id);
+                }
             }
         }
         Ok(())
@@ -69,7 +71,7 @@ impl Actor for MLActivityActor {
 }
 
 impl MLActivityActor {
-    fn check_or_push(&self, state: &mut MLActivityState, id: IItemID) {
+    fn check_or_push(state: &mut MLActivityState, id: IItemID) {
         if state.cache.put(id.clone(), ()).is_none() {
             let _ = state
                 .item_update_actor
