@@ -147,7 +147,7 @@ impl InternalWorkshopItem {
             subscription_history: vec![],
             retention: subscriptions as f32 / lifetime_subscriptions.max(1) as f32,
             created: data.time_created.unwrap_or_default() as u64,
-            conversions: views as f32 / subscriptions.max(1) as f32,
+            conversions: subscriptions as f32 / views.max(1) as f32,
             hotness: 0.0,
             trend_week: 0.0,
             trend_month: 0.0,
