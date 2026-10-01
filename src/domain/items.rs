@@ -95,8 +95,7 @@ impl History {
         // being that relative, large growth will be peak early and be
         // squashed.
         if self.0.len() < period {
-            // Tiny values, need send this to the shadow realm
-            return f32::MIN;
+            return 0.0;
         }
 
         let slice = self.0.make_contiguous();
