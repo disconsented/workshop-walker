@@ -31,7 +31,7 @@ mod web;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = Whatever;
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() -> Result<()> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(env::var("RUST_LOG").unwrap_or_default())
