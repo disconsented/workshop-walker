@@ -22,6 +22,11 @@
 
 	let searchTerm = $state('');
 	let statusFilter = $state('all');
+	// The table compares controlled state by reference. A new array on each read looks like a
+	// filter change, and a filter change resets the page index to 0.
+	const columnFilters = $derived(
+		statusFilter === 'all' ? [] : [{ id: 'status', value: Number(statusFilter) }]
+	);
 	let pagination: PaginationState = $state({ pageIndex: 0, pageSize: 10 });
 	let userPagination: PaginationState = $state({ pageIndex: 0, pageSize: 10 });
 
@@ -161,7 +166,7 @@
 				return searchTerm;
 			},
 			get columnFilters() {
-				return statusFilter === 'all' ? [] : [{ id: 'status', value: Number(statusFilter) }];
+				return columnFilters;
 			},
 			get pagination() {
 				return pagination;
