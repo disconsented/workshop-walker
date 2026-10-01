@@ -1,6 +1,8 @@
-workshopdb
-target
-data_cache
-build
-node_modules
+workshopdb*
+**/target
+**/build
+**/node_modules
 .idea
+*.zip
+/*.surql
+workshop-image
