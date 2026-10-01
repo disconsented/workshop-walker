@@ -13,7 +13,6 @@
 	import TimeAgo from '$lib/timeAgo.svelte';
 
 	let { data }: { data } = $props();
-	console.log(data);
 	let properties: Property[] = $state([]);
 
 	let users: User[] = $state([]);
@@ -92,15 +91,6 @@
 	}
 
 	let group = $state('properties');
-
-	export type Game = {
-		appid: string;
-		image_url: string;
-		description: string;
-		developer: string;
-		name: string;
-	};
-
 	type Source = 'System' | { User: string };
 
 	type Property = {
