@@ -73,6 +73,8 @@ pub trait ItemsPort: Send + Sync + 'static {
         item: InsertableWorkshopItem,
         children: Vec<Child>,
     ) -> Result<(), ItemsError>;
+
+    async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError>;
 }
 
 pub struct History(VecDeque<u64>);

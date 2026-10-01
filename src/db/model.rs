@@ -92,6 +92,7 @@ pub struct WorkshopItem {
     pub languages: Vec<DetectedLanguage>,
     pub last_updated: u64,
     pub created: u64,
+    pub ml_last_run: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview_url: Option<String>,
     pub title: String,
@@ -188,6 +189,7 @@ pub struct FullWorkshopItem {
     pub author: Option<ExternalUsername>, // Authors steam ID
     pub last_updated: u64, // Timestamp in milliseconds
     pub created: u64,      // Timestamp in milliseconds
+    pub ml_last_run: Option<u64>,
 
     // Localization
     #[serde(default)]

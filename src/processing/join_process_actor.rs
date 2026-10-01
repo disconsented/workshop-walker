@@ -154,6 +154,7 @@ impl InternalWorkshopItem {
             trend_quarter: 0.0,
             trend_half: 0.0,
             trend_year: 0.0,
+            ml_last_run: None,
         })
     }
 }

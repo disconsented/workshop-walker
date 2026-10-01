@@ -1,13 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait, call};
 use snafu::Whatever;
+use surrealdb::{Surreal, engine::local::Db};
 use tokio::{task, task::JoinHandle};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, trace};
 
 use crate::{
+    application::items_service::ItemsService,
     db::{
         IItemID,
+        items_repository::ItemsSilo,
         model::{Class, InternalSource, Status},
         properties_actor::PropertiesMsg,
     },
@@ -20,6 +23,7 @@ pub struct MLQueueActor;
 pub struct MLQueueArgs {
     pub extractor: ActorRef<LlamaMsg>,
     pub property_actor: ActorRef<PropertiesMsg>,
+    pub database: Surreal<Db>,
 }
 
 pub struct MLQueueState {
@@ -27,6 +31,7 @@ pub struct MLQueueState {
     property_actor: ActorRef<PropertiesMsg>,
     task: Option<JoinHandle<()>>,
     queue: HashMap<IItemID, (String, String)>,
+    items_service: Arc<ItemsService<ItemsSilo>>,
 }
 
 pub enum MLQueueMsg {
@@ -51,6 +56,7 @@ impl Actor for MLQueueActor {
             property_actor: args.property_actor,
             task: None,
             queue: HashMap::default(),
+            items_service: Arc::new(ItemsService::new(ItemsSilo::new(args.database))),
         })
     }
 
@@ -94,9 +100,18 @@ fn queue(
 ) {
     let extractor = state.extractor.clone();
     let property_actor = state.property_actor.clone();
+    let items_service = state.items_service.clone();
     let task = task::spawn(async move {
         debug!(?id, "starting ML task");
-        let result = process_one(extractor, property_actor, id, title, description).await;
+        let result = process_one(
+            extractor,
+            property_actor,
+            items_service,
+            id,
+            title,
+            description,
+        )
+        .await;
         let _ = myself.send_message(MLQueueMsg::Finished(result));
     });
 
@@ -113,6 +128,7 @@ fn queue_next(myself: ActorRef<MLQueueMsg>, state: &mut MLQueueState) {
 async fn process_one(
     extractor: ActorRef<LlamaMsg>,
     property_actor: ActorRef<PropertiesMsg>,
+    items_service: Arc<ItemsService<ItemsSilo>>,
     workshop_item_id: IItemID,
     title: String,
     description: String,
@@ -126,6 +142,12 @@ async fn process_one(
         Ok(Ok(props)) => {
             debug!(?workshop_item_id, ?props, "ML extraction completed");
 
+            if let Err(error) = items_service
+                .update_ml_last_run(workshop_item_id.clone())
+                .await
+            {
+                error!(?error, "Error occurred updating timestamp for ml last run");
+            }
             for (class, value) in props
                 .genres
                 .into_iter()
@@ -159,7 +181,7 @@ async fn process_one(
             }
         }
         Ok(Err(error)) => {
-            error!(?error, ?workshop_item_id,  "ML extraction failed");
+            error!(?error, ?workshop_item_id, "ML extraction failed");
         }
         Err(error) => {
             error!(?error, ?workshop_item_id, "ML extractor RPC failed");
