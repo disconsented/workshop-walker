@@ -181,7 +181,7 @@ impl ItemsPort for ItemsSilo {
             .bind(("now", Utc::now().timestamp()))
             .await
             .whatever_context("querying update ml_last_run")?
-            .take(0)
+            .take((0, "ml_last_run"))
             .whatever_context("taking ml_last_run")?;
 
         if last_ran.is_none() {
