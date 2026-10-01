@@ -37,7 +37,10 @@ use tracing::{debug, error};
 
 use crate::{
     app_config::BiscuitConfig,
-    db::{IUserID, UserID, model::InternalUser},
+    db::{
+        IUserID, UserID,
+        model::InternalUser,
+    },
     steam::steam_user_actor::SteamUserMsg,
 };
 
@@ -541,6 +544,7 @@ impl AuthActor {
         {
             let user = InternalUser {
                 id: UserID::from(user_id).into(),
+                username: None,
                 admin: false,
                 banned: false,
                 last_logged_in: Utc::now(),

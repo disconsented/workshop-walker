@@ -23,7 +23,10 @@ impl AdminPort for AdminSilo {
     async fn list_users(&self) -> Result<Vec<InternalUser>, AdminError> {
         match self
             .db
-            .query("SELECT * FROM users")
+            .query(
+                "SELECT *, (SELECT * FROM usernames WHERE $parent.id.id() = id.id() LIMIT 1)[0] \
+                 as username FROM users;",
+            )
             .await
             .map(|mut q| q.take(0))
         {
