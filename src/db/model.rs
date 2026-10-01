@@ -302,6 +302,8 @@ pub struct User {
     /// The steam account ID
     #[dual_type(IUserID)]
     pub id: UserID,
+    #[dual_type(Option<InternalUsername>, to_external = to_external_username, to_internal = to_internal_username)]
+    pub username: Option<ExternalUsername>,
     /// Privileged access
     pub admin: bool,
     pub banned: bool,

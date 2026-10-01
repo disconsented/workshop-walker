@@ -23,7 +23,7 @@
 </script>
 
 <div class="table-wrap">
-	<table class="table">
+	<table class="table table-zebra">
 		<thead>
 			{#each table.getHeaderGroups() as group (group.id)}
 				<tr>

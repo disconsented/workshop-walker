@@ -10,6 +10,7 @@
 		type Updater
 	} from '@tanstack/svelte-table';
 	import { features } from './tableFeatures';
+	import TimeAgo from '$lib/timeAgo.svelte';
 
 	let { data }: { data } = $props();
 	console.log(data);
@@ -180,16 +181,21 @@
 
 	type User = {
 		id: number;
-		name?: string;
+		username?: { id: number; name: string };
 		admin: boolean;
 		banned: boolean;
 		last_logged_in: string;
 	};
 
 	const userColumns: Array<ColumnDef<typeof features, User>> = [
-		{ accessorKey: 'id', header: 'ID', sortFn: 'basic' },
 		{
-			accessorFn: (row) => row.name ?? 'unpopulated',
+			cell: (info) => renderSnippet(userLink, info.row.original.id),
+			accessorKey: 'id',
+			header: 'ID',
+			sortFn: 'basic'
+		},
+		{
+			accessorFn: (row) => row.username?.name ?? 'unpopulated',
 			id: 'name',
 			header: 'Name',
 			sortFn: 'alphanumeric'
@@ -206,7 +212,12 @@
 			sortFn: 'basic',
 			cell: (info) => renderSnippet(banToggle, info.row.original)
 		},
-		{ accessorKey: 'last_logged_in', header: 'Last Logged In', sortFn: 'basic' }
+		{
+			cell: (info) => renderSnippet(lastLoggedIn, info.row.original.last_logged_in),
+			accessorKey: 'last_logged_in',
+			header: 'Last Logged In',
+			sortFn: 'basic'
+		}
 	];
 
 	const userTable = createTable({
@@ -340,4 +351,14 @@
 
 {#snippet appsPanel()}
 	<AdminApps></AdminApps>
+{/snippet}
+
+{#snippet userLink(id: string)}
+	<a class="anchor" href="https://steamcommunity.com/profiles/{id}">{id}</a>
+{/snippet}
+
+{#snippet lastLoggedIn(dateTime: string)}
+	<span class="capitalize">
+		<TimeAgo date={Math.floor(new Date(dateTime).getTime() / 1000)} />
+	</span>
 {/snippet}
