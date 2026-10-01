@@ -5,12 +5,15 @@
 	import Icon from 'svelte-awesome';
 	import Properties from '../../../components/Properties.svelte';
 
+	const ONE_WEEK_MS = 604800 * 1000;
+
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting
 		item: any;
 	}
 
 	let { loggedIn = $bindable(), item }: Props = $props();
+	const elapsed = Date.now() - new Date(Number(item.created) * 1000).getTime();
 </script>
 
 <div
@@ -33,9 +36,9 @@
 		<div class="t-0 absolute left-0 flex h-full w-full flex-col justify-between">
 			<!--Top-->
 			<div class="flex w-full justify-end gap-1">
-				{#if Date.now() - new Date(Number(item.created) * 1000).getTime() < 604800 * 1000}
+				{#if elapsed < ONE_WEEK_MS}
 					<span
-						class="btn preset-filled-surface-50-950 border-primary-500 text-primary-500 mt-1 rounded-md border-1 border-dashed text-xs opacity-80"
+						class="badge preset-filled-surface-50-950 border-primary-500 text-primary-500 mt-1 rounded-md border-1 border-dashed text-xs opacity-80"
 					>
 						<Icon data={faNewspaper} class="fa-fw" />
 						New
