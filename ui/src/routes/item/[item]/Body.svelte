@@ -42,6 +42,8 @@
 	];
 	all_langs.sort();
 	let tab = $state(undefined);
+	let sort = $state(undefined);
+	let filterName = $state(undefined);
 </script>
 
 <div class="flex flex-col gap-4">
@@ -99,9 +101,28 @@
 								<Icon data={faChevronDown} class="fa-fw" />
 							{/if}
 						</Accordion.ItemTrigger>
-						<Accordion.ItemContent>
+						<Accordion.ItemContent class="pl-0">
 							<form>
 								<div class="grid grid-cols-2 gap-2">
+									<div>
+										<span class="label-text">Filter by name</span>
+										<input
+											class="input text-base"
+											type="search"
+											placeholder="Input"
+											bind:value={filterName}
+										/>
+									</div>
+									<div>
+										<span class="label-text">Sort</span>
+										<select class="select text-base" bind:value={sort}>
+											<option value="updated" selected>Last Updated</option>
+											<option value="popularity">Popularity</option>
+											<option value="subscriptions">Subscriptions</option>
+											<option value="trending">Trending - Week</option>
+											<option value="votes">Votes</option>
+										</select>
+									</div>
 									<div>
 										<span class="label-text">Tags</span>
 										<ToggleGroup
@@ -110,7 +131,7 @@
 											onValueChange={(details) => (selectedTags = details.value)}
 											multiple
 										>
-											{#each all_tags as tag}
+											{#each all_tags as tag (tag.id)}
 												<ToggleGroup.Item
 													value={tag.id}
 													class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
@@ -163,11 +184,11 @@
 			</div>
 			<Tabs.Content value="dependencies">
 				<span class="opacity-50"> Items that must be installed alongside this one. </span>
-				<BodyTab {selectedTags} {selectedLangs} items={item.dependencies} />
+				<BodyTab {selectedTags} {selectedLangs} {sort} {filterName} items={item.dependencies} />
 			</Tabs.Content>
 			<Tabs.Content value="dependants">
 				<span class="opacity-50">Items that list this one as a dependency.</span>
-				<BodyTab {selectedTags} {selectedLangs} items={item.dependants} />
+				<BodyTab {selectedTags} {selectedLangs} {sort} {filterName} items={item.dependants} />
 			</Tabs.Content>
 		</Tabs>
 	</div>
