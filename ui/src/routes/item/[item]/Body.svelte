@@ -42,7 +42,7 @@
 	];
 	all_langs.sort();
 	let tab = $state(undefined);
-	let sort = $state(undefined);
+	let sort = $state('updated');
 	let filterName = $state(undefined);
 </script>
 
