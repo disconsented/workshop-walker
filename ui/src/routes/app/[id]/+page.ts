@@ -116,7 +116,7 @@ function loadParams(params: URLSearchParams) {
 	if (paramLimit) {
 		limit.v = Number(paramLimit);
 	} else {
-		limit.v = 100;
+		limit.v = 50;
 	}
 
 	const paramTitle = params.get('title');
