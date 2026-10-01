@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { faLink } from '@fortawesome/free-solid-svg-icons';
+	import { faLink, faNewspaper } from '@fortawesome/free-solid-svg-icons';
 	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import Icon from 'svelte-awesome';
@@ -32,7 +32,15 @@
 		<!--Details overlaid-->
 		<div class="t-0 absolute left-0 flex h-full w-full flex-col justify-between">
 			<!--Top-->
-			<div class="flex w-full justify-end">
+			<div class="flex w-full justify-end gap-1">
+				{#if Date.now() - new Date(Number(item.created) * 1000).getTime() < 604800 * 1000}
+					<span
+						class="btn preset-filled-surface-50-950 border-primary-500 text-primary-500 mt-1 rounded-md border-1 border-dashed text-xs opacity-80"
+					>
+						<Icon data={faNewspaper} class="fa-fw" />
+						New
+					</span>
+				{/if}
 				<a
 					href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
 					target="_blank"
