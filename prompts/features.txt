@@ -32,6 +32,7 @@ TYPES, AT MOST 2
 - patch: bug fixes and compatibility work
 - library: a framework that other mods depend on
 - cheat: gives the player an advantage
+- optimization: changes to improve performance
 - translation: the purpose of the mod is to translate the base game or another
   mod. A mod that ships its own strings in several languages is not a
   translation, and translation credits in the description do not make it one.
