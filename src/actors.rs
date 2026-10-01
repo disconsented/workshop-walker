@@ -76,6 +76,7 @@ pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
         MLQueueArgs {
             extractor: extraction_actor,
             property_actor,
+            database: db.clone(),
         },
     )
     .instrument(info_span!("spawn::ml_queue"))

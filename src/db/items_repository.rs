@@ -1,5 +1,6 @@
 use std::num::ParseIntError;
 
+use chrono::Utc;
 use snafu::ResultExt;
 use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
@@ -169,6 +170,27 @@ impl ItemsPort for ItemsSilo {
         if !errors.is_empty() {
             error!(?errors, sql, "inserting data");
         }
+        Ok(())
+    }
+
+    async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError> {
+        let last_ran: Option<i64> = self
+            .db
+            .query("UPDATE $id SET ml_last_run=$now RETURN ml_last_run;")
+            .bind(("id", id))
+            .bind(("now", Utc::now().timestamp()))
+            .await
+            .whatever_context("querying update ml_last_run")?
+            .take(0)
+            .whatever_context("taking ml_last_run")?;
+
+        if last_ran.is_none() {
+            return Err(ItemsError::Internal {
+                message: "Updating ml_last_run did NOT return a value".to_string(),
+                source: None,
+            });
+        }
+
         Ok(())
     }
 }

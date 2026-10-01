@@ -117,6 +117,10 @@ impl<R: ItemsPort> ItemsService<R> {
             .await
             .whatever_context("inserting item")
     }
+
+    pub(crate) async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError> {
+        self.repo.update_ml_last_run(id).await
+    }
 }
 
 impl<R: ItemsPort> ItemsService<R> {
