@@ -10,7 +10,7 @@ use reqwest::Client;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
 use tokio::task::JoinHandle;
-use tracing::{Instrument, debug, error, info, info_span};
+use tracing::{Instrument, debug, error, info, info_span, warn};
 
 use crate::{
     db::{IAppID, item_update_actor::ItemUpdateMsg},
@@ -164,7 +164,7 @@ async fn download(
 async fn start_downloader(
     myself: &ActorRef<SteamDownloadMsg>,
     state: &mut SteamDownloadState,
-    app: IAppID, // Function needs to be infalliable, so, we handle the converion outside here
+    app: IAppID, // Function needs to be infallible, so, we handle the conversion outside here
     force: bool,
 ) {
     let timestamp: Option<u64> = state
@@ -199,7 +199,11 @@ async fn start_downloader(
     };
     if time_since > h12 || force {
         let _ = myself.send_message(message_builder());
-        info!(period = %humantime::Duration::from(time_since), app = ?app, "newest mod is at least 12 hours out of date; running update now");
+        if force {
+            warn!(?app, "Force starting download");
+        } else {
+            info!(period = %humantime::Duration::from(time_since), ?app, "newest mod is at least 12 hours out of date; running update now");
+        }
     }
 
     if let Some(old) = state
