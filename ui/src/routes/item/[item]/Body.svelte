@@ -102,7 +102,7 @@
 							{/if}
 						</Accordion.ItemTrigger>
 						<Accordion.ItemContent class="pl-0">
-							<form>
+							<form onsubmit={(e) => e.preventDefault()}>
 								<div class="grid grid-cols-2 gap-2">
 									<div>
 										<span class="label-text">Filter by name</span>
