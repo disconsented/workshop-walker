@@ -271,6 +271,7 @@ pub fn dual_struct(attr_ts: TokenStream, item: TokenStream) -> TokenStream {
         #(#original_attrs)*
         #[doc = #internal_struct_doc]
         #[derive(#(#internal_derives),*)]
+        #[surreal(crate = "surrealdb_types")]
         #[serde(rename = #original_name_str)]
         pub struct #internal_ident {
             #(#internal_fields),*
