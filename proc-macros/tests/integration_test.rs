@@ -5,6 +5,7 @@ use surrealdb_types::SurrealValue;
 
 // Mock types to simulate the User's environment
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue, ToSchema)]
+#[surreal(crate = "surrealdb_types")]
 #[surreal(transparent)]
 pub struct ItemID(i64);
 impl From<i64> for ItemID {
@@ -14,6 +15,7 @@ impl From<i64> for ItemID {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue, ToSchema)]
+#[surreal(crate = "surrealdb_types")]
 #[surreal(transparent)]
 pub struct AppID(i64);
 impl From<i64> for AppID {
@@ -23,6 +25,7 @@ impl From<i64> for AppID {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue)]
+#[surreal(crate = "surrealdb_types")]
 pub struct IItemID(surrealdb_types::RecordId);
 impl From<ItemID> for IItemID {
     fn from(id: ItemID) -> Self {
@@ -37,6 +40,7 @@ impl From<IItemID> for ItemID {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, SurrealValue)]
+#[surreal(crate = "surrealdb_types")]
 pub struct IAppID(surrealdb_types::RecordId);
 impl From<AppID> for IAppID {
     fn from(id: AppID) -> Self {
