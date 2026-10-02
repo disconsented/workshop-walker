@@ -443,8 +443,8 @@ async fn query_inner(
     language: Option<DetectedLanguage>,
     tags: Vec<String>,
     title: Option<String>,
-    updated_before: Option<i64>,
-    updated_after: Option<i64>,
+    last_updated_gte: Option<i64>,
+    last_updated_lte: Option<i64>,
     order_by: Option<OrderBy>,
     positive_props: Vec<Property>,
     negative_props: Vec<Property>,
@@ -458,8 +458,8 @@ async fn query_inner(
         language,
         tags,
         title,
-        updated_before,
-        updated_after,
+        last_updated_gte,
+        last_updated_lte,
         order_by,
         positive_props,
         negative_props,
@@ -536,6 +536,25 @@ mod test {
             DEFINE FIELD score ON workshop_items TYPE float PERMISSIONS FULL;
             DEFINE FIELD tags ON workshop_items TYPE array<record<tags>> PERMISSIONS FULL;
             DEFINE FIELD title ON workshop_items TYPE string PERMISSIONS FULL;
+            DEFINE FIELD created ON workshop_items TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD ml_last_run ON workshop_items TYPE int | NONE DEFAULT NONE PERMISSIONS \
+             FULL;
+            DEFINE FIELD lifetime_subscriptions ON workshop_items TYPE int DEFAULT 0 PERMISSIONS \
+             FULL;
+            DEFINE FIELD subscriptions ON workshop_items TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD views ON workshop_items TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD view_history ON workshop_items TYPE array<int> DEFAULT [] PERMISSIONS \
+             FULL;
+            DEFINE FIELD subscription_history ON workshop_items TYPE array<int> DEFAULT [] \
+             PERMISSIONS FULL;
+            DEFINE FIELD conversions ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD retention ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD hotness ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_week ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_month ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_quarter ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_half ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_year ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
 
             DEFINE TABLE workshop_item_properties TYPE RELATION IN workshop_items OUT properties \
              SCHEMAFULL PERMISSIONS NONE;
@@ -690,8 +709,8 @@ mod test {
     /// bounds, in ascending order.
     async fn list_last_updated(
         db: &Surreal<Db>,
-        updated_before: Option<i64>,
-        updated_after: Option<i64>,
+        last_updated_gte: Option<i64>,
+        last_updated_lte: Option<i64>,
     ) -> Vec<u64> {
         let items = query_inner(
             1,
@@ -700,8 +719,8 @@ mod test {
             None,
             vec![],
             None,
-            updated_before,
-            updated_after,
+            last_updated_gte,
+            last_updated_lte,
             None,
             vec![],
             vec![],
@@ -715,9 +734,9 @@ mod test {
         stamps
     }
 
-    /// `updated_before` and `updated_after` must bound `last_updated` on the
-    /// side their names say: `before` keeps the older items, `after` keeps the
-    /// newer ones.
+    /// `last_updated_gte` and `last_updated_lte` must bound `last_updated` on
+    /// the side their names say: `gte` keeps the newer items, `lte` keeps the
+    /// older ones.
     #[tokio::test]
     async fn updated_bounds_filter_on_the_correct_side() {
         let db = seed_db().await;
@@ -730,25 +749,25 @@ mod test {
         );
 
         assert_eq!(
-            list_last_updated(&db, Some(150), None).await,
-            vec![0, 100],
-            "updated_before=150 keeps only the items updated before 150"
-        );
-
-        assert_eq!(
             list_last_updated(&db, None, Some(150)).await,
-            vec![200],
-            "updated_after=150 keeps only the items updated after 150"
+            vec![0, 100],
+            "last_updated_lte=150 keeps only the items updated at or before 150"
         );
 
         assert_eq!(
-            list_last_updated(&db, Some(150), Some(50)).await,
+            list_last_updated(&db, Some(150), None).await,
+            vec![200],
+            "last_updated_gte=150 keeps only the items updated at or after 150"
+        );
+
+        assert_eq!(
+            list_last_updated(&db, Some(50), Some(150)).await,
             vec![100],
             "both bounds together keep the items inside the window"
         );
 
         assert!(
-            list_last_updated(&db, Some(50), Some(150)).await.is_empty(),
+            list_last_updated(&db, Some(150), Some(50)).await.is_empty(),
             "an inverted window matches nothing"
         );
     }
