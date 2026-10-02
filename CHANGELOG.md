@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/disconsented/workshop-walker/compare/v0.5.0...v0.6.0) - 2026-10-02
+
+### Added
+
+- *(items)* load 50 items per page by default
+- *(items)* sort the dependency lists by update time by default
+- *(items)* filter and sort the dependency lists by name
+- *(items)* mark items created in the last week as new
+- *(admin)* show usernames, profile links and login age for users
+- *(admin)* page and sort the property and user tables
+- *(ml)* add the optimization type to the feature prompt
+- *(ml)* rewrite the feature extraction prompt
+
+### Fixed
+
+- *(query)* keep the list working without the ML actor
+- *(properties)* sort the property search results by class
+- *(ui)* Safe parse admin requests
+- *(items)* stop the dependency filter form from reloading the page
+- *(items)* show the new marker as a badge, not a button
+- *(items)* give an item with short history a zero trend
+- *(items)* compute conversions as subscriptions per view
+- *(items)* rank items with short history last in trends
+- Conversion calculation
+- *(query)* drop items that hold no author record
+- *(migrations)* bind the source rows before the copy loop
+
+### Other
+
+- *(items)* add the popularity fields to the test schemas
+- *(items)* start the item query from the first property
+- *(changelog)* add the missing 0.3.0 section
+- *(admin)* remove a debug log and the unused Game type
+- *(steam)* log a forced download at warn level
+- *(docker)* cache cargo builds and trim the build context
+- *(ml)* take ml_last_run from the returned object
+- *(admin)* keep the property filter array stable
+- *(ml)* record ml_last_run after each extraction
+- *(ml)* drop the unused self from check_or_push
+- run the tokio runtime on eight worker threads
+- *(deps)* drop the unused surrealdb remote protocols
+- *(items)* move item persistence behind a port
+- *(properties)* pass the search limit and threshold from the service
+- add a just recipe for the format and fix pass
+- *(docker)* move the runtime image to debian 13
+
 ## [0.5.0](https://github.com/disconsented/workshop-walker/compare/v0.4.0...v0.5.0) - 2026-09-24
 
 ### Added
