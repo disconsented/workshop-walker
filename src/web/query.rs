@@ -9,7 +9,7 @@ use serde::{
     Deserialize, Deserializer,
     de::{Error, IntoDeserializer},
 };
-use snafu::{OptionExt, ResultExt, Whatever};
+use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
 use surrealdb_core::sql::{
     BinaryOperator, Closure, Cond, Dir, Expr, Field, Fields, Idiom, Kind, Limit, Literal, Lookup,
@@ -472,16 +472,13 @@ async fn query_inner(
 
     let results: Vec<InternalWorkshopItem> = results.take(0).whatever_context("taking result")?;
 
-    {
+    // The ML signal is best effort. A missing actor must not fail the listing.
+    if let Some(actor) = ML_ACTIVITY_ACTOR.get() {
         let ids = results
             .iter()
             .map(|item| &item.id)
             .cloned()
             .collect::<Vec<_>>();
-        let actor = ML_ACTIVITY_ACTOR
-            .get()
-            .cloned()
-            .whatever_context("missing activity actor")?;
         let _ = actor.send_message(MLActivityMsg::SignalBatch(ids));
     }
 
