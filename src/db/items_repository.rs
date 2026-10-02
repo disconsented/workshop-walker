@@ -453,6 +453,25 @@ mod test {
             DEFINE FIELD score ON workshop_items TYPE float PERMISSIONS FULL;
             DEFINE FIELD tags ON workshop_items TYPE array<record<tags>> PERMISSIONS FULL;
             DEFINE FIELD title ON workshop_items TYPE string PERMISSIONS FULL;
+            DEFINE FIELD created ON workshop_items TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD ml_last_run ON workshop_items TYPE int | NONE DEFAULT NONE PERMISSIONS \
+             FULL;
+            DEFINE FIELD lifetime_subscriptions ON workshop_items TYPE int DEFAULT 0 PERMISSIONS \
+             FULL;
+            DEFINE FIELD subscriptions ON workshop_items TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD views ON workshop_items TYPE int DEFAULT 0 PERMISSIONS FULL;
+            DEFINE FIELD view_history ON workshop_items TYPE array<int> DEFAULT [] PERMISSIONS \
+             FULL;
+            DEFINE FIELD subscription_history ON workshop_items TYPE array<int> DEFAULT [] \
+             PERMISSIONS FULL;
+            DEFINE FIELD conversions ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD retention ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD hotness ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_week ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_month ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_quarter ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_half ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
+            DEFINE FIELD trend_year ON workshop_items TYPE float DEFAULT 0.0 PERMISSIONS FULL;
 
             DEFINE TABLE item_dependencies TYPE RELATION IN workshop_items OUT workshop_items \
              SCHEMAFULL PERMISSIONS NONE;
