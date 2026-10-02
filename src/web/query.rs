@@ -1,3 +1,5 @@
+use std::ops::Not;
+
 use salvo::{
     Depot, Request, Writer,
     oapi::{ToSchema, endpoint},
@@ -219,8 +221,38 @@ fn build_query(
     };
 
     let app = IAppID::from(app);
+
+    // This is janky as fuck and I'm sorry, it was something claude discovered
+    // and its much faster than before
+    let what = if let Some(prop) = positive_props.first() {
+        vec![Expr::Idiom(Idiom(vec![
+            Part::Start(Expr::from_public_value(
+                IPropertyID::from(prop.clone()).into_value(),
+            )),
+            Part::Graph(Box::from(Lookup {
+                kind: LookupKind::Graph(Dir::In),
+                cond: Some(Cond(properties_condition.clone())),
+                what: vec![LookupSubject::Table {
+                    table: "workshop_item_properties".into(),
+                    referencing_field: None,
+                }],
+                ..Default::default()
+            })),
+            Part::Graph(Box::from(Lookup {
+                kind: LookupKind::Graph(Dir::In),
+                what: vec![LookupSubject::Table {
+                    table: "workshop_items".into(),
+                    referencing_field: None,
+                }],
+                ..Default::default()
+            })),
+        ]))]
+    } else {
+        vec![Expr::Table("workshop_items".into())]
+    };
+
     let mut stmt = SelectStatement {
-        what: vec![Expr::Table("workshop_items".into())],
+        what,
         timeout: Expr::Literal(Literal::Duration(Duration::from_secs(5))),
         ..Default::default()
     };
@@ -271,6 +303,54 @@ fn build_query(
     stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
     stmt.cond = {
         let mut conditions = vec![];
+        if positive_props.is_empty().not() {
+            conditions.push(Expr::Idiom(Idiom(vec![Part::Start(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom(vec![
+                    Part::Graph(Box::from(Lookup {
+                        kind: LookupKind::Graph(Dir::Out),
+                        cond: Some(Cond(properties_condition.clone())),
+                        what: vec![LookupSubject::Table {
+                            table: "workshop_item_properties".into(),
+                            referencing_field: None,
+                        }],
+                        ..Default::default()
+                    })),
+                    Part::Field("out".to_string().into()),
+                ]))),
+                op: BinaryOperator::ContainAll,
+                right: Box::new(Expr::Literal(Literal::Array(
+                    positive_props
+                        .into_iter()
+                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
+                        .collect::<Vec<Expr>>(),
+                ))),
+            })])));
+        }
+
+        if negative_props.is_empty().not() {
+            conditions.push(Expr::Idiom(Idiom(vec![Part::Start(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom(vec![
+                    Part::Graph(Box::from(Lookup {
+                        kind: LookupKind::Graph(Dir::Out),
+                        cond: Some(Cond(properties_condition.clone())),
+                        what: vec![LookupSubject::Table {
+                            table: "workshop_item_properties".into(),
+                            referencing_field: None,
+                        }],
+                        ..Default::default()
+                    })),
+                    Part::Field("out".to_string().into()),
+                ]))),
+                op: BinaryOperator::ContainNone,
+                right: Box::new(Expr::Literal(Literal::Array(
+                    negative_props
+                        .into_iter()
+                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
+                        .collect::<Vec<Expr>>(),
+                ))),
+            })])));
+        }
+
         conditions.push(Expr::Binary {
             left: Box::new(Expr::Idiom(Idiom::field("app".to_string()))),
             op: BinaryOperator::Equal,
@@ -299,56 +379,6 @@ fn build_query(
                 right: Box::new(Expr::Literal(Literal::Array(
                     tags.into_iter()
                         .map(|tag| Expr::from_public_value(ITagID::from(tag).into_value()))
-                        .collect::<Vec<_>>(),
-                ))),
-            });
-        }
-
-        if !positive_props.is_empty() {
-            let idiom = Expr::Idiom(Idiom(vec![
-                Part::Graph(Box::from(Lookup {
-                    kind: LookupKind::Graph(Dir::Out),
-                    what: vec![LookupSubject::Table {
-                        table: "workshop_item_properties".into(),
-                        referencing_field: None,
-                    }],
-                    cond: Some(Cond(properties_condition.clone())),
-                    ..Default::default()
-                })),
-                Part::Field("out".into()),
-            ]));
-            conditions.push(Expr::Binary {
-                left: Box::new(idiom),
-                op: BinaryOperator::ContainAll,
-                right: Box::new(Expr::Literal(Literal::Array(
-                    positive_props
-                        .into_iter()
-                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
-                        .collect::<Vec<_>>(),
-                ))),
-            });
-        }
-
-        if !negative_props.is_empty() {
-            let idiom = Expr::Idiom(Idiom(vec![
-                Part::Graph(Box::from(Lookup {
-                    kind: LookupKind::Graph(Dir::Out),
-                    what: vec![LookupSubject::Table {
-                        table: "workshop_item_properties".into(),
-                        referencing_field: None,
-                    }],
-                    cond: Some(Cond(properties_condition.clone())),
-                    ..Default::default()
-                })),
-                Part::Field("out".into()),
-            ]));
-            conditions.push(Expr::Binary {
-                left: Box::new(idiom),
-                op: BinaryOperator::ContainNone,
-                right: Box::new(Expr::Literal(Literal::Array(
-                    negative_props
-                        .into_iter()
-                        .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
                         .collect::<Vec<_>>(),
                 ))),
             });
