@@ -248,7 +248,7 @@ impl PropertiesPort for PropertiesSilo {
                 "SELECT out.id().class AS class, out.id().value as value FROM \
                  workshop_item_properties WHERE in.*.app = $app AND upvote_count >= \
                  $upvote_threshold AND status = 1 AND prop_value @@ $term GROUP BY class, value \
-                 LIMIT $limit;",
+                 ORDER BY class COLLATE DESC LIMIT $limit;",
             )
             .bind(("upvote_threshold", upvote_threshold))
             .bind(("limit", limit))
