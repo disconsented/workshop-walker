@@ -112,7 +112,7 @@ impl Actor for ItemUpdateActor {
                     .send_message(SteamUserMsg::Fetch(item.author.id.clone()));
 
                 if let Some(ml_queue) = &state.ml_queue
-                    && let Ok(true) = state.items_service.should_queue_ml(&item).await
+                    && let Ok(true) = state.items_service.should_queue_ml(&item, false).await
                 {
                     let _ = ml_queue.send_message(MLQueueMsg::Queue(
                         item.id.clone(),
@@ -131,7 +131,7 @@ impl Actor for ItemUpdateActor {
                         Ok(item) => {
                             if let Ok(true) = state
                                 .items_service
-                                .should_queue_ml(&item)
+                                .should_queue_ml(&item, true)
                                 .await
                                 .inspect_err(|error| {
                                     error!(?error, "checking if should queue ML for hint");

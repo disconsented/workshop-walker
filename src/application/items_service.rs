@@ -20,7 +20,17 @@ pub struct ItemsService<R: ItemsPort> {
 }
 
 impl<R: ItemsPort> ItemsService<R> {
-    pub async fn should_queue_ml(&self, item: &InternalWorkshopItem) -> Result<bool, ItemsError> {
+    /// Queue ML on the following conditions:
+    /// The model can support the language it's written in (currently just
+    /// English) Either one of the following:
+    /// 1) It's been accessed by a user (search/direct item) _and_ ml hasn't run
+    ///    before
+    /// 2) The description has changed
+    pub async fn should_queue_ml(
+        &self,
+        item: &InternalWorkshopItem,
+        activity_hint: bool,
+    ) -> Result<bool, ItemsError> {
         let (existing_description, ml_last_ran) = self
             .repo
             .get_description_and_last_ml(item.id.clone())
@@ -34,9 +44,10 @@ impl<R: ItemsPort> ItemsService<R> {
             viable_language,
             description_changed,
             ?ml_last_ran,
+            activity_hint,
             "decision"
         );
-        Ok(viable_language && (ml_last_ran.is_none() || description_changed))
+        Ok(viable_language && (activity_hint && ml_last_ran.is_none() || description_changed))
     }
 
     pub async fn get_item(&self, id: IItemID) -> Result<InternalWorkshopItem, ItemsError> {
