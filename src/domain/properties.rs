@@ -71,5 +71,6 @@ pub trait PropertiesPort: Send + Sync + 'static {
         search_query: InternalSearchProperty,
         limit: usize,
         upvote_threshold: usize,
+        minimum_relations: usize,
     ) -> Result<Vec<Property>, PropertiesError>;
 }

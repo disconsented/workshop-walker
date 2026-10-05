@@ -93,7 +93,6 @@ impl PropertiesPort for PropertiesSilo {
         }
 
         // Insert any new properties and relate
-
         let result = self
             .db
             .query("BEGIN")
@@ -241,16 +240,29 @@ impl PropertiesPort for PropertiesSilo {
         search_query: InternalSearchProperty,
         limit: usize,
         upvote_threshold: usize,
+        minimum_relations: usize,
     ) -> Result<Vec<Property>, PropertiesError> {
         let results = self
             .db
             .query(
-                "SELECT out.id().class AS class, out.id().value as value FROM \
-                 workshop_item_properties WHERE in.*.app = $app AND upvote_count >= \
-                 $upvote_threshold AND status = 1 AND prop_value @@ $term GROUP BY class, value \
-                 ORDER BY class COLLATE DESC LIMIT $limit;",
+                "SELECT
+                    id.id().class AS class,
+                    id.id().value AS value,
+                    search::score(1) AS score
+                FROM properties
+                WHERE
+                    count(
+                        <-(workshop_item_properties WHERE
+                            in.*.app = $app
+                            AND upvote_count >= $upvote_threshold
+                            AND status = 1)
+                    ) >= $minimum_relations
+                    AND value @1@ $term
+                ORDER BY score DESC
+                LIMIT $limit;",
             )
             .bind(("upvote_threshold", upvote_threshold))
+            .bind(("minimum_relations", minimum_relations))
             .bind(("limit", limit))
             .bind(("app", search_query.app))
             .bind(("term", search_query.search_term))
