@@ -174,7 +174,7 @@ async fn process_one(
                         debug!(?workshop_item_id, %class, %value, "Property conflict");
                     }
                     Ok(Err(error)) => {
-                        error!(?error, ?workshop_item_id,  %class, %value,  "Inserting new property");
+                        error!(?error, ?workshop_item_id,  %class, %value, "Inserting new property");
                     }
                     Err(_) => (),
                 }
