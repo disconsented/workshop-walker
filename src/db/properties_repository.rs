@@ -242,7 +242,7 @@ impl PropertiesPort for PropertiesSilo {
         upvote_threshold: usize,
         minimum_relations: usize,
     ) -> Result<Vec<Property>, PropertiesError> {
-        let results = self
+        let query = self
             .db
             .query(
                 "SELECT
@@ -265,8 +265,9 @@ impl PropertiesPort for PropertiesSilo {
             .bind(("minimum_relations", minimum_relations))
             .bind(("limit", limit))
             .bind(("app", search_query.app))
-            .bind(("term", search_query.search_term))
-            .await;
+            .bind(("term", search_query.search_term));
+
+        let results = query.await;
 
         match results.map(surrealdb::IndexedResults::check) {
             Ok(Ok(mut terms)) => Ok(terms.take(0).map_err(|_| PropertiesError::Internal)?),
