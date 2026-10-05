@@ -22,8 +22,32 @@ impl Actor for BBActor {
         _: ActorRef<Self::Msg>,
         _: Self::Arguments,
     ) -> Result<Self::State, ActorProcessingErr> {
+        // ToDo: Setup bb for the following:
+
+        // [hr][/hr]
+        // [table]
+        // [cap]
+        // let mut config = BBCodeTagConfig::default(); // Default does not
+        // include extended tags fyi let mut matchers: Vec<MatchInfo> =
+        // vec![]; // A list of NEW matchers we'll pass to from_config
+        //
+        // // You define how your tag gets turned into HTML using a closure; you
+        // are provided the open tag // regex capture, the pre-parsed
+        // pre-escaped body, and the closing tag regex capture (if the user
+        // provided it). // "EmitScope" is just a fancy alias so you
+        // don't have to fuss with the complicated types
+        // let color_emitter : EmitScope = Arc::new(|open_capture,body,_c| {
+        //     //NOTE: in production code, don't `unwrap` the named capture
+        // group, it might not exist!     let color =
+        // open_capture.unwrap().name("attr").unwrap().as_str();
+        //     format!(r#"<span style="color:{}">{}</span>"#, color, body)
+        // });
+        //
+        // BBCode::add_tagmatcher(&mut matchers, "color",
+        // ScopeInfo::basic(color_emitter), None, None)?; //Repeat the
+        // emitter / add_tagmatcher above for each tag you want to add
+
         Ok(Self::State {
-            // [hr][/hr]
             bb: BBCode::from_config(BBCodeTagConfig::extended(), None)?,
         })
     }
