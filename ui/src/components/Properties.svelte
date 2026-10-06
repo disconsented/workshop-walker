@@ -10,9 +10,15 @@
 		itemID: string;
 		properties: any[];
 	}
+	// We want to ignore/grey out any props that are too heavily downvoted
+	const UPVOTE_THRESHOLD = -5;
 
 	let { loggedIn = $bindable(), itemID, properties }: Props = $props();
-	let sorted_props = $derived(properties?.toSorted((a, b) => b.upvote_count - a.upvote_count));
+	let sorted_props = $derived(
+		properties
+			?.toSorted((a, b) => b.upvote_count - a.upvote_count)
+			.filter((value) => value.upvote_count > UPVOTE_THRESHOLD)
+	);
 	let first_props = $derived(sorted_props?.slice(0, 6));
 	let remaining_props = $derived(sorted_props?.slice(6));
 	let open = $state(false);
