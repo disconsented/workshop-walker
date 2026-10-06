@@ -44,6 +44,7 @@ ractor = { features = ["async-trait", "monitors"], version = "0.16" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
   "affix-state",
+  "compression",
   "concurrency-limiter",
   "cookie",
   "logging",
