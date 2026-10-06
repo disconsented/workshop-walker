@@ -48,12 +48,15 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
             .push(
                 Router::with_path("list")
                     .hoop(auth::validate_opt)
+                    .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
                     .get(query::list),
             )
             .push(
-                Router::with_path("item")
-                    .hoop(auth::validate_opt)
-                    .push(Router::with_path("{id}").get(item::get)),
+                Router::with_path("item").hoop(auth::validate_opt).push(
+                    Router::with_path("{id}")
+                        .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
+                        .get(item::get),
+                ),
             )
             .push(
                 Router::with_path("property")
@@ -61,8 +64,11 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                     .post(properties::new),
             )
             .push(
-                Router::with_path("properties")
-                    .push(Router::with_path("search").post(search_properties)),
+                Router::with_path("properties").push(
+                    Router::with_path("search")
+                        .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
+                        .post(search_properties),
+                ),
             )
             .push(
                 Router::with_path("vote")
@@ -80,6 +86,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                     .push(
                         Router::with_path("properties")
                             .put(admin::patch_workshop_item_properties)
+                            .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
                             .get(admin::get_workshop_item_properties),
                     )
                     .push(
