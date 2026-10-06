@@ -9,7 +9,7 @@ use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use reqwest::Client;
 use snafu::{ResultExt, Whatever};
 use surrealdb::{Surreal, engine::local::Db};
-use tokio::task::JoinHandle;
+use tokio::{task, task::JoinHandle, time::sleep};
 use tracing::{Instrument, debug, error, info, info_span, warn};
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
 
 pub static DOWNLOAD_ACTOR: OnceLock<ActorRef<SteamDownloadMsg>> = OnceLock::new();
 
-pub struct SteamDownloadActor {}
+pub struct SteamDownloadActor;
 
 pub struct SteamDownloadArgs {
     pub steam_token: Arc<String>,
@@ -110,7 +110,6 @@ impl Actor for SteamDownloadActor {
         Ok(())
     }
 }
-
 async fn download(
     state: &mut SteamDownloadState,
     app: IAppID,
@@ -204,13 +203,21 @@ async fn start_downloader(
         } else {
             info!(period = %humantime::Duration::from(time_since), ?app, "newest mod is at least 12 hours out of date; running update now");
         }
-    }
-
-    if let Some(old) = state
-        .apps
-        .insert(app.clone(), myself.send_interval(h12, message_builder))
-    {
-        // Remember to abort the old timer
-        old.abort();
+        if let Some(old) = state
+            .apps
+            .insert(app.clone(), myself.send_interval(h12, message_builder))
+        {
+            // Remember to abort the old timer
+            old.abort();
+        }
+    } else {
+        let next_time = h12.saturating_sub(time_since);
+        debug!(?app, waiting = %humantime::Duration::from(next_time), "Delaying mod download");
+        let myself = myself.clone();
+        let app = app.clone();
+        task::spawn(async move {
+            sleep(next_time).await;
+            let _ = myself.send_message(SteamDownloadMsg::AddApp(app));
+        });
     }
 }
