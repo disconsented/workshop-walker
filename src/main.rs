@@ -10,8 +10,9 @@ use surrealdb::{
     engine::local::{Db, RocksDb},
     opt::auth::Root,
 };
+use tokio::{select, signal};
 use tokio_stream::StreamExt;
-use tracing::{Instrument, debug, error, info_span};
+use tracing::{Instrument, debug, error, info, info_span, warn};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use crate::{
@@ -66,7 +67,15 @@ async fn main() -> Result<()> {
     actors::spawn(&settings, &db)
         .instrument(info_span!(parent: &span, "spawn actors"))
         .await?;
-    web::start(db, Arc::new(settings)).await;
+
+    select! {
+        () = web::start(db, Arc::new(settings)) => {
+            warn!("Web server stopped");
+        }
+        _ = signal::ctrl_c() => {
+            info!("Received ctrl-c");
+        }
+    }
     Ok(())
 }
 
