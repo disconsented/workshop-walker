@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use snafu::{OptionExt, ResultExt, Snafu};
 use tokio::{fs::read_to_string, time::sleep};
 use tokio_stream::{self as stream, StreamExt};
-use tracing::{debug, instrument, warn};
+use tracing::{debug, instrument, trace, warn};
 
 /// The pause between two health checks while the server loads its model.
 const HEALTH_POLL: Duration = Duration::from_millis(250);
@@ -222,7 +222,7 @@ async fn extract(state: &LlamaState, task: Task, prompt: &str) -> Result<MLPrope
             ..
         },
     ] = completion.choices;
-    debug!(?finish_reason, content = ?message.content, "model answered");
+    trace!(?finish_reason, content = ?message.content, "model answered");
 
     let answer = message.content.context(NoContentSnafu {
         task: task.name,

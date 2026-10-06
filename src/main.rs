@@ -13,7 +13,6 @@ use surrealdb::{
 use tokio::{select, signal};
 use tokio_stream::StreamExt;
 use tracing::{Instrument, debug, error, info, info_span, warn};
-use tracing_subscriber::fmt::format::FmtSpan;
 
 use crate::{
     application::admin_service::AdminService,
@@ -36,7 +35,6 @@ pub type Error = Whatever;
 async fn main() -> Result<()> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(env::var("RUST_LOG").unwrap_or_default())
-        .with_span_events(FmtSpan::CLOSE)
         .try_init();
     let settings: app_config::Config = config::Config::builder()
         .add_source(config::File::with_name("config/config.toml"))
