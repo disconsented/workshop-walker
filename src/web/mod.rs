@@ -104,7 +104,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
             .push(Router::with_path("verify").get(auth::verify_token_from_steam))
             .push(Router::with_path("logout").get(auth::invalidate)),
     );
-    let doc = OpenApi::new("workshop-walker", "0.0.1").merge_router(&router);
+    let doc = OpenApi::new("workshop-walker", env!("CARGO_PKG_VERSION")).merge_router(&router);
     let router = router
         .push(doc.into_router("/api-doc/openapi.json"))
         .push(SwaggerUi::new("/api-doc/openapi.json").into_router("swagger-ui"));
