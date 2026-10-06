@@ -12,8 +12,9 @@
 	}
 
 	let { loggedIn = $bindable(), itemID, properties }: Props = $props();
-	let first_props = $derived(properties?.slice(0, 6));
-	let remaining_props = $derived(properties?.slice(6));
+	let sorted_props = $derived(properties?.toSorted((a, b) => b.upvote_count - a.upvote_count));
+	let first_props = $derived(sorted_props?.slice(0, 6));
+	let remaining_props = $derived(sorted_props?.slice(6));
 	let open = $state(false);
 </script>
 
