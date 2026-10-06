@@ -58,7 +58,9 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<div class="grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+	<div
+		class="grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+	>
 		{#each paginated as dep}
 			{@render itemCard(dep)}
 		{/each}

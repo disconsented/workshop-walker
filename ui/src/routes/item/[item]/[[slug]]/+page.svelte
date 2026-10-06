@@ -39,7 +39,7 @@
 			<div class="w-full border-b-1 p-4 lg:w-md lg:border-b-0">
 				<Sidebar {loggedIn} {item} />
 			</div>
-			<div class="w-full max-w-6xl">
+			<div class="w-full">
 				<Body {item} {app} />
 			</div>
 		</div>

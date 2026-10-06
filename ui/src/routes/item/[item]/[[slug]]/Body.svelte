@@ -60,7 +60,7 @@
 				class:hidden={open}
 			></div>
 			<article
-				class="prose dark:prose-invert max-w-none overflow-hidden"
+				class="prose dark:prose-invert max-w-6xl overflow-hidden"
 				class:max-h-[6lh]={!open}
 				class:lg:max-h-[10lh]={!open}
 			>
