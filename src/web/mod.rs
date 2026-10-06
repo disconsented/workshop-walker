@@ -110,13 +110,15 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
         .push(SwaggerUi::new("/api-doc/openapi.json").into_router("swagger-ui"));
 
     let router = router.push(
-        Router::with_path("{**path}").get(
-            StaticDir::new(["ui/build/"])
-                .include_dot_files(false)
-                .auto_list(true)
-                .defaults("index.html")
-                .fallback("index.html"),
-        ),
+        Router::with_hoop(CachingHeaders::new())
+            .path("{**path}")
+            .get(
+                StaticDir::new(["ui/build/"])
+                    .include_dot_files(false)
+                    .auto_list(false)
+                    .defaults("index.html")
+                    .fallback("index.html"),
+            ),
     );
 
     let service = Service::new(router).hoop(Logger::new());
