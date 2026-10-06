@@ -73,7 +73,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 	return {
 		// Streamed: the app name is only known once /api/app resolves.
 		breadcrumbs: appRequest.then(() => [
-			{ title: app.v.name ?? params.id, href: `/app/${params.id}` }
+			{ title: app.v.name ?? params.id, href: `/app/${params.id}/${params.slug}` }
 		]),
 		appRequest: appRequest,
 		searchRequest: appRequest.then(() =>

@@ -9,6 +9,7 @@
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import Icon from 'svelte-awesome';
 	import { Pagination, Portal, Tooltip } from '@skeletonlabs/skeleton-svelte';
+	import slugify from 'slugify';
 
 	interface Props {
 		items: any;
@@ -104,7 +105,7 @@
 					<Tooltip.Trigger class="flex"
 						><a
 							class="hover:anchor overflow-hidden text-nowrap text-ellipsis"
-							href="/item/{item.id}"
+							href="/item/{item.id}/{slugify(item.title)}"
 							target="_blank"
 							rel="noopener noreferrer">{item.title}</a
 						>
@@ -144,7 +145,7 @@
 		</div>
 		<div class="flex flex-col">
 			<a
-				href="/item/{item.id}"
+				href="/item/{item.id}/{slugify(item.title)}"
 				target="_blank"
 				rel="noopener noreferrer"
 				class="btn anchor preset-outlined-surface-200-800"

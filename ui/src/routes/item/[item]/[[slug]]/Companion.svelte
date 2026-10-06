@@ -2,6 +2,7 @@
 	import Icon from 'svelte-awesome';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import { faThumbsDown, faThumbsUp } from '@fortawesome/free-solid-svg-icons';
+	import slugify from 'slugify';
 
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting
@@ -17,7 +18,12 @@
 >
 	<!-- Title with voting -->
 	<div class="flex flex-col">
-		<a href="/item/{item.id}" target="_self" rel="noopener noreferrer" class="hover:filter-none">
+		<a
+			href="/item/{item.id}/{slugify(item.title)}"
+			target="_self"
+			rel="noopener noreferrer"
+			class="hover:filter-none"
+		>
 			<img
 				src={item.preview_url}
 				alt="banner"
@@ -76,7 +82,7 @@
 			Workshop
 		</a>
 		<a
-			href="/item/{item.id}"
+			href="/item/{item.id}/{slugify(item.title)}"
 			target="_self"
 			rel="noopener noreferrer"
 			class="btn preset-tonal-primary flex items-center gap-2 truncate whitespace-normal"

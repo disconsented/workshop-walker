@@ -2,8 +2,8 @@
 	import { faChevronDown, faChevronUp, faLock } from '@fortawesome/free-solid-svg-icons';
 	import { faSteamSymbol } from '@fortawesome/free-brands-svg-icons';
 	import Icon from 'svelte-awesome';
-	import SuggestProperty from '../routes/app/[id]/suggestProperty.svelte';
-	import Property from '../routes/item/[item]/Property.svelte';
+	import Property from '../routes/item/[item]/[[slug]]/Property.svelte';
+	import SuggestProperty from '../routes/app/[id]/[[slug]]/suggestProperty.svelte';
 
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting
@@ -26,7 +26,7 @@
 				property={{ class: prop.out.class, value: prop.out.value, ...prop }}
 				hideVote={false}
 				{itemID}
-			></Property>
+			/>
 		{/each}
 		{#if remaining_props.length > 0}
 			{#if open}
@@ -36,7 +36,7 @@
 						property={{ class: prop.out.class, value: prop.out.value, ...prop }}
 						hideVote={false}
 						{itemID}
-					></Property>
+					/>
 				{/each}
 			{/if}
 			<button

@@ -1,4 +1,5 @@
 import { parseSafeJSON, reviver } from '$lib/parser';
+import slugify from 'slugify';
 
 export const prerender = false;
 export const load = async ({ fetch, params }) => {
@@ -14,8 +15,8 @@ export const load = async ({ fetch, params }) => {
 		data: item,
 		app: app,
 		breadcrumbs: [
-			{ title: app?.name ?? String(item.app), href: `/app/${item.app}` },
-			{ title: item.title, href: `/item/${params.item}` }
+			{ title: app?.name ?? String(item.app), href: `/app/${item.app}/${slugify(app?.name)}` },
+			{ title: item.title, href: `/item/${params.item}/${slugify(item.title)}` }
 		]
 	};
 };

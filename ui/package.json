@@ -57,6 +57,7 @@
 		"@tanstack/svelte-table": "^9.2.4",
 		"javascript-time-ago": "^2.5.11",
 		"layerchart": "^2.5.0",
+		"slugify": "^1.6.9",
 		"svelte-awesome": "^3.3.5",
 		"svelte-loading-spinners": "^0.3.6"
 	}

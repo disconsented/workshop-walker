@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from 'svelte-awesome';
 	import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+	import slugify from 'slugify';
 
 	interface Props {
 		image_url: string;
@@ -12,12 +13,10 @@
 	}
 
 	let { image_url, name, developer, description, appid, url = undefined }: Props = $props();
-	// Direct URL, anchor or app page link
-	const link = url ? url : appid === '#' ? '.' : '/app/' + appid;
 </script>
 
 <a
-	href={link}
+	href="/app/{appid}/{slugify(name)}"
 	class="card preset-filled-surface-100-900 border-surface-200-800 divide-surface-200-800 block w-md max-w-md divide-y overflow-hidden border-[1px]"
 >
 	<header class="flex">
