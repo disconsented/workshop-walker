@@ -9,7 +9,7 @@
 	} from '@fortawesome/free-solid-svg-icons';
 	import Icon from 'svelte-awesome';
 	import { exclamationCircle } from 'svelte-awesome/icons';
-	import Property from '../../item/[item]/Property.svelte';
+	import Property from '../../../item/[item]/[[slug]]/Property.svelte';
 
 	interface Props {
 		itemID: string;
@@ -25,7 +25,6 @@
 		class: '',
 		value: '',
 		note: undefined,
-		// svelte-ignore state_referenced_locally
 		workshop_item: itemID
 	};
 
@@ -232,7 +231,7 @@
 				}}
 				itemID
 				hideVote
-			></Property>
+			/>
 		</div>
 		<button
 			onclick={() => {

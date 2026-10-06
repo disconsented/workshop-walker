@@ -3,9 +3,9 @@
 	import { Progress } from '@skeletonlabs/skeleton-svelte';
 	import Icon from 'svelte-awesome';
 	import TimeAgo from '$lib/timeAgo.svelte';
-	import Properties from '../../../components/Properties.svelte';
 	import { inToLangShort } from '$lib/lang';
 	import PopularityChart from './PopularityChart.svelte';
+	import Properties from '../../../../components/Properties.svelte';
 
 	interface Props {
 		loggedIn: boolean; // Used for allowing voting

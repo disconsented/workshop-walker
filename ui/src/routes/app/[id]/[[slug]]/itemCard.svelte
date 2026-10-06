@@ -3,7 +3,8 @@
 	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import Icon from 'svelte-awesome';
-	import Properties from '../../../components/Properties.svelte';
+	import Properties from '../../../../components/Properties.svelte';
+	import slugify from 'slugify';
 
 	const ONE_WEEK_MS = 604800 * 1000;
 
@@ -59,7 +60,7 @@
 				<div class="w-full">
 					<h6 class="h6 p-1">
 						<a
-							href="/item/{item.id}"
+							href="/item/{item.id}/{slugify(item.title)}"
 							target="_self"
 							rel="noopener noreferrer"
 							class="card inline-block place-items-center text-balance"

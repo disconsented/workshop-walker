@@ -31,7 +31,7 @@
 	} from './store.svelte';
 	import { SvelteMap, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
-	import Property from '../../item/[item]/Property.svelte';
+	import Property from '../../../item/[item]/[[slug]]/Property.svelte';
 
 	interface Props {
 		appTags: string[];

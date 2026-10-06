@@ -22,6 +22,7 @@
 	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import TimeAgo from '$lib/timeAgo.svelte';
 	import { inToLangShort } from '$lib/lang';
+	import slugify from 'slugify';
 
 	let { data }: { data: PageData } = $props();
 
@@ -253,7 +254,7 @@
 					</div>
 					<div role="cell" class="flex flex-row place-items-center gap-1">
 						<a
-							href="/item/{item.id}"
+							href="/item/{item.id}/{slugify(item.title)}"
 							target="_self"
 							rel="noopener noreferrer"
 							class="btn preset-outlined-surface-300-700 p-2"
