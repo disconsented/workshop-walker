@@ -22,12 +22,14 @@
 	} from '@fortawesome/free-solid-svg-icons';
 	import {
 		language,
+		lastUpdatedGte,
+		lastUpdatedLte,
+		limit,
 		orderBy,
+		page,
 		searchProps,
 		tags,
-		title,
-		lastUpdatedLte,
-		lastUpdatedGte
+		title
 	} from './store.svelte';
 	import { SvelteMap, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -110,6 +112,22 @@
 			});
 		} else {
 			params.delete('negative_props');
+		}
+	});
+
+	$effect(() => {
+		if (limit.v) {
+			params.set('limit', limit.v);
+		} else {
+			params.delete('limit');
+		}
+	});
+
+	$effect(() => {
+		if (page.v) {
+			params.set('page', page.v);
+		} else {
+			params.delete('page');
 		}
 	});
 
@@ -266,6 +284,30 @@
 		class:!hidden={!showAdvanced}
 	>
 		<div class="flex w-full flex-col gap-2">
+			<div class="flex flex-row gap-2">
+				<label class="label w-fit">
+					<span class="label-text">Page</span>
+					<input
+						class="input"
+						type="number"
+						placeholder="Page"
+						min="0"
+						max="100"
+						bind:value={page.v}
+					/>
+				</label>
+				<label class="label w-fit">
+					<span class="label-text">Limit</span>
+					<input
+						class="input"
+						type="number"
+						placeholder="Limit"
+						min="0"
+						max="100"
+						bind:value={limit.v}
+					/>
+				</label>
+			</div>
 			<div class="flex flex-col gap-2">
 				Updated
 				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">

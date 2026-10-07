@@ -5,6 +5,7 @@ import {
 	orderBy,
 	searchProps,
 	tags,
+	page,
 	title,
 	lastUpdatedLte,
 	lastUpdatedGte
@@ -32,6 +33,10 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 
 	if (limit.v) {
 		paramList.push(['limit', limit.v]);
+	}
+
+	if (page.v) {
+		paramList.push(['page', page.v]);
 	}
 
 	if (title.v) {
@@ -117,6 +122,13 @@ function loadParams(params: URLSearchParams) {
 		limit.v = Number(paramLimit);
 	} else {
 		limit.v = 50;
+	}
+
+	const paramPage = params.get('page');
+	if (paramPage) {
+		page.v = Number(paramPage);
+	} else {
+		page.v = 0;
 	}
 
 	const paramTitle = params.get('title');

@@ -4,6 +4,7 @@ export const language = $state({ v: '1' });
 export const tags: { v: string[] } = $state({ v: [] });
 export const orderBy = $state({ v: 'TrendMonth' });
 export const limit = $state({ v: 50 });
+export const page = $state({ v: 0 });
 export const title = $state({ v: undefined });
 export const lastUpdatedGte: { v: Date | undefined } = $state({ v: undefined });
 export const lastUpdatedLte: { v: Date | undefined } = $state({ v: undefined });
