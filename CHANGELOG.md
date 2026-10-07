@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/disconsented/workshop-walker/compare/v0.6.0...v0.7.0) - 2026-10-07
+
+### Added
+
+- *(properties)* limit and filter the classifier answers
+- *(properties)* tell the classifier to use full genre names
+- *(search)* add page and limit fields to the advanced search
+- *(item)* show the dependants as compact banner cards
+- *(properties)* hide the properties with a score of -5 or less
+- *(ui)* add a name slug to the app and item URLs
+- *(properties)* show the most upvoted properties first
+- *(main)* stop the server on ctrl-c
+- *(web)* send caching headers for the static UI files
+- *(items)* only queue ML for unseen items on user activity
+- *(properties)* search properties by relation count
+
+### Fixed
+
+- *(properties)* clear the properties and rerun the classifier
+- *(search)* show that property filters combine with AND
+- *(steam)* wait for the 12 hour interval before the next download
+- *(api)* report the crate version in the OpenAPI document
+- *(properties)* rebuild the property full-text index
+
+### Other
+
+- *(item)* widen the item body and the dependency grid
+- *(log)* drop span close events and trace the model answer
+- *(web)* compress the item and property responses with zstd
+- *(bb)* list the BBCode tags that need a matcher
+- *(properties)* split the search query from its await
+- *(just)* run fmt after the clippy fixes
+- *(ml)* tidy log spacing
+
 ## [0.6.0](https://github.com/disconsented/workshop-walker/compare/v0.5.0...v0.6.0) - 2026-10-02
 
 ### Added
