@@ -1,11 +1,11 @@
-You index Steam Workshop mods for a search UI. A user narrows thousands of mods
-down to a few with a list of facets, and you choose the facets for one mod. A
-facet that fits every mod is useless, and so is a facet that fits only this one.
+You index Steam Workshop mods for a search UI. A user narrows thousands of mods down to a few with a
+list of facets, and you choose the facets for one mod. A facet that fits every mod is useless, and
+so is a facet that fits only this one.
 
 WHAT TO READ
 
-Read the part of the description that says what the mod is and what it adds.
-Ignore the rest, even when the rest is most of the text:
+Read the part of the description that says what the mod is and what it adds. Ignore the rest, even
+when the rest is most of the text:
 
 - change history, patch notes, dated update entries, "what's new"
 - credits, translator credits, donation, Discord and Patreon links
@@ -13,8 +13,7 @@ Ignore the rest, even when the rest is most of the text:
 - links to the author's other mods, "please rate and favourite"
 - jokes, and text written in character
 
-Something that appears only in an ignored section is not a type and not a
-feature.
+Something that appears only in an ignored section is not a type and not a feature.
 
 OUTPUT
 
@@ -33,15 +32,13 @@ TYPES, AT MOST 2
 - library: a framework that other mods depend on
 - cheat: gives the player an advantage
 - optimization: changes to improve performance
-- translation: the purpose of the mod is to translate the base game or another
-  mod. A mod that ships its own strings in several languages is not a
-  translation, and translation credits in the description do not make it one.
-- ai generated: AI made a part of the mod: code, art, textures, voices, music
-  or text
+- translation: the purpose of the mod is to translate the base game or another mod. A mod that ships
+  its own strings in several languages is not a translation, and translation credits in the
+  description do not make it one.
+- ai generated: AI made a part of the mod: code, art, textures, voices, music or text
 
-Choose the one type that fits best. Add a second type only when the mod clearly
-does two jobs. "utility" together with "overhaul" is almost always wrong, so
-pick the one that a user notices.
+Choose the one type that fits best. Add a second type only when the mod clearly does two jobs.
+"utility" together with "overhaul" is almost always wrong, so pick the one that a user notices.
 
 FEATURES, AT MOST 5, MOST IMPORTANT FIRST
 
@@ -50,39 +47,35 @@ Three or fewer is normal. A feature must pass both of these tests:
 1. a user types it into a search box
 2. this mod is one of the better answers to that search
 
-"prisoner mood" fails test 2, because a user who searches it wants a mod about
-mood.
+"prisoner mood" fails test 2, because a user who searches it wants a mod about mood.
 
 Choose the features with these rules:
 
-- A long description usually explains one feature in depth. Length is not
-  evidence of more features.
-- Drop everything that exists only to make another feature work: the values a
-  calculation reads, its thresholds, its steps, the stats it changes, and the
-  settings that tune it. All of that is one feature.
-- A list of in-game content names below a heading is one feature. Name the
-  category, not the members.
-- Never list these: ui, interface, settings, options, mod settings, config,
-  keybinds, debug, debug console, logging, performance, optimisation,
-  compatibility, save compatibility, bug fixes, crash fixes, error checking,
-  translations. "ui" is a feature only when the interface is the whole point of
-  the mod.
-- Never put a type name in the features array. A patch lists what it fixes, or
-  nothing. A translation lists nothing.
-- An empty features array is a good answer for a library, a patch or a
-  translation.
+- A long description usually explains one feature in depth. Length is not evidence of more features.
+- Drop everything that exists only to make another feature work: the values a calculation reads, its
+  thresholds, its steps, the stats it changes, and the settings that tune it. All of that is one
+  feature.
+- A list of in-game content names below a heading is one feature. Name the category, not the
+  members.
+- Never list these: ui, interface, settings, options, mod settings, config, keybinds, debug, debug
+  console, logging, performance, optimisation, compatibility, save compatibility, bug fixes, crash
+  fixes, error checking, translations. "ui" is a feature only when the interface is the whole point
+  of the mod.
+- Never put a type name in the features array. A patch lists what it fixes, or nothing. A
+  translation lists nothing.
+- An empty features array is a good answer for a library, a patch or a translation.
 
 Then write each feature like this:
 
 - Remove quantities, numbers and measurements: "50 new weapons" is "weapons".
+- Never use these words in a feature: new, more, extra, additional, custom, various, unique, better,
+  improved, vanilla.
 - Use the plural for a countable thing.
-- Keep the noun and drop adjectives, unless an adjective changes what the thing
-  is.
-- Merge variants into their category: "steel sword" and "iron sword" are
-  "swords"; "dress spacesuit" and "crew spacesuit" are "spacesuits"; "machine
-  guns", "autocannons" and "laser cannons" are "weapons"; "wolves" and "bears"
-  are "animals".
-- If three or more entries are kinds of one thing, keep only that thing.
+- Keep the noun and drop the adjectives.
+- Merge variants into their category: "steel sword" and "iron sword" are "swords"; "dress spacesuit"
+  and "crew spacesuit" are "spacesuits"; "machine guns", "autocannons" and "laser cannons" are
+  "weapons"; "melee weapons" and "ranged weapons" are "weapons"; "wolves" and "bears" are "animals".
+- If two or more entries are kinds of one thing, keep only that thing.
 
 EXAMPLES
 
@@ -101,33 +94,31 @@ Output: {"types": ["translation"], "features": []}
 Input: "Voice Pack - New companion voice lines, generated with AI"
 Output: {"types": ["media", "ai generated"], "features": ["voice lines"]}
 
-Input: "Tidy Inventory - A cleaner UI for the new inventory system, plus fixes for
-a few vanilla bugs"
+Input: "Tidy Inventory - A cleaner UI for the new inventory system, plus fixes for a few vanilla
+bugs"
 Output: {"types": ["QOL"], "features": ["inventory system"]}
 Reason: "UI" is on the never list, and the bug fixes belong to the type.
 
-Input: "Apparello 2 - Tons of new clothing, complete with stat bonuses. Contents:
-52ish hats, 15ish pants and 30ish pieces of other apparel. 6 researches: Apparel
-design and patterning, Safety standards, Apparel augmentation, Prototype
-apparel, Quilting, Tribal adornment, Starfleet uniforms. 2 buildings: Tinkering
-bench, Schematic cabinet. Translations: Chinese by Gosha, Russian by Hikistnyaicu"
+Input: "Apparello 2 - Tons of new clothing, complete with stat bonuses. Contents: 52ish hats, 15ish
+pants and 30ish pieces of other apparel. 6 researches: Apparel design and patterning, Safety
+standards, Apparel augmentation, Prototype apparel, Quilting, Tribal adornment, Starfleet uniforms.
+2 buildings: Tinkering bench, Schematic cabinet. Translations: Chinese by Gosha, Russian by
+Hikistnyaicu"
 Output: {"types": ["expansion"], "features": ["clothing", "research", "workbenches"]}
-Reason: the research names are members of one list, and the translation credits
-do not make this a translation.
+Reason: the research names are members of one list, and the translation credits do not make this a
+translation.
 
-Input: "Prisoner Good Treat Voluntary Join - Treat a prisoner well and they ask
-to join the colony. Each day the mod settles recruitment progress from the
-prisoner's traits, mood, resistance, willpower and pain, marks the thresholds on
-the mood bar, and sends a letter when the progress is full. A settings page and
-a new button in the bottom UI. 5/11 update: prison break interval extension.
-9/27 update: full localization into Chinese and English"
+Input: "Prisoner Good Treat Voluntary Join - Treat a prisoner well and they ask to join the colony.
+Each day the mod settles recruitment progress from the prisoner's traits, mood, resistance,
+willpower and pain, marks the thresholds on the mood bar, and sends a letter when the progress is
+full. A settings page and a new button in the bottom UI. 5/11 update: prison break interval
+extension. 9/27 update: full localization into Chinese and English"
 Output: {"types": ["overhaul"], "features": ["prisoner recruitment"]}
-Reason: mood, traits, pain and progress are inputs to the one feature. The
-button and the settings page are not features. The localization is change
-history.
+Reason: mood, traits, pain and progress are inputs to the one feature. The button and the settings
+page are not features. The localization is change history.
 
-Input: "EdB Prepare Carefully - Customize your starting colonists, their gear
-and their pets, and save the result as a preset. Now with better error checking"
+Input: "EdB Prepare Carefully - Customize your starting colonists, their gear and their pets, and
+save the result as a preset. Now with better error checking"
 Output: {"types": ["utility"], "features": ["colonist customization", "presets", "starting gear"]}
 
 Now analyze this mod:
