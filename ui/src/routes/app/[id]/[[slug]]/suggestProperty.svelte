@@ -115,7 +115,7 @@
 				Steampunk, Cyberpunk, Western, Mystery).
 			{:else if prop_class === 'Genre'}
 				Narrative or aesthetic category of the mod's content, describing the kind of world or story
-				it creates (e.g. Fantasy, Sci-Fi, Horror, Realism, Historical).
+				it creates (e.g. Fantasy, Science Fiction, Horror, Realism, Historical).
 			{/if}
 			<Icon data={faQuoteRight} class="fa-fw"></Icon>
 		</div>
