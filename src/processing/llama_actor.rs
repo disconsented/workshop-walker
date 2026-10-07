@@ -16,25 +16,63 @@ const HEALTH_POLL: Duration = Duration::from_millis(250);
 /// The time the actor waits for the server before it gives up.
 const HEALTH_BUDGET: Duration = Duration::from_secs(300);
 
+/// Values that the model writes when it has no answer. They are never a
+/// property, whatever the class.
+const PLACEHOLDERS: [&str; 7] = [
+    "unknown",
+    "none",
+    "n/a",
+    "other",
+    "misc",
+    "miscellaneous",
+    "general",
+];
+
 /// One request to the model. `name` goes into the JSON schema, `fields` names
 /// the arrays the answer must hold.
 #[derive(Clone, Copy, Debug)]
 struct Task {
     name: &'static str,
     prompt_path: &'static str,
-    fields: [&'static str; 2],
+    fields: [Field; 2],
+}
+
+/// One array in the answer. The grammar stops the model after `max_items`
+/// entries, so the limit holds even when the model ignores the prompt.
+#[derive(Clone, Copy, Debug)]
+struct Field {
+    name: &'static str,
+    max_items: u8,
 }
 
 const TASKS: [Task; 2] = [
     Task {
         name: "features",
         prompt_path: "./prompts/features.txt",
-        fields: ["types", "features"],
+        fields: [
+            Field {
+                name: "types",
+                max_items: 2,
+            },
+            Field {
+                name: "features",
+                max_items: 5,
+            },
+        ],
     },
     Task {
         name: "genres",
         prompt_path: "./prompts/genres.txt",
-        fields: ["genres", "themes"],
+        fields: [
+            Field {
+                name: "genres",
+                max_items: 2,
+            },
+            Field {
+                name: "themes",
+                max_items: 3,
+            },
+        ],
     },
 ];
 
@@ -197,6 +235,7 @@ async fn run_process(
         properties.merge(extract(state, *task, &prompt).await?);
     }
 
+    properties.remove_blocked();
     Ok(properties)
 }
 
@@ -246,9 +285,17 @@ fn request_body(task: Task, prompt: &str) -> ChatRequest<'_> {
                     properties: task
                         .fields
                         .iter()
-                        .map(|field| (*field, ArraySchema::default()))
+                        .map(|field| {
+                            (
+                                field.name,
+                                ArraySchema {
+                                    max_items: field.max_items,
+                                    ..ArraySchema::default()
+                                },
+                            )
+                        })
                         .collect(),
-                    required: task.fields,
+                    required: task.fields.map(|field| field.name),
                     ..ObjectSchema::default()
                 },
                 ..JsonSchema::default()
@@ -347,6 +394,8 @@ struct ArraySchema {
     #[serde(rename = "type")]
     kind: &'static str,
     items: ItemSchema,
+    #[serde(rename = "maxItems")]
+    max_items: u8,
 }
 
 impl Default for ArraySchema {
@@ -354,6 +403,7 @@ impl Default for ArraySchema {
         Self {
             kind: "array",
             items: ItemSchema::default(),
+            max_items: u8::MAX,
         }
     }
 }
@@ -399,6 +449,30 @@ impl MLProperties {
         self.types.extend(other.types);
         self.features.extend(other.features);
     }
+
+    /// Removes the placeholders from every field, and the mechanics from the
+    /// genres and the themes.
+    fn remove_blocked(&mut self) {
+        let not_placeholder = |value: &String| !is_blocked(value, &PLACEHOLDERS);
+
+        for field in [
+            &mut self.genres,
+            &mut self.themes,
+            &mut self.types,
+            &mut self.features,
+        ] {
+            field.retain(not_placeholder);
+        }
+    }
+}
+
+fn is_blocked(value: &str, list: &[&str]) -> bool {
+    let value = value.trim();
+    let blocked = list.iter().any(|entry| entry.eq_ignore_ascii_case(value));
+    if blocked {
+        debug!(value, "removed a blocked value from the model answer");
+    }
+    blocked
 }
 
 #[derive(Deserialize, Debug)]
@@ -456,4 +530,44 @@ pub struct Timings {
     pub predicted_n: u32,
     pub predicted_ms: f64,
     pub predicted_per_second: Option<f64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn strings(values: &[&str]) -> Vec<String> {
+        values.iter().map(ToString::to_string).collect()
+    }
+
+    #[test]
+    fn remove_blocked_keeps_mechanics_in_types_and_features() {
+        let mut properties = MLProperties {
+            types: strings(&["utility", "overhaul"]),
+            features: strings(&["automation", "crafting"]),
+            ..MLProperties::default()
+        };
+
+        properties.remove_blocked();
+
+        assert_eq!(properties.types, strings(&["utility", "overhaul"]));
+        assert_eq!(properties.features, strings(&["automation", "crafting"]));
+    }
+
+    #[test]
+    fn remove_blocked_drops_placeholders_from_every_field() {
+        let mut properties = MLProperties {
+            genres: strings(&["None"]),
+            themes: strings(&["Unknown", "Piracy"]),
+            types: strings(&["other"]),
+            features: strings(&["Misc", "weapons"]),
+        };
+
+        properties.remove_blocked();
+
+        assert!(properties.genres.is_empty());
+        assert_eq!(properties.themes, strings(&["Piracy"]));
+        assert!(properties.types.is_empty());
+        assert_eq!(properties.features, strings(&["weapons"]));
+    }
 }
