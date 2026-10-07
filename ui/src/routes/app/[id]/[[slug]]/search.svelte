@@ -426,7 +426,7 @@
 				<div class="flex flex-row items-center justify-between">
 					Properties (Maximum 5)
 					<SegmentedControl
-						value="or"
+						value="and"
 						onValueChange={(details) => (value = details.value)}
 						disabled
 					>
