@@ -1,0 +1,1 @@
+UPDATE workshop_items SET ml_last_run = NONE;
