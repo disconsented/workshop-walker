@@ -37,6 +37,8 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
     )
     .add_headers(true);
 
+    let compression = Compression::new();
+
     let router = Router::new().push(
         Router::with_path("api")
             .hoop(max_size(1024 * 1024))
@@ -48,13 +50,13 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
             .push(
                 Router::with_path("list")
                     .hoop(auth::validate_opt)
-                    .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
+                    .hoop(compression.clone())
                     .get(query::list),
             )
             .push(
                 Router::with_path("item").hoop(auth::validate_opt).push(
                     Router::with_path("{id}")
-                        .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
+                        .hoop(compression.clone())
                         .get(item::get),
                 ),
             )
@@ -66,7 +68,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
             .push(
                 Router::with_path("properties").push(
                     Router::with_path("search")
-                        .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
+                        .hoop(compression.clone())
                         .post(search_properties),
                 ),
             )
@@ -86,7 +88,7 @@ pub async fn start(db: Surreal<Db>, config: Arc<Config>) {
                     .push(
                         Router::with_path("properties")
                             .put(admin::patch_workshop_item_properties)
-                            .hoop(Compression::new().enable_zstd(CompressionLevel::Fastest))
+                            .hoop(compression.clone())
                             .get(admin::get_workshop_item_properties),
                     )
                     .push(
