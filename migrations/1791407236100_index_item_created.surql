@@ -1,0 +1,1 @@
+DEFINE INDEX item_created ON workshop_items FIELDS created CONCURRENTLY;

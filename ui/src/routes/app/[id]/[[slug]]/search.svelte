@@ -21,9 +21,13 @@
 		faSliders
 	} from '@fortawesome/free-solid-svg-icons';
 	import {
+		createdGte,
+		createdLte,
+		createdPeriod,
 		language,
 		lastUpdatedGte,
 		lastUpdatedLte,
+		lastUpdatedPeriod,
 		limit,
 		orderBy,
 		page,
@@ -41,9 +45,30 @@
 	}
 
 	let { appTags, appID }: Props = $props();
+	let presetValue = $state(undefined);
 	let value = $state<string | null>('and');
 	let showAdvanced = $state(true);
-	let updatedDate = $state(lastUpdatedGte.v || lastUpdatedLte.v ? 'custom' : 'all');
+	let updatedDate = $state(
+		lastUpdatedPeriod.v ?? (lastUpdatedGte.v || lastUpdatedLte.v ? 'custom' : 'all')
+	);
+
+	function updateLastUpdated(){
+		if (updatedDate && updatedDate != 'custom' && updatedDate != 'all') {
+			updatedSelectionChange({ target: { value: lastUpdatedPeriod.v } });
+		}
+	}
+	updateLastUpdated();
+
+	let createdDate = $state(createdPeriod.v ?? (createdGte.v || createdLte.v ? 'custom' : 'all'));
+	function updateCreated(){
+		if (createdDate && createdDate != 'custom' && createdDate != 'all') {
+			createdSelectionChange({ target: { value: createdPeriod.v } });
+		}
+	}
+
+	updateCreated();
+
+
 
 	const params = new SvelteURLSearchParams();
 	$effect(() => {
@@ -59,6 +84,14 @@
 			params.set('title', title.v);
 		} else {
 			params.delete('title');
+		}
+	});
+
+	$effect(() => {
+		if (lastUpdatedPeriod.v && lastUpdatedPeriod.v !== 'custom') {
+			params.set('last_updated', lastUpdatedPeriod.v);
+		} else {
+			params.delete('last_updated');
 		}
 	});
 
@@ -79,6 +112,30 @@
 	});
 
 	$effect(() => {
+		if (createdPeriod.v && createdPeriod.v !== 'custom') {
+			params.set('created', createdPeriod.v);
+		} else {
+			params.delete('created');
+		}
+	});
+
+	$effect(() => {
+		if (createdGte.v) {
+			params.set('created_gte', Math.trunc(createdGte.v.getTime() / 1000).toString());
+		} else {
+			params.delete('created_gte');
+		}
+	});
+
+	$effect(() => {
+		if (createdLte.v) {
+			params.set('created_lte', Math.trunc(createdLte.v.getTime() / 1000).toString());
+		} else {
+			params.delete('created_lte');
+		}
+	});
+
+	$effect(() => {
 		if (tags.v) {
 			params.delete('tags');
 			tags.v.forEach((v) => {
@@ -91,33 +148,33 @@
 
 	$effect(() => {
 		if (searchProps.v) {
-			params.delete('positive_props');
+			params.delete('include_props');
 			searchProps.v.forEach(({ positive }, v) => {
 				if (positive) {
-					params.append('positive_props', v);
+					params.append('include_props', v);
 				}
 			});
 		} else {
-			params.delete('positive_props');
+			params.delete('include_props');
 		}
 	});
 
 	$effect(() => {
 		if (searchProps.v) {
-			params.delete('negative_props');
+			params.delete('exclude_props');
 			searchProps.v.forEach(({ positive }, v) => {
 				if (!positive) {
-					params.append('negative_props', v);
+					params.append('exclude_props', v);
 				}
 			});
 		} else {
-			params.delete('negative_props');
+			params.delete('exclude_props');
 		}
 	});
 
 	$effect(() => {
 		if (limit.v) {
-			params.set('limit', limit.v);
+			params.set('limit', String(limit.v));
 		} else {
 			params.delete('limit');
 		}
@@ -125,7 +182,7 @@
 
 	$effect(() => {
 		if (page.v) {
-			params.set('page', page.v);
+			params.set('page', String(page.v));
 		} else {
 			params.delete('page');
 		}
@@ -178,6 +235,51 @@
 					lastUpdatedGte.v = date;
 					break;
 			}
+			lastUpdatedPeriod.v = event.target.value;
+		}
+	}
+
+	function createdSelectionChange(event: InputEvent) {
+		console.debug('createdSelectionChange', event, event.target);
+		if (event.target) {
+			const date = new Date();
+			switch (event.target.value) {
+				case 'all':
+					createdLte.v = undefined;
+					createdGte.v = undefined;
+					break;
+				case 'today':
+					date.setDate(date.getDate() - 1);
+					createdLte.v = undefined;
+					createdGte.v = date;
+					break;
+				case 'week':
+					date.setDate(date.getDate() - 7);
+					createdLte.v = undefined;
+					createdGte.v = date;
+					break;
+				case 'month':
+					date.setDate(date.getDate() - 30);
+					createdLte.v = undefined;
+					createdGte.v = date;
+					break;
+				case 'quarter':
+					date.setDate(date.getDate() - 90);
+					createdLte.v = undefined;
+					createdGte.v = date;
+					break;
+				case 'half':
+					date.setDate(date.getDate() - 180);
+					createdLte.v = undefined;
+					createdGte.v = date;
+					break;
+				case 'year':
+					date.setDate(date.getDate() - 365);
+					createdLte.v = undefined;
+					createdGte.v = date;
+					break;
+			}
+			createdPeriod.v = event.target.value;
 		}
 	}
 
@@ -213,6 +315,68 @@
 			itemToString: (item) => `${item.class}:${item.value}`
 		})
 	);
+
+	let onPresetValueChange = (details) => {
+		presetValue = details.value;
+		console.log(presetValue);
+		switch (details.value[0]) {
+			case 'popular':
+				createdDate = "quarter";
+				createdPeriod.v = "quarter";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "Subscriptions";
+				break;
+			case 'subscribed':
+				createdDate = "all";
+				createdPeriod.v = "all";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "Subscriptions";
+				break;
+			case 'trending':
+				createdDate = "all";
+				createdPeriod.v = "all";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "TrendWeek";
+				break;
+			case 'updated':
+				createdDate = "all";
+				createdPeriod.v = "all";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "LastUpdated";
+				break;
+			case 'new':
+				createdDate = "week";
+				createdPeriod.v = "week";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "LastUpdated";
+				break;
+			case 'week':
+				createdDate = "week";
+				createdPeriod.v = "week";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "Subscriptions";
+				break;
+				case 'dependedOn':
+				createdDate = "year";
+				createdPeriod.v = "year";
+				lastUpdatedPeriod.v = "all";
+				updatedDate = "all";
+				orderBy.v = "Dependents";
+				break;
+			default:
+				break;
+		}
+
+		updateLastUpdated();
+		updateCreated();
+	};
+
 </script>
 
 <form
@@ -269,6 +433,8 @@
 				<option value="TrendYear">Trending - Year</option>
 				<option value="LastUpdated">Last Updated</option>
 				<option value="Subscriptions">Subscriptions</option>
+				<option value="Rating">Rating</option>
+				<option value="Dependents">Dependents</option>
 			</select>
 		</div>
 		<button class="btn preset-tonal" type="button" onclick={() => (showAdvanced = !showAdvanced)}>
@@ -284,6 +450,121 @@
 		class:!hidden={!showAdvanced}
 	>
 		<div class="flex w-full flex-col gap-2">
+			<!--Created-->
+			<div class="flex flex-col gap-2">
+				Created
+				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">
+					<div class="field-group w-full grid-cols-[auto_1fr] gap-0">
+						<label class="label label-text preset-tonal" for="url">
+							<Icon data={faCalendar} class="fa-fw" />
+						</label>
+						<select
+							class="select rounded-r-lg"
+							bind:value={createdDate}
+							oninput={createdSelectionChange}
+						>
+							<option value="all" selected>All time</option>
+							<option value="today">Today</option>
+							<option value="week">Past week</option>
+							<option value="month">Past month</option>
+							<option value="quarter">Past 3 months</option>
+							<option value="half">Past 6 months</option>
+							<option value="year">Past year</option>
+							<option value="custom">Custom range...</option>
+						</select>
+					</div>
+
+					<div class="field-group grid-cols-[auto_1fr] gap-0">
+						<label class="label label-text preset-tonal gap-1" for="url">
+							<Icon data={faRightFromBracket} class="fa-fw" />
+							From
+						</label>
+						<input
+							class="input"
+							type="date"
+							disabled={createdDate != 'custom'}
+							bind:value={
+								() => createdGte.v?.toISOString().slice(0, 10) ?? '',
+								(v) => (createdGte.v = v ? new Date(v + 'T00:00:00Z') : undefined)
+							}
+						/>
+					</div>
+
+					<div class="field-group grid-cols-[auto_1fr] gap-0">
+						<label class="label label-text preset-tonal gap-1" for="url">
+							<Icon data={faRightToBracket} class="fa-fw" />
+							To
+						</label>
+						<input
+							class="input"
+							type="date"
+							disabled={createdDate != 'custom'}
+							bind:value={
+								() => createdLte.v?.toISOString().slice(0, 10) ?? '',
+								(v) => (createdLte.v = v ? new Date(v + 'T00:00:00Z') : undefined)
+							}
+						/>
+					</div>
+				</div>
+			</div>
+			<!--Tags-->
+			<div class="flex flex-col gap-2">
+				<div class="flex flex-row items-center justify-between">
+					<div>
+						Tags <span class="text-sm italic opacity-50"
+					>(Steam tag, shown as written. Similar names can be different tags.)</span
+					>
+					</div>
+					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
+						<SegmentedControl.Control class="gap-0 p-0">
+							<SegmentedControl.Indicator />
+							<SegmentedControl.Item value="and">
+								<SegmentedControl.ItemText>AND</SegmentedControl.ItemText>
+								<SegmentedControl.ItemHiddenInput />
+							</SegmentedControl.Item>
+							<SegmentedControl.Item value="or">
+								<SegmentedControl.ItemText>OR</SegmentedControl.ItemText>
+								<SegmentedControl.ItemHiddenInput />
+							</SegmentedControl.Item>
+						</SegmentedControl.Control>
+					</SegmentedControl>
+				</div>
+				<div class="flex flex-row flex-wrap gap-1">
+					<ToggleGroup
+						class="flex flex-wrap border-0"
+						value={tags.v}
+						onValueChange={(details) => (tags.v = details.value)}
+						multiple
+					>
+						{#each appTags as tag}
+							<ToggleGroup.Item
+								value={tag}
+								class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
+							>
+								<Tooltip positioning={{ placement: 'top' }}>
+									<!--Fixes submitting the forum prematurely-->
+									<Tooltip.Trigger>
+										<button type="button">{tag}</button>
+									</Tooltip.Trigger>
+									<Portal>
+										<Tooltip.Positioner>
+											<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
+												<span>"{tag}"</span>
+												<Tooltip.Arrow
+													class="[--arrow-background:var(--color-surface-950-50)] [--arrow-size:--spacing(2)]"
+												>
+													<Tooltip.ArrowTip />
+												</Tooltip.Arrow>
+											</Tooltip.Content>
+										</Tooltip.Positioner>
+									</Portal>
+								</Tooltip>
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup>
+				</div>
+			</div>
+			<!--Pagination-->
 			<div class="flex flex-row gap-2">
 				<label class="label w-fit">
 					<span class="label-text">Page</span>
@@ -308,6 +589,9 @@
 					/>
 				</label>
 			</div>
+		</div>
+		<div class="flex w-full flex-col gap-2">
+			<!--Last Updated-->
 			<div class="flex flex-col gap-2">
 				Updated
 				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">
@@ -364,65 +648,8 @@
 					</div>
 				</div>
 			</div>
+			<!--Properties-->
 			<div class="flex flex-col gap-2">
-				<div class="flex flex-row items-center justify-between">
-					<div>
-						Tags <span class="text-sm italic opacity-50"
-							>(Steam tag, shown as written. Similar names can be different tags.)</span
-						>
-					</div>
-					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
-						<SegmentedControl.Control class="gap-0 p-0">
-							<SegmentedControl.Indicator />
-							<SegmentedControl.Item value="and">
-								<SegmentedControl.ItemText>AND</SegmentedControl.ItemText>
-								<SegmentedControl.ItemHiddenInput />
-							</SegmentedControl.Item>
-							<SegmentedControl.Item value="or">
-								<SegmentedControl.ItemText>OR</SegmentedControl.ItemText>
-								<SegmentedControl.ItemHiddenInput />
-							</SegmentedControl.Item>
-						</SegmentedControl.Control>
-					</SegmentedControl>
-				</div>
-				<div class="flex flex-row flex-wrap gap-1">
-					<ToggleGroup
-						class="flex flex-wrap border-0"
-						value={tags.v}
-						onValueChange={(details) => (tags.v = details.value)}
-						multiple
-					>
-						{#each appTags as tag}
-							<ToggleGroup.Item
-								value={tag}
-								class="chip preset-outlined-surface-400-600 hover:preset-tonal data-[state=on]:preset-filled-primary-500"
-							>
-								<Tooltip positioning={{ placement: 'top' }}>
-									<!--Fixes submitting the forum prematurely-->
-									<Tooltip.Trigger>
-										<button type="button">{tag}</button>
-									</Tooltip.Trigger>
-									<Portal>
-										<Tooltip.Positioner>
-											<Tooltip.Content class="card preset-filled-surface-950-50 p-2">
-												<span>"{tag}"</span>
-												<Tooltip.Arrow
-													class="[--arrow-background:var(--color-surface-950-50)] [--arrow-size:--spacing(2)]"
-												>
-													<Tooltip.ArrowTip />
-												</Tooltip.Arrow>
-											</Tooltip.Content>
-										</Tooltip.Positioner>
-									</Portal>
-								</Tooltip>
-							</ToggleGroup.Item>
-						{/each}
-					</ToggleGroup>
-				</div>
-			</div>
-		</div>
-		<div class="flex w-full flex-col gap-2">
-			<div class="flex flex-col">
 				<div class="flex flex-row items-center justify-between">
 					Properties (Maximum 5)
 					<SegmentedControl
@@ -539,6 +766,35 @@
 						</button>
 					</div>
 				{/each}
+			</div>
+			<!--Presets-->
+			<div class="flex flex-col gap-2">
+				Preset
+				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">
+					<ToggleGroup value={presetValue} onValueChange={onPresetValueChange}>
+						<ToggleGroup.Item value="popular">
+							Most Popular
+						</ToggleGroup.Item>
+						<ToggleGroup.Item value="subscribed">
+							Most Subscribed
+						</ToggleGroup.Item>
+						<ToggleGroup.Item value="trending">
+							Trending
+						</ToggleGroup.Item>
+						<ToggleGroup.Item value="updated">
+							Last Updated
+						</ToggleGroup.Item>
+						<ToggleGroup.Item value="new">
+							New
+						</ToggleGroup.Item>
+						<ToggleGroup.Item value="week">
+							Best This Week
+						</ToggleGroup.Item>
+						<ToggleGroup.Item value="dependedOn">
+							Recently Most Depended On
+						</ToggleGroup.Item>
+					</ToggleGroup>
+				</div>
 			</div>
 		</div>
 	</div>

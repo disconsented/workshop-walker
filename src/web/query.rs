@@ -67,9 +67,11 @@ struct Parameters {
     title: Option<String>,
     last_updated_gte: Option<i64>,
     last_updated_lte: Option<i64>,
+    created_gte: Option<i64>,
+    created_lte: Option<i64>,
     order_by: Option<OrderBy>,
-    positive_props: Option<Vec<PropertyParam>>,
-    negative_props: Option<Vec<PropertyParam>>,
+    include_props: Option<Vec<PropertyParam>>,
+    exclude_props: Option<Vec<PropertyParam>>,
 }
 
 // ToDo: Separate out filtering to its own struct
@@ -90,23 +92,25 @@ pub async fn list(
         mut title,
         last_updated_gte,
         last_updated_lte,
+        created_gte,
+        created_lte,
         mut order_by,
-        positive_props,
-        negative_props,
+        include_props,
+        exclude_props,
     } = parameters;
     let page = page.unwrap_or(0);
     let limit = limit.unwrap_or(100).min(100);
     let db: &Surreal<Db> = DB_POOL.get().expect("Getting db connection");
     let user = auth::get_user_from_depot(depot);
-    let positive_props = {
-        let mut props = positive_props.unwrap_or_default();
+    let include_props = {
+        let mut props = include_props.unwrap_or_default();
         props
             .drain(..props.len().min(5))
             .map(|param| param.0)
             .collect()
     };
-    let negative_props = {
-        let mut props = negative_props.unwrap_or_default();
+    let exclude_props = {
+        let mut props = exclude_props.unwrap_or_default();
         props
             .drain(..props.len().min(5))
             .map(|param| param.0)
@@ -122,9 +126,11 @@ pub async fn list(
         title.take(),
         last_updated_gte,
         last_updated_lte,
+        created_gte,
+        created_lte,
         order_by.take(),
-        positive_props,
-        negative_props,
+        include_props,
+        exclude_props,
         db,
         user,
     )
@@ -146,9 +152,11 @@ fn build_query(
     title: Option<String>,
     last_updated_gte: Option<i64>,
     last_updated_lte: Option<i64>,
+    created_gte: Option<i64>,
+    created_lte: Option<i64>,
     order_by: Option<OrderBy>,
-    positive_props: Vec<Property>,
-    negative_props: Vec<Property>,
+    include_props: Vec<Property>,
+    exclude_props: Vec<Property>,
     user: Option<&IUserID>,
 ) -> SelectStatement {
     let mut prop_fields = vec![
@@ -224,7 +232,7 @@ fn build_query(
 
     // This is janky as fuck and I'm sorry, it was something claude discovered
     // and its much faster than before
-    let what = if let Some(prop) = positive_props.first() {
+    let what = if let Some(prop) = include_props.first() {
         vec![Expr::Idiom(Idiom(vec![
             Part::Start(Expr::from_public_value(
                 IPropertyID::from(prop.clone()).into_value(),
@@ -257,7 +265,7 @@ fn build_query(
         ..Default::default()
     };
     {
-        stmt.fields = Fields::Select(vec![
+        let mut fields = vec![
             Field::All,
             Field::Single(Selector {
                 expr: Expr::Idiom(Idiom(vec![
@@ -297,13 +305,33 @@ fn build_query(
                 expr: Expr::Idiom(Idiom(vec![Part::Field("author".into()), Part::All])),
                 alias: None,
             }),
-        ]);
+        ];
+
+        if order_by == Some(OrderBy::Dependents) {
+            fields.push(Field::Single(Selector {
+                expr: Expr::Idiom(Idiom(vec![
+                    Part::Graph(Box::from(Lookup {
+                        kind: LookupKind::Graph(Dir::In),
+                        what: vec![LookupSubject::Table {
+                            table: "item_dependencies".into(),
+                            referencing_field: None,
+                        }],
+                        cond: None,
+                        ..Default::default()
+                    })),
+                    Part::Method("len".into(), vec![])
+                ])),
+                alias: Some(Idiom::field("dependents".to_string())),
+            }));
+        }
+        stmt.fields = Fields::Select(fields);
     }
+
     stmt.limit = Some(Limit(Expr::from_public_value(limit.into_value())));
     stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
     stmt.cond = {
         let mut conditions = vec![];
-        if positive_props.is_empty().not() {
+        if include_props.is_empty().not() {
             conditions.push(Expr::Idiom(Idiom(vec![Part::Start(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom(vec![
                     Part::Graph(Box::from(Lookup {
@@ -319,7 +347,7 @@ fn build_query(
                 ]))),
                 op: BinaryOperator::ContainAll,
                 right: Box::new(Expr::Literal(Literal::Array(
-                    positive_props
+                    include_props
                         .into_iter()
                         .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
                         .collect::<Vec<Expr>>(),
@@ -327,7 +355,7 @@ fn build_query(
             })])));
         }
 
-        if negative_props.is_empty().not() {
+        if exclude_props.is_empty().not() {
             conditions.push(Expr::Idiom(Idiom(vec![Part::Start(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom(vec![
                     Part::Graph(Box::from(Lookup {
@@ -343,7 +371,7 @@ fn build_query(
                 ]))),
                 op: BinaryOperator::ContainNone,
                 right: Box::new(Expr::Literal(Literal::Array(
-                    negative_props
+                    exclude_props
                         .into_iter()
                         .map(|prop| Expr::from_public_value(IPropertyID::from(prop).into_value()))
                         .collect::<Vec<Expr>>(),
@@ -411,6 +439,22 @@ fn build_query(
             });
         }
 
+        if let Some(created_gte) = created_gte {
+            conditions.push(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom::field("created".to_string()))),
+                op: BinaryOperator::MoreThanEqual,
+                right: Box::new(Expr::Literal(Literal::Integer(created_gte))),
+            });
+        }
+
+        if let Some(created_lte) = created_lte {
+            conditions.push(Expr::Binary {
+                left: Box::new(Expr::Idiom(Idiom::field("created".to_string()))),
+                op: BinaryOperator::LessThanEqual,
+                right: Box::new(Expr::Literal(Literal::Integer(created_lte))),
+            });
+        }
+
         let first = conditions
             .pop()
             .expect("Expected at least one condition to be present");
@@ -445,9 +489,11 @@ async fn query_inner(
     title: Option<String>,
     last_updated_gte: Option<i64>,
     last_updated_lte: Option<i64>,
+    created_gte: Option<i64>,
+    created_lte: Option<i64>,
     order_by: Option<OrderBy>,
-    positive_props: Vec<Property>,
-    negative_props: Vec<Property>,
+    include_props: Vec<Property>,
+    exclude_props: Vec<Property>,
     db: &Surreal<Db>,
     user: Option<IUserID>,
 ) -> web::Result<Vec<ExternalWorkshopItem>, Whatever> {
@@ -460,9 +506,11 @@ async fn query_inner(
         title,
         last_updated_gte,
         last_updated_lte,
+        created_gte,
+        created_lte,
         order_by,
-        positive_props,
-        negative_props,
+        include_props,
+        exclude_props,
         user.as_ref(),
     );
     debug!(sql = stmt.to_sql(), "running big query");

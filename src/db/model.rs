@@ -15,7 +15,7 @@ use crate::{
     processing::language_actor::DetectedLanguage,
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema, Default, PartialEq)]
 pub enum OrderBy {
     Hotness,
     Subscriptions,
@@ -26,6 +26,8 @@ pub enum OrderBy {
     TrendHalf,
     TrendYear,
     LastUpdated,
+    Rating,
+    Dependents
 }
 
 impl OrderBy {
@@ -39,6 +41,8 @@ impl OrderBy {
             OrderBy::TrendQuarter => "trend_quarter",
             OrderBy::TrendHalf => "trend_half",
             OrderBy::TrendYear => "trend_year",
+            OrderBy::Rating => "score",
+            OrderBy::Dependents => "dependents"
         }
     }
 }

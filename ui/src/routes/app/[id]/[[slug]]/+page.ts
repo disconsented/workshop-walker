@@ -8,7 +8,11 @@ import {
 	page,
 	title,
 	lastUpdatedLte,
-	lastUpdatedGte
+	lastUpdatedGte,
+	createdGte,
+	createdLte,
+	createdPeriod,
+	lastUpdatedPeriod
 } from './store.svelte';
 import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
 import { parseSafeJSON } from '$lib/parser';
@@ -44,19 +48,27 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 	}
 
 	if (lastUpdatedGte.v) {
-		paramList.push(['last_updated_gte', lastUpdatedGte.v / 1000]);
+		paramList.push(['last_updated_gte', BigInt(lastUpdatedGte.v) / BigInt(1000)]);
 	}
 
 	if (lastUpdatedLte.v) {
-		paramList.push(['last_updated_lte', lastUpdatedLte.v / 1000]);
+		paramList.push(['last_updated_lte', BigInt(lastUpdatedLte.v) / BigInt(1000)]);
+	}
+
+	if (createdGte.v) {
+		paramList.push(['created_gte', BigInt(createdGte.v) / BigInt(1000)]);
+	}
+
+	if (createdLte.v) {
+		paramList.push(['created_lte', BigInt(createdLte.v) / BigInt(1000)]);
 	}
 
 	if (searchProps.v) {
 		searchProps.v.forEach(({ positive }, prop_string) => {
 			if (positive) {
-				paramList.push(['positive_props', prop_string]);
+				paramList.push(['include_props', prop_string]);
 			} else {
-				paramList.push(['negative_props', prop_string]);
+				paramList.push(['exclude_props', prop_string]);
 			}
 		});
 	}
@@ -138,18 +150,44 @@ function loadParams(params: URLSearchParams) {
 		title.v = undefined;
 	}
 
-	const paramUpdatedBefore = params.get('last_updated_gte');
-	if (paramUpdatedBefore) {
-		lastUpdatedGte.v = new Date(Number(paramUpdatedBefore) * 1000);
+	const paramLastUpdatedPeriod = params.get('last_updated');
+	if (paramLastUpdatedPeriod) {
+		lastUpdatedPeriod.v = paramLastUpdatedPeriod;
 	} else {
-		lastUpdatedGte.v = undefined;
+		lastUpdatedPeriod.v = undefined;
+		const paramUpdatedBefore = params.get('last_updated_gte');
+		if (paramUpdatedBefore) {
+			lastUpdatedGte.v = new Date(Number(paramUpdatedBefore) * 1000);
+		} else {
+			lastUpdatedGte.v = undefined;
+		}
+
+		const paramUpdatedAfter = params.get('last_updated_lte');
+		if (paramUpdatedAfter) {
+			lastUpdatedLte.v = new Date(Number(paramUpdatedAfter) * 1000);
+		} else {
+			lastUpdatedLte.v = undefined;
+		}
 	}
 
-	const paramUpdatedAfter = params.get('last_updated_lte');
-	if (paramUpdatedAfter) {
-		lastUpdatedLte.v = new Date(Number(paramUpdatedAfter) * 1000);
+	const paramCreatedPeriod = params.get('created');
+	if (paramCreatedPeriod) {
+		createdPeriod.v = paramCreatedPeriod;
 	} else {
-		lastUpdatedLte.v = undefined;
+		createdPeriod.v = undefined;
+		const paramCreatedBefore = params.get('created_gte');
+		if (paramCreatedBefore) {
+			createdGte.v = new Date(Number(paramCreatedBefore) * 1000);
+		} else {
+			createdGte.v = undefined;
+		}
+
+		const paramCreatedAfter = params.get('created_lte');
+		if (paramCreatedAfter) {
+			createdLte.v = new Date(Number(paramCreatedAfter) * 1000);
+		} else {
+			createdLte.v = undefined;
+		}
 	}
 
 	const paramTags = params.getAll('tags');
@@ -160,9 +198,9 @@ function loadParams(params: URLSearchParams) {
 	}
 
 	searchProps.v.clear();
-	const paramPositiveProps = params.getAll('positive_props');
-	if (paramPositiveProps.length > 0) {
-		paramPositiveProps.forEach((prop) => {
+	const paramIncludeProps = params.getAll('include_props');
+	if (paramIncludeProps.length > 0) {
+		paramIncludeProps.forEach((prop) => {
 			const prop_split = prop.split(':');
 			searchProps.v.set(prop, {
 				property: { class: prop_split[0], value: prop_split[1] },
@@ -171,9 +209,9 @@ function loadParams(params: URLSearchParams) {
 		});
 	}
 
-	const paramNegativeProps = params.getAll('negative_props');
-	if (paramNegativeProps.length > 0) {
-		paramNegativeProps.forEach((prop) => {
+	const paramExcludeProps = params.getAll('exclude_props');
+	if (paramExcludeProps.length > 0) {
+		paramExcludeProps.forEach((prop) => {
 			const prop_split = prop.split(':');
 			searchProps.v.set(prop, {
 				property: { class: prop_split[0], value: prop_split[1] },
