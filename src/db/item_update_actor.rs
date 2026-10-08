@@ -1,6 +1,6 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use surrealdb::{Surreal, engine::local::Db};
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::{
     application::items_service::ItemsService,
@@ -12,7 +12,7 @@ use crate::{
         ml_queue_actor::MLQueueMsg,
     },
     steam::{
-        model::{Child, EResult, IPublishedResponse, IPublishedStruct, SteamRoot},
+        model::{Child, IPublishedResponse, IPublishedStruct, SteamRoot},
         steam_user_actor::SteamUserMsg,
     },
 };
@@ -39,6 +39,7 @@ pub struct ItemUpdateState {
 pub enum ItemUpdateMsg {
     DeserializeRawFiles(SteamRoot<IPublishedResponse>),
     MainlineProcessing(IPublishedStruct),
+    Hide(IPublishedStruct),
     Upsert((InternalWorkshopItem, Vec<Child>)),
     /// Intended to be invoked from user intent signals
     MaybeQueue(IItemID),
@@ -75,9 +76,7 @@ impl Actor for ItemUpdateActor {
                 for file in steam_root.response.publishedfiledetails {
                     match serde_json::from_value::<IPublishedStruct>(file) {
                         Ok(file) => {
-                            if file.result == EResult::OK as i32 {
-                                myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
-                            }
+                            myself.send_message(ItemUpdateMsg::MainlineProcessing(file))?;
                         }
                         Err(error) => {
                             error!(?error, "deserializing raw file");
@@ -147,6 +146,19 @@ impl Actor for ItemUpdateActor {
                         Err(error) => {
                             error!(?error, "getting item");
                         }
+                    }
+                }
+            }
+            ItemUpdateMsg::Hide(file) => {
+                match file.publishedfileid.parse::<i64>().map(IItemID::from) {
+                    Ok(id) => {
+                        warn!(?id, reason = ?file.result,  "Hiding item");
+                        if let Err(error) = state.items_service.set_hidden(id.clone(), true).await {
+                            error!(?error, ?id, "setting hidden item");
+                        }
+                    }
+                    Err(error) => {
+                        error!(?error, "parsing id to set hidden");
                     }
                 }
             }

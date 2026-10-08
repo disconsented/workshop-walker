@@ -75,6 +75,7 @@ pub trait ItemsPort: Send + Sync + 'static {
     ) -> Result<(), ItemsError>;
 
     async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError>;
+    async fn set_hidden(&self, id: IItemID, hidden: bool) -> Result<(), ItemsError>;
 }
 
 pub struct History(VecDeque<u64>);

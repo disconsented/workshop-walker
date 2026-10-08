@@ -240,7 +240,7 @@ pub struct IPublishedStruct {
     pub preview_file_size: Option<String>,
     pub preview_url: Option<String>,
     pub publishedfileid: String,
-    pub result: i32,
+    pub result: EResult,
     pub revision: Option<i64>,
     pub revision_change_number: Option<String>,
     #[serde(default)]
@@ -312,9 +312,9 @@ pub struct SteamUser {
 pub struct SteamUserResponse {
     pub players: Vec<SteamUser>,
 }
-#[expect(dead_code, reason = "here for completeness if needed in the future")]
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
 #[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EResult {
     /// No result. Not listed in the docs, but present in `steamclientpublic.h`.
     None = 0,

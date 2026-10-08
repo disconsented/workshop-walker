@@ -143,6 +143,7 @@ pub struct InsertableWorkshopItem {
     pub title: String,
     pub score: f32,
     pub tags: Vec<ITagID>,
+    pub hidden: bool,
 
     // Raw metrics
     pub lifetime_subscriptions: u64,

@@ -193,6 +193,27 @@ impl ItemsPort for ItemsSilo {
 
         Ok(())
     }
+
+    async fn set_hidden(&self, id: IItemID, hidden: bool) -> Result<(), ItemsError> {
+        let last_ran: Option<i64> = self
+            .db
+            .query("UPDATE $id SET hidden=$hidden RETURN hidden;")
+            .bind(("id", id))
+            .bind(("hidden", hidden))
+            .await
+            .whatever_context("querying update hidden")?
+            .take((0, "hidden"))
+            .whatever_context("taking hidden")?;
+
+        if last_ran.is_none() {
+            return Err(ItemsError::Internal {
+                message: "Updating hidden did NOT return a value".to_string(),
+                source: None,
+            });
+        }
+
+        Ok(())
+    }
 }
 
 /// Builds the `SELECT` for one item with its properties, dependencies and
@@ -294,6 +315,11 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
         what: vec![Expr::from_public_value(
             RecordId::from(id.clone()).into_value(),
         )],
+        cond: Some(Cond(Expr::Binary {
+            left: Box::new(Expr::Idiom(Idiom::field("hidden".to_string()))),
+            op: BinaryOperator::Equal,
+            right: Box::new(Expr::from_public_value(false.into_value())),
+        })),
         timeout: Expr::Literal(Literal::Duration(Duration::from_secs(2))),
         ..Default::default()
     };
@@ -320,6 +346,7 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
     } else {
         status_accepted
     };
+
 
     stmt.fields = Fields::Select(vec![
         Field::All,
@@ -374,6 +401,14 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
                         table: "item_dependencies".into(),
                         referencing_field: None,
                     }],
+                    cond: Some(Cond(Expr::Binary {
+                        left: Box::new(Expr::Idiom(Idiom(vec![
+                            Part::Field("out".into()),
+                            Part::Field("hidden".into()),
+                        ]))),
+                        op: BinaryOperator::Equal,
+                        right: Box::new(Expr::from_public_value(false.into_value())),
+                    })),
                     ..Default::default()
                 })),
                 Part::All,
@@ -391,6 +426,14 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
                         table: "item_dependencies".into(),
                         referencing_field: None,
                     }],
+                    cond: Some(Cond(Expr::Binary {
+                        left: Box::new(Expr::Idiom(Idiom(vec![
+                            Part::Field("in".into()),
+                            Part::Field("hidden".into()),
+                        ]))),
+                        op: BinaryOperator::Equal,
+                        right: Box::new(Expr::from_public_value(false.into_value())),
+                    })),
                     ..Default::default()
                 })),
                 Part::All,

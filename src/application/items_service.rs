@@ -105,6 +105,7 @@ impl<R: ItemsPort> ItemsService<R> {
             title: item.title,
             score: item.score,
             tags: tags.into_iter().map(|tag| tag.id).collect::<Vec<_>>(),
+            hidden: false,
             lifetime_subscriptions: item.lifetime_subscriptions,
             subscriptions: item.subscriptions,
             views: item.views,
@@ -129,8 +130,12 @@ impl<R: ItemsPort> ItemsService<R> {
             .whatever_context("inserting item")
     }
 
-    pub(crate) async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError> {
+    pub async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError> {
         self.repo.update_ml_last_run(id).await
+    }
+
+    pub async fn set_hidden(&self, id: IItemID, hidden: bool) -> Result<(), ItemsError> {
+        self.repo.set_hidden(id, hidden).await
     }
 }
 

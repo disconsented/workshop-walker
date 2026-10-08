@@ -331,6 +331,12 @@ fn build_query(
     stmt.start = Some(Start(Expr::from_public_value((page * limit).into_value())));
     stmt.cond = {
         let mut conditions = vec![];
+        conditions.push(Expr::Binary {
+            left: Box::new(Expr::Idiom(Idiom::field("hidden".to_string()))),
+            op: BinaryOperator::Equal,
+            right: Box::new(Expr::from_public_value(false.into_value())),
+        });
+
         if include_props.is_empty().not() {
             conditions.push(Expr::Idiom(Idiom(vec![Part::Start(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom(vec![
