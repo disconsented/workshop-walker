@@ -83,7 +83,7 @@ impl PropertiesPort for PropertiesSilo {
             existing_properties.contains(&test_prop)
         };
 
-        trace!(%test_prop, exists = prop_exists, "property already exists?");
+        trace!(%test_prop, prop_exists, "property already exists?");
 
         // A repeat link would only trip the unique index, and the server
         // reports that as an internal error rather than an
