@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { whichLang } from '$lib/lang';
-	import { faChevronLeft, faChevronRight, faEllipsis } from '@fortawesome/free-solid-svg-icons';
+	import {
+		faArrowRight,
+		faChevronLeft,
+		faChevronRight,
+		faEllipsis
+	} from '@fortawesome/free-solid-svg-icons';
 	import { faSteam } from '@fortawesome/free-brands-svg-icons';
 	import Icon from 'svelte-awesome';
 	import { Pagination } from '@skeletonlabs/skeleton-svelte';
@@ -97,67 +102,58 @@
 </div>
 {#snippet itemCardCompact(item)}
 	<div
-		class="card border-surface-300-700 bg-surface-100-900 flex w-full flex-col place-items-center justify-between gap-2 border-1"
+		class="card group border-surface-300-700 bg-surface-100-900 hover:border-primary-500/60 has-[a.stretched:focus-visible]:outline-primary-500 relative isolate flex h-48 w-full flex-col justify-end overflow-hidden border-1 transition-colors has-[a.stretched:focus-visible]:outline-2 has-[a.stretched:focus-visible]:outline-offset-2"
 	>
-		<div class="relative h-48 w-full">
-			<header>
-				<img
-					src={item.preview_url}
-					class="pattern-background absolute h-48 w-full object-cover"
-					alt="banner"
-					class:hue-rotate-90={!item.preview_url}
-					class:grayscale={!item.preview_url}
-					loading="lazy"
-				/>
-				<div class="absolute h-48 w-full bg-linear-to-t from-black from-30% to-[transparent]"></div>
-			</header>
+		<img
+			src={item.preview_url}
+			alt="preview"
+			loading="lazy"
+			class="pattern-background absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+			class:hue-rotate-90={!item.preview_url}
+			class:grayscale={!item.preview_url}
+		/>
+		<div class="absolute inset-0 -z-10 bg-linear-to-t from-black from-30% to-transparent"></div>
 
-			<!--Details overlaid-->
-			<article class="t-0 absolute left-0 flex h-full w-full flex-col justify-between pr-2">
-				<!--Top-->
-				<div class="flex w-full justify-end gap-1">
+		<a
+			href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
+			target="_blank"
+			rel="noopener noreferrer"
+			title="Open on Steam Workshop"
+			aria-label="Open {item.title} on Steam Workshop"
+			class="text-surface-50 absolute top-2 right-2 z-20 grid size-8 place-items-center rounded-md border border-white/10 bg-black/60 transition-colors hover:bg-black hover:text-white"
+		>
+			<Icon data={faSteam} />
+		</a>
+
+		<div class="flex items-end gap-2.5 p-2.5">
+			<div class="flex min-w-0 flex-1 flex-col gap-1">
+				<h6 class="h6 text-sm text-pretty">
 					<a
-						href="https://steamcommunity.com/sharedfiles/filedetails/?id={item.id}"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="btn preset-filled-surface-50-950 mt-1 rounded-md border-1 border-dashed border-gray-500 text-xs text-gray-500 opacity-80 hover:text-gray-700"
+						href="/item/{item.id}/{slugify(item.title)}"
+						class="stretched after:absolute after:inset-0 after:z-10 focus-visible:outline-none"
 					>
-						<Icon data={faSteam} class="fa-fw" />
-						Steam
+						{item.title}
 					</a>
-				</div>
-				<!--Bottom (Title, author, updated-->
-				<div class="flex w-full flex-col">
-					<div class="w-full">
-						<h6 class="h6 p-1 text-sm">
-							<a
-								href="/item/{item.id}/{slugify(item.title)}"
-								target="_self"
-								rel="noopener noreferrer"
-								class="card inline-block place-items-center text-pretty"
-							>
-								{item.title}
-							</a>
-						</h6>
+				</h6>
+				<footer class="flex items-center justify-between gap-2 text-xs">
+					<a
+						href="https://steamcommunity.com/profiles/{item.author
+							.id}/myworkshopfiles/?appid={item.app}"
+						target="_self"
+						rel="noopener noreferrer"
+						class="text-surface-200 truncate anchor z-10">{item.author?.name ?? 'Unknown'}</a
+					>
+					<div class="flex items-center gap-1 text-nowrap">
+						{@render sortedDetail(item)}
 					</div>
-					<footer class="flex w-full place-items-center justify-between gap-2 p-1">
-						{#if item.author}
-							<a
-								href="https://steamcommunity.com/profiles/{item.author
-									.id}/myworkshopfiles/?appid={item.app}"
-								target="_self"
-								rel="noopener noreferrer"
-								class="anchor flex min-w-0 items-center gap-1 text-xs"
-							>
-								<span class="truncate">{item.author?.name ?? 'Unknown'}</span></a
-							>
-						{/if}
-						<div class="flex w-fit items-center gap-1 text-nowrap">
-							{@render sortedDetail(item)}
-						</div>
-					</footer>
-				</div>
-			</article>
+				</footer>
+			</div>
+			<span
+				aria-hidden="true"
+				class="preset-tonal-primary group-hover:preset-filled-primary-500 grid size-8 shrink-0 place-items-center rounded-md transition-colors"
+			>
+				<Icon data={faArrowRight} />
+			</span>
 		</div>
 	</div>
 {/snippet}
