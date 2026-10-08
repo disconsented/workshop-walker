@@ -775,7 +775,7 @@
 						<ToggleGroup.Item value="updated">Last Updated</ToggleGroup.Item>
 						<ToggleGroup.Item value="new">New</ToggleGroup.Item>
 						<ToggleGroup.Item value="week">Best This Week</ToggleGroup.Item>
-						<ToggleGroup.Item value="dependedOn">Recently Most Depended On</ToggleGroup.Item>
+						<ToggleGroup.Item value="dependedOn">Most Depended On This Year</ToggleGroup.Item>
 					</ToggleGroup>
 				</div>
 			</div>
