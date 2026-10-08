@@ -319,7 +319,7 @@ fn build_query(
                         cond: None,
                         ..Default::default()
                     })),
-                    Part::Method("len".into(), vec![])
+                    Part::Method("len".into(), vec![]),
                 ])),
                 alias: Some(Idiom::field("dependents".to_string())),
             }));

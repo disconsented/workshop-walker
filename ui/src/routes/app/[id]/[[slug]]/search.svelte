@@ -52,7 +52,7 @@
 		lastUpdatedPeriod.v ?? (lastUpdatedGte.v || lastUpdatedLte.v ? 'custom' : 'all')
 	);
 
-	function updateLastUpdated(){
+	function updateLastUpdated() {
 		if (updatedDate && updatedDate != 'custom' && updatedDate != 'all') {
 			updatedSelectionChange({ target: { value: lastUpdatedPeriod.v } });
 		}
@@ -60,15 +60,13 @@
 	updateLastUpdated();
 
 	let createdDate = $state(createdPeriod.v ?? (createdGte.v || createdLte.v ? 'custom' : 'all'));
-	function updateCreated(){
+	function updateCreated() {
 		if (createdDate && createdDate != 'custom' && createdDate != 'all') {
 			createdSelectionChange({ target: { value: createdPeriod.v } });
 		}
 	}
 
 	updateCreated();
-
-
 
 	const params = new SvelteURLSearchParams();
 	$effect(() => {
@@ -321,53 +319,53 @@
 		console.log(presetValue);
 		switch (details.value[0]) {
 			case 'popular':
-				createdDate = "quarter";
-				createdPeriod.v = "quarter";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "Subscriptions";
+				createdDate = 'quarter';
+				createdPeriod.v = 'quarter';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'Subscriptions';
 				break;
 			case 'subscribed':
-				createdDate = "all";
-				createdPeriod.v = "all";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "Subscriptions";
+				createdDate = 'all';
+				createdPeriod.v = 'all';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'Subscriptions';
 				break;
 			case 'trending':
-				createdDate = "all";
-				createdPeriod.v = "all";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "TrendWeek";
+				createdDate = 'all';
+				createdPeriod.v = 'all';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'TrendWeek';
 				break;
 			case 'updated':
-				createdDate = "all";
-				createdPeriod.v = "all";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "LastUpdated";
+				createdDate = 'all';
+				createdPeriod.v = 'all';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'LastUpdated';
 				break;
 			case 'new':
-				createdDate = "week";
-				createdPeriod.v = "week";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "LastUpdated";
+				createdDate = 'week';
+				createdPeriod.v = 'week';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'LastUpdated';
 				break;
 			case 'week':
-				createdDate = "week";
-				createdPeriod.v = "week";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "Subscriptions";
+				createdDate = 'week';
+				createdPeriod.v = 'week';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'Subscriptions';
 				break;
-				case 'dependedOn':
-				createdDate = "year";
-				createdPeriod.v = "year";
-				lastUpdatedPeriod.v = "all";
-				updatedDate = "all";
-				orderBy.v = "Dependents";
+			case 'dependedOn':
+				createdDate = 'year';
+				createdPeriod.v = 'year';
+				lastUpdatedPeriod.v = 'all';
+				updatedDate = 'all';
+				orderBy.v = 'Dependents';
 				break;
 			default:
 				break;
@@ -376,7 +374,6 @@
 		updateLastUpdated();
 		updateCreated();
 	};
-
 </script>
 
 <form
@@ -512,8 +509,8 @@
 				<div class="flex flex-row items-center justify-between">
 					<div>
 						Tags <span class="text-sm italic opacity-50"
-					>(Steam tag, shown as written. Similar names can be different tags.)</span
-					>
+							>(Steam tag, shown as written. Similar names can be different tags.)</span
+						>
 					</div>
 					<SegmentedControl {value} onValueChange={(details) => (value = details.value)} disabled>
 						<SegmentedControl.Control class="gap-0 p-0">
@@ -772,27 +769,13 @@
 				Preset
 				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">
 					<ToggleGroup value={presetValue} onValueChange={onPresetValueChange}>
-						<ToggleGroup.Item value="popular">
-							Most Popular
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="subscribed">
-							Most Subscribed
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="trending">
-							Trending
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="updated">
-							Last Updated
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="new">
-							New
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="week">
-							Best This Week
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="dependedOn">
-							Recently Most Depended On
-						</ToggleGroup.Item>
+						<ToggleGroup.Item value="popular">Most Popular</ToggleGroup.Item>
+						<ToggleGroup.Item value="subscribed">Most Subscribed</ToggleGroup.Item>
+						<ToggleGroup.Item value="trending">Trending</ToggleGroup.Item>
+						<ToggleGroup.Item value="updated">Last Updated</ToggleGroup.Item>
+						<ToggleGroup.Item value="new">New</ToggleGroup.Item>
+						<ToggleGroup.Item value="week">Best This Week</ToggleGroup.Item>
+						<ToggleGroup.Item value="dependedOn">Recently Most Depended On</ToggleGroup.Item>
 					</ToggleGroup>
 				</div>
 			</div>
