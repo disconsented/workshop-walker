@@ -14,7 +14,7 @@ use crate::{
         bb_actor::BBMsg,
         language_actor::{DetectedLanguage, LanguageMsg},
     },
-    steam::model::IPublishedStruct,
+    steam::model::{EResult, IPublishedStruct},
 };
 
 /// Ephemeral actor, only used to coordinate tasks without tying up the greater
@@ -61,10 +61,9 @@ impl Actor for JoinProcessActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             JoinProcessMsg::Process(mut data) => {
-                // Sometimes we'll find items that are missing this, and they're
-                // effectively empty, so, just skip them and carry on
-                if data.consumer_appid.is_none() {
+                if data.result != EResult::OK {
                     myself.stop(None);
+                    let _ = state.item_update.send_message(ItemUpdateMsg::Hide(data));
                     return Ok(());
                 }
                 let description = take(&mut data.file_description).unwrap_or_default();
