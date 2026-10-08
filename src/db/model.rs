@@ -27,7 +27,7 @@ pub enum OrderBy {
     TrendYear,
     LastUpdated,
     Rating,
-    Dependents
+    Dependents,
 }
 
 impl OrderBy {
@@ -42,7 +42,7 @@ impl OrderBy {
             OrderBy::TrendHalf => "trend_half",
             OrderBy::TrendYear => "trend_year",
             OrderBy::Rating => "score",
-            OrderBy::Dependents => "dependents"
+            OrderBy::Dependents => "dependents",
         }
     }
 }
