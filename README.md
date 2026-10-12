@@ -61,6 +61,12 @@ contributed adds to the maintenance burden. This is also an effort to manage bur
 
 For anything touching the UI, ideally include some kind of visual reference.
 
+If it's accepted:
+
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/). release-plz builds the changelog and version from them.
+- Rust: `cargo +nightly fmt --all` and `cargo clippy --all` must pass. Clippy warnings fail the build.
+- UI: `npm run format`, `npm run lint` and `npm run check` from `ui/` must pass.
+
 --- 
 
 This project is not associated with Valve, Steam, etc. I just got annoyed one day I couldn't see dependants and wanted an
