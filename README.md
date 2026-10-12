@@ -67,6 +67,60 @@ If it's accepted:
 - Rust: `cargo +nightly fmt --all` and `cargo clippy --all` must pass. Clippy warnings fail the build.
 - UI: `npm run format`, `npm run lint` and `npm run check` from `ui/` must pass.
 
+## Getting Started
+
+### Requirements
+
+- Rust, latest stable
+- Clang, to build RocksDB (`libclang-dev` on Debian and Ubuntu)
+- Node.js 26
+- [biscuit-cli](https://doc.biscuitsec.org/usage/command-line.html), to make a keypair
+- A [Steam Web API key](https://steamcommunity.com/dev/apikey)
+- a llama.cpp server for property classification 
+
+The database is embedded. It writes to `./workshopdb` and needs no server.
+
+### Configure
+
+  ```bash                                                                                                                                                                                                 
+  git clone https://github.com/disconsented/workshop-walker                                                                                                                                               
+  cd workshop-walker                                                                                                                                                                                      
+  cp config/config.example.toml config/config.toml                                                                                                                                                        
+  biscuit keypair                                                                                                                                                                                         
+  ```    
+
+Put the keypair, your Steam API key and your SteamID64 in `config/config.toml`.                                                                                                                         
+To run without classification, set `ml_extraction.enabled = false`.
+
+### Classifier (optional)
+
+  ```bash                                                                                                                                                                                                 
+  docker run -d -p 8081:8080 \                                                                                                                                                                            
+    --volume models:/models --env LLAMA_CACHE=/models/ \                                                                                                                                                  
+    --restart unless-stopped \                                                                                                                                                                            
+    ghcr.io/ggml-org/llama.cpp:server \                                                                                                                                                                   
+    -hf google/gemma-4-E4B-it-qat-q4_0-gguf -hff gemma-4-E4B_q4_0-it.gguf \                                                                                                                               
+    -c 4096 -np 1 -t 20 -tb 20 --jinja --reasoning off \                                                                                                                                                  
+    --sleep-idle-seconds 120 --no-warmup                                   
+   ```
+
+### Run
+
+Backend (listens on port 5800):
+
+```bash
+RUST_LOG="workshop_walker=debug,salvo=debug" cargo run --bin workshop-walker
+```
+
+Frontend, in a second terminal:
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. The dev server sends `/api` to the backend.
 --- 
 
 This project is not associated with Valve, Steam, etc. I just got annoyed one day I couldn't see dependants and wanted an
