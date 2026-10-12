@@ -141,7 +141,7 @@
 							.id}/myworkshopfiles/?appid={item.app}"
 						target="_self"
 						rel="noopener noreferrer"
-						class="text-surface-200 truncate anchor z-10">{item.author?.name ?? 'Unknown'}</a
+						class="text-surface-200 anchor z-10 truncate">{item.author?.name ?? 'Unknown'}</a
 					>
 					<div class="flex items-center gap-1 text-nowrap">
 						{@render sortedDetail(item)}
