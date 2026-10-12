@@ -5,6 +5,10 @@
 [![ui](https://img.shields.io/github/actions/workflow/status/disconsented/workshop-walker/ui.yml?branch=master&label=ui)](https://github.com/disconsented/workshop-walker/actions/workflows/ui.yml)
 [![License: MPL-2.0](https://img.shields.io/github/license/disconsented/workshop-walker)](LICENSE.md)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+[![Rust](https://img.shields.io/badge/Rust-2024-dea584?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![SurrealDB](https://img.shields.io/badge/SurrealDB-3.1-ff00a0?logo=surrealdb&logoColor=white)](https://surrealdb.com/)                                                                                
+[![Skeleton.dev](https://img.shields.io/badge/Skeleton.dev-5-4f46e5)](https://www.skeleton.dev/)                                                                                                        
+[![Svelte](https://img.shields.io/badge/Svelte-5-ff3e00?logo=svelte&logoColor=white)](https://svelte.dev/)
 
 ---
 
