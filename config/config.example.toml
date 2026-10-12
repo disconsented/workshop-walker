@@ -1,0 +1,25 @@
+# https://steamid.io/ - Mark your user as admin
+admin_users = ["SteamID64"]
+# The redirection URL
+base_url = "http://localhost:5173"
+# Ignore the 12-hour window between pulls on boot
+force_update = false
+# Whether to download from the Steam API
+updater = true
+
+[ml_extraction]
+enabled = true
+url = "http://localhost:8081"
+
+[steam]
+# https://steamcommunity.com/dev/apikey
+api_token = "..."
+
+[database]
+password = "root"
+user = "root"
+
+[biscuit]
+# https://doc.biscuitsec.org/usage/command-line.html
+private_key = "ed25519-private/..."
+public_key = "ed25519/..."
