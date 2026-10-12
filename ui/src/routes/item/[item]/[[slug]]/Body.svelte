@@ -46,7 +46,7 @@
 	let filterName = $state(undefined);
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-4 pr-2">
 	<div class="flex flex-col gap-4">
 		<div class="relative">
 			<button
