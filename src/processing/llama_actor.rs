@@ -52,7 +52,7 @@ const TASKS: [Task; 2] = [
         fields: [
             Field {
                 name: "types",
-                max_items: 2,
+                max_items: 3,
             },
             Field {
                 name: "features",
