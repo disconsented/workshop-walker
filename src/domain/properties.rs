@@ -4,11 +4,11 @@ use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
 
 use crate::db::{
-    AppID, IAppID, IItemID, IUserID, ItemID,
+    AppID, IAppID, IItemID, IPropertyID, IUserID, ItemID,
     model::{Class, InternalSource, Property, Status},
 };
 
-#[derive(Debug, Snafu, Clone)]
+#[derive(Debug, Snafu, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum PropertiesError {
     #[snafu(display("Invalid vote score"))]
@@ -19,6 +19,8 @@ pub enum PropertiesError {
     Conflict,
     #[snafu(display("Internal error"))]
     Internal,
+    #[snafu(display("Not Found"))]
+    NotFound,
 }
 
 /// Data required to create/link a new property to a workshop item
@@ -59,6 +61,12 @@ pub trait PropertiesPort: Send + Sync + 'static {
         source: InternalSource,
         status: Status,
     ) -> Result<(), PropertiesError>;
+
+    async fn get_hidden_system_props(
+        &self,
+        property: IPropertyID,
+        app: IAppID,
+    ) -> Result<(Vec<IPropertyID>, usize), PropertiesError>;
     async fn vote(&self, vote: InternalVoteData, userid: IUserID) -> Result<(), PropertiesError>;
     async fn remove_vote(
         &self,

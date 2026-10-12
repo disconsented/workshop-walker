@@ -1,11 +1,12 @@
 use std::result::Result;
 
 use surrealdb::{Surreal, engine::local::Db};
+use surrealdb_types::SurrealValue;
 use tracing::{debug, error, trace};
 
 use crate::{
     db::{
-        IUserID,
+        IAppID, IPropertyID, IUserID,
         model::{InternalSource, Property, Status},
     },
     domain::properties::{
@@ -139,6 +140,57 @@ impl PropertiesPort for PropertiesSilo {
                 error!(?error, "query error");
                 Err(PropertiesError::Internal)
             }
+        }
+    }
+
+    async fn get_hidden_system_props(
+        &self,
+        property: IPropertyID,
+        app: IAppID,
+    ) -> Result<(Vec<IPropertyID>, usize), PropertiesError> {
+        #[derive(SurrealValue)]
+        struct ResultPair {
+            count: usize,
+            hidden_properties: Vec<IPropertyID>,
+        }
+        let mut result = self
+            .db
+            .query(
+                "LET $properties = SELECT *
+                FROM workshop_item_properties
+                WHERE
+                    out = $property
+                    AND source = \"system\"
+                    AND in.app = $app;
+                RETURN {
+                    \"count\": $properties.len(),
+                    \"hidden_properties\": $properties.filter(
+                        |$prop| {
+                            $prop.status == -2;
+                        }
+                    ).map(|$prop|$prop.out).distinct(),
+                };",
+            )
+            // the problem is that we're returning the ID from the workshop_item_properties table,
+            // which is random, that gets used later and of course doesnt work because
+            // its not a real thingwe use
+            .bind(("property", property))
+            .bind(("app", app))
+            .await
+            .inspect_err(|error| error!(?error, "getting hidden props"))
+            .map_err(|_| PropertiesError::Internal)?
+            .check()
+            .inspect_err(|error| error!(?error, "checking hidden props"))
+            .map_err(|_| PropertiesError::Internal)?;
+
+        let result: Option<ResultPair> = result
+            .take(1)
+            .inspect_err(|error| error!(?error, "taking hidden props result"))
+            .map_err(|_| PropertiesError::Internal)?;
+        if let Some(result) = result {
+            Ok((result.hidden_properties, result.count))
+        } else {
+            Err(PropertiesError::NotFound)
         }
     }
 
@@ -295,8 +347,8 @@ mod tests {
     use super::PropertiesSilo;
     use crate::{
         db::{
-            IItemID, IUserID,
-            model::{Class, InternalSource, Status},
+            IAppID, IItemID, IUserID,
+            model::{Class, InternalSource, Property, Status},
         },
         domain::properties::{
             InternalNewProperty, InternalVoteData, PropertiesError, PropertiesPort,
@@ -312,8 +364,11 @@ mod tests {
     ///   * `vote_count`   = total number of votes cast (up + down)
     ///   * `upvote_count` = net score (sum of every voter's +1 / -1)
     const SCHEMA: &str = "
+        DEFINE TABLE apps TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+
         DEFINE TABLE workshop_items TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD name ON workshop_items TYPE option<string> PERMISSIONS FULL;
+        DEFINE FIELD app ON workshop_items TYPE option<record<apps>> PERMISSIONS FULL;
 
         DEFINE TABLE properties TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
         DEFINE FIELD id ON properties TYPE { class: string, value: string } PERMISSIONS FULL;
@@ -325,7 +380,8 @@ mod tests {
         DEFINE FIELD note ON workshop_item_properties TYPE none | string PERMISSIONS FULL;
         DEFINE FIELD source ON workshop_item_properties TYPE 'system' | record<users> PERMISSIONS \
                           FULL;
-        DEFINE FIELD status ON workshop_item_properties TYPE -1 | 0 | 1 DEFAULT 0 PERMISSIONS FULL;
+        DEFINE FIELD status ON workshop_item_properties TYPE -2 | -1 | 0 | 1 DEFAULT 0 PERMISSIONS \
+                          FULL;
         DEFINE FIELD upvote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
         DEFINE FIELD vote_count ON workshop_item_properties TYPE int DEFAULT 0 PERMISSIONS FULL;
         DEFINE INDEX unique_workshop_item_properties ON workshop_item_properties FIELDS in, out \
@@ -442,10 +498,43 @@ mod tests {
             .collect()
     }
 
+    // --- hidden system properties ---
+
+    /// The seeded item is in app 1 and has a hidden system link to
+    /// `Feature/ffff`. The lookup must count that link and report it as
+    /// hidden.
+    #[tokio::test]
+    async fn test_get_hidden_system_props_finds_the_hidden_link() {
+        let (silo, db) = setup().await;
+        db.query(
+            "CREATE apps:1; UPDATE workshop_items:294100 SET app = apps:1; UPDATE \
+             workshop_item_properties SET status = -2;",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+
+        let (hidden, count) = silo
+            .get_hidden_system_props(
+                Property {
+                    class: Class::Feature,
+                    value: "ffff".to_string(),
+                }
+                .into(),
+                IAppID::from(1i64),
+            )
+            .await
+            .expect("the lookup should decode its own result");
+
+        assert_eq!(count, 1, "one system link exists in app 1");
+        assert_eq!(hidden.len(), 1, "that link is hidden");
+    }
+
     // --- creating and linking properties ---
 
     #[tokio::test]
-    async fn create_property_that_does_not_exist_yet() {
+    async fn test_create_property_that_does_not_exist_yet() {
         let (silo, db) = setup().await;
         silo.create_or_link_property(
             new_property(ITEM, Class::Genre, "fantasy"),
@@ -465,7 +554,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn link_property_that_already_exists_to_another_item() {
+    async fn test_link_property_that_already_exists_to_another_item() {
         let (silo, db) = setup().await;
         db.query("CREATE workshop_items:294101 SET name = 'other';")
             .await
@@ -492,7 +581,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_property_from_a_user() {
+    async fn test_create_property_from_a_user() {
         let (silo, db) = setup().await;
         silo.create_or_link_property(
             new_property(ITEM, Class::Genre, "fantasy"),
@@ -515,7 +604,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn linking_the_same_property_twice_conflicts() {
+    async fn test_linking_the_same_property_twice_conflicts() {
         let (silo, db) = setup().await;
         let err = silo
             .create_or_link_property(
@@ -530,7 +619,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_value_close_to_an_existing_one_in_the_same_class_conflicts() {
+    async fn test_a_value_close_to_an_existing_one_in_the_same_class_conflicts() {
         let (silo, db) = setup().await;
         silo.create_or_link_property(
             new_property(ITEM, Class::Feature, "cybernetics"),
@@ -561,7 +650,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn the_same_value_in_another_class_is_not_a_duplicate() {
+    async fn test_the_same_value_in_another_class_is_not_a_duplicate() {
         let (silo, db) = setup().await;
         // Each class is its own namespace: `Genre/ffff` says something
         // different about the item than the seeded `Feature/ffff`.
@@ -582,7 +671,7 @@ mod tests {
     // --- adding a vote to a property (none -> vote) ---
 
     #[tokio::test]
-    async fn add_upvote_sets_score() {
+    async fn test_add_upvote_sets_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         assert_eq!(counts(&db).await, (1, 1));
@@ -590,7 +679,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_downvote_sets_score() {
+    async fn test_add_downvote_sets_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(-1), user(1)).await.unwrap();
         assert_eq!(counts(&db).await, (1, -1));
@@ -600,7 +689,7 @@ mod tests {
     // --- changing a vote (vote -> different vote): score must follow ---
 
     #[tokio::test]
-    async fn change_upvote_to_downvote_updates_score() {
+    async fn test_change_upvote_to_downvote_updates_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         assert_eq!(counts(&db).await, (1, 1));
@@ -611,7 +700,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn change_downvote_to_upvote_updates_score() {
+    async fn test_change_downvote_to_upvote_updates_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(-1), user(1)).await.unwrap();
         assert_eq!(counts(&db).await, (1, -1));
@@ -623,7 +712,7 @@ mod tests {
     // --- re-casting the same vote is a no-op ---
 
     #[tokio::test]
-    async fn recasting_same_upvote_is_noop() {
+    async fn test_recasting_same_upvote_is_noop() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         silo.vote(vote(1), user(1)).await.unwrap();
@@ -632,7 +721,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn recasting_same_downvote_is_noop() {
+    async fn test_recasting_same_downvote_is_noop() {
         let (silo, db) = setup().await;
         silo.vote(vote(-1), user(1)).await.unwrap();
         silo.vote(vote(-1), user(1)).await.unwrap();
@@ -643,7 +732,7 @@ mod tests {
     // --- removing a vote (vote -> none) ---
 
     #[tokio::test]
-    async fn remove_upvote_clears_score() {
+    async fn test_remove_upvote_clears_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         silo.remove_vote(vote(1), user(1)).await.unwrap();
@@ -652,7 +741,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn remove_downvote_clears_score() {
+    async fn test_remove_downvote_clears_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(-1), user(1)).await.unwrap();
         silo.remove_vote(vote(-1), user(1)).await.unwrap();
@@ -661,7 +750,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn remove_without_existing_vote_is_noop() {
+    async fn test_remove_without_existing_vote_is_noop() {
         let (silo, db) = setup().await;
         silo.remove_vote(vote(1), user(1)).await.unwrap();
         assert_eq!(counts(&db).await, (0, 0));
@@ -671,7 +760,7 @@ mod tests {
     // --- multiple voters: the score aggregates every voter ---
 
     #[tokio::test]
-    async fn two_users_upvoting_sum_the_score() {
+    async fn test_two_users_upvoting_sum_the_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         silo.vote(vote(1), user(2)).await.unwrap();
@@ -680,7 +769,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn opposing_votes_net_to_zero() {
+    async fn test_opposing_votes_net_to_zero() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         silo.vote(vote(-1), user(2)).await.unwrap();
@@ -689,7 +778,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn one_user_changing_does_not_affect_the_other() {
+    async fn test_one_user_changing_does_not_affect_the_other() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         silo.vote(vote(1), user(2)).await.unwrap();
@@ -700,7 +789,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn removing_one_of_two_votes_updates_score() {
+    async fn test_removing_one_of_two_votes_updates_score() {
         let (silo, db) = setup().await;
         silo.vote(vote(1), user(1)).await.unwrap();
         silo.vote(vote(1), user(2)).await.unwrap();
@@ -712,7 +801,7 @@ mod tests {
     // --- voting against records that don't exist is rejected ---
 
     #[tokio::test]
-    async fn vote_on_missing_property_errors() {
+    async fn test_vote_on_missing_property_errors() {
         let (silo, db) = setup().await;
         let missing = InternalVoteData {
             item: IItemID::from(ITEM),
@@ -727,7 +816,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn vote_on_missing_item_errors() {
+    async fn test_vote_on_missing_item_errors() {
         let (silo, db) = setup().await;
         let missing = InternalVoteData {
             item: IItemID::from(999_i64),

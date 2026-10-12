@@ -5,9 +5,10 @@ use snafu::{ErrorCompat, prelude::*};
 
 use crate::{
     db::{
-        IItemID, IUserID,
+        IAppID, IItemID, IPropertyID, IUserID,
         model::{
             HistoryPair, InsertableWorkshopItem, InternalFullWorkshopItem, InternalWorkshopItem,
+            Status,
         },
     },
     steam::model::Child,
@@ -76,6 +77,13 @@ pub trait ItemsPort: Send + Sync + 'static {
 
     async fn update_ml_last_run(&self, id: IItemID) -> Result<(), ItemsError>;
     async fn set_hidden(&self, id: IItemID, hidden: bool) -> Result<(), ItemsError>;
+    async fn set_property_status(
+        &self,
+        app: IAppID,
+        properties: Vec<IPropertyID>,
+        new_status: Status,
+        test_status: Option<Status>,
+    ) -> Result<(), ItemsError>;
 }
 
 pub struct History(VecDeque<u64>);

@@ -8,12 +8,7 @@ use tracing::{debug, error, trace};
 
 use crate::{
     application::items_service::ItemsService,
-    db::{
-        IItemID,
-        items_repository::ItemsSilo,
-        model::{Class, InternalSource, Status},
-        properties_actor::PropertiesMsg,
-    },
+    db::{IItemID, items_repository::ItemsSilo, model::Class, properties_actor::PropertiesMsg},
     domain::properties::{InternalNewProperty, PropertiesError},
     processing::llama_actor::LlamaMsg,
 };
@@ -156,15 +151,13 @@ async fn process_one(
                 .chain(props.types.into_iter().map(|v| (Class::Type, v)))
                 .chain(props.features.into_iter().map(|v| (Class::Feature, v)))
             {
-                match call!(property_actor, |reply| PropertiesMsg::NewProperty(
+                match call!(property_actor, |reply| PropertiesMsg::NewSystemProperty(
                     InternalNewProperty {
                         workshop_item: workshop_item_id.clone(),
                         class: class.clone(),
                         value: value.clone(),
                         note: None,
                     },
-                    InternalSource::System,
-                    Status::Accepted,
                     reply
                 )) {
                     Ok(Ok(..)) => {
