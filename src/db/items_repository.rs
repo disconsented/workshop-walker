@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{error::Error, num::ParseIntError};
 
 use chrono::Utc;
 use snafu::ResultExt;
@@ -12,11 +12,11 @@ use surrealdb_core::sql::{
     part::DestructurePart,
 };
 use surrealdb_types::{Duration, RecordId, SurrealValue, ToSql, Value};
-use tracing::{debug, error};
+use tracing::{debug, error, trace};
 
 use crate::{
     db::{
-        IItemID, IUserID,
+        IAppID, IItemID, IPropertyID, IUserID,
         model::{
             HistoryPair, InsertableWorkshopItem, InternalFullWorkshopItem, InternalWorkshopItem,
             Status,
@@ -50,7 +50,7 @@ impl ItemsPort for ItemsSilo {
 
         let result: Option<InternalWorkshopItem> = results
             .take(0)
-            .inspect_err(|error| error!(message = "get_item", ?error, "Failed to take result"))
+            .inspect_err(|error| error!(?error, message = "get_item", "Failed to take result"))
             .whatever_context("take result")?;
         result.ok_or(ItemsError::NotFound)
     }
@@ -214,6 +214,69 @@ impl ItemsPort for ItemsSilo {
 
         Ok(())
     }
+
+    async fn set_property_status(
+        &self,
+        app: IAppID,
+        properties: Vec<IPropertyID>,
+        new_status: Status,
+        test_status: Option<Status>,
+    ) -> Result<(), ItemsError> {
+        let convert_error = |error| ItemsError::Internal {
+            message: "Setting status on workshop_item_property".to_string(),
+            source: Some(Box::<dyn Error + Send + Sync>::from(error)),
+        };
+
+        trace!(
+            ?app,
+            ?properties,
+            ?new_status,
+            ?test_status,
+            "setting property status"
+        );
+
+        let query = if let Some(test_status) = test_status {
+            self.db
+                .query(
+                    "UPDATE workshop_item_properties SET
+                    status = $status
+                WHERE
+                    in.app = $app
+                    AND out IN $properties
+                    AND status = $test_status
+                RETURN id;",
+                )
+                .bind(("test_status", test_status))
+        } else {
+            self.db.query(
+                "UPDATE workshop_item_properties SET
+                    status = $status
+                WHERE
+                    in.app = $app
+                    AND out IN $properties
+                RETURN id;",
+            )
+        };
+
+        let results = query
+            .bind(("app", app))
+            .bind(("properties", properties))
+            .bind(("status", new_status))
+            .await
+            .map_err(convert_error)?;
+
+        let item_property: Vec<RecordId> = results
+            .check()
+            .map_err(convert_error)?
+            .take(0)
+            .map_err(convert_error)?;
+
+        if item_property.is_empty() {
+            return Err(ItemsError::NotFound);
+        }
+
+        Ok(())
+    }
 }
 
 /// Builds the `SELECT` for one item with its properties, dependencies and
@@ -347,7 +410,6 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
         status_accepted
     };
 
-
     stmt.fields = Fields::Select(vec![
         Field::All,
         Field::Single(Selector {
@@ -449,12 +511,15 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use surrealdb::{Surreal, engine::local::Mem};
 
     use super::{Db, InternalFullWorkshopItem, ItemsSilo, ToSql, build_full_item_statement};
     use crate::{
-        db::{IItemID, IUserID},
+        db::{
+            IAppID, IItemID, IUserID,
+            model::{Class, Property, Status},
+        },
         domain::items::ItemsPort,
     };
 
@@ -463,7 +528,7 @@ mod test {
     ///   - 100 -> item_dependencies -> 200   (100 depends on 200)
     ///   - 300 -> item_dependencies -> 100   (300 depends on 100)
     /// So from item 100's perspective: 200 is a dependency, 300 is a dependant.
-    async fn seed_db() -> Surreal<Db> {
+    pub(crate) async fn seed_db() -> Surreal<Db> {
         let db = Surreal::new::<Mem>(()).await.unwrap();
         db.use_ns("test").use_db("test").await.unwrap();
 
@@ -620,6 +685,51 @@ mod test {
             vec![IItemID::from(300i64)],
             "dependants should be the `in` end of incoming edges (300)"
         );
+    }
+
+    /// Item 100 is in app 1 and has a hidden system link to
+    /// `Feature/hidden`. Accepting the hidden links of that property in app 1
+    /// must change that row.
+    #[tokio::test]
+    async fn set_property_status_accepts_hidden_links_in_the_app() {
+        let db = seed_db().await;
+        db.query(
+            "DEFINE FIELD OVERWRITE status ON workshop_item_properties TYPE -2 | -1 | 0 | 1 \
+             DEFAULT 0 PERMISSIONS FULL;
+            CREATE properties:{ class: 'Feature', value: 'hidden' };
+            RELATE workshop_items:100 -> workshop_item_properties -> properties:{ class: \
+             'Feature', value: 'hidden' } SET status = -2, source = 'system';",
+        )
+        .await
+        .unwrap()
+        .check()
+        .unwrap();
+        let silo = ItemsSilo::new(db.clone());
+
+        silo.set_property_status(
+            IAppID::from(1i64),
+            vec![
+                Property {
+                    class: Class::Feature,
+                    value: "hidden".to_string(),
+                }
+                .into(),
+            ],
+            Status::Accepted,
+            Some(Status::Hidden),
+        )
+        .await
+        .expect("the hidden link on item 100 should match");
+
+        let mut result = db
+            .query(
+                "SELECT VALUE status FROM workshop_item_properties WHERE out = properties:{ \
+                 class: 'Feature', value: 'hidden' };",
+            )
+            .await
+            .unwrap();
+        let statuses: Vec<i64> = result.take(0).unwrap();
+        assert_eq!(statuses, vec![1], "the hidden link should now be accepted");
     }
 
     /// A leaf item with only an incoming edge should report a dependant and no

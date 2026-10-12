@@ -10,7 +10,7 @@ use surrealdb::{Surreal, engine::local::Db};
 use crate::{
     application::properties_service::PropertiesService,
     db::{
-        model::{ExternalSource, Property, Status},
+        model::{ExternalSource, Property},
         properties_actor::{PROPERTIES_ACTOR, PropertiesMsg},
         properties_repository::PropertiesSilo,
     },
@@ -36,6 +36,7 @@ enum InnerError {
     Conflict,
     Unauthorized,
     InternalError,
+    NotFound,
 }
 
 impl InnerError {
@@ -45,6 +46,7 @@ impl InnerError {
             InnerError::Conflict => StatusCode::CONFLICT,
             InnerError::Unauthorized => StatusCode::UNAUTHORIZED,
             InnerError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            InnerError::NotFound => StatusCode::NOT_FOUND,
         }
     }
 }
@@ -83,6 +85,7 @@ impl From<PropertiesError> for InnerError {
             PropertiesError::BadRequest { msg } => Self::BadRequest { msg },
             PropertiesError::Conflict => Self::Conflict,
             PropertiesError::Internal => Self::InternalError,
+            PropertiesError::NotFound => Self::NotFound,
         }
     }
 }
@@ -146,10 +149,9 @@ pub async fn new(new_property: JsonBody<ExternalNewProperty>, depot: &mut Depot)
             .map_err(|_| InnerError::InternalError)?,
     )
     .into();
-    call!(actor, |reply| PropertiesMsg::NewProperty(
+    call!(actor, |reply| PropertiesMsg::NewUserProperty(
         new_property.0.into(),
         source,
-        Status::Pending,
         reply,
     ))
     .map_err(InnerError::from)?

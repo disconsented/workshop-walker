@@ -32,6 +32,7 @@
 
 	// Status options
 	const statusOptions = [
+		{ value: '-2', label: 'Hidden' },
 		{ value: '-1', label: 'Denied' },
 		{ value: '0', label: 'Pending' },
 		{ value: '1', label: 'Approved' },
@@ -272,7 +273,9 @@
 {/snippet}
 
 {#snippet statusLabel(status: number)}
-	{#if status === -1}
+	{#if status === -2}
+		<span class="text-error-500">Hidden</span>
+	{:else if status === -1}
 		<span class="text-error-500">Denied</span>
 	{:else if status === 0}
 		<span class="text-warning-500">Pending</span>

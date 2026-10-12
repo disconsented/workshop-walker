@@ -1,6 +1,6 @@
 use crate::{
     db::{
-        IUserID,
+        IAppID, IPropertyID, IUserID,
         model::{InternalSource, Property, Status},
     },
     domain::properties::{
@@ -63,6 +63,14 @@ impl<R: PropertiesPort> PropertiesService<R> {
             .await
     }
 
+    pub async fn get_hidden_system_props(
+        &self,
+        property: IPropertyID,
+        app: IAppID,
+    ) -> Result<(Vec<IPropertyID>, usize), PropertiesError> {
+        self.repo.get_hidden_system_props(property, app).await
+    }
+
     pub async fn vote(
         &self,
         vote: InternalVoteData,
@@ -104,7 +112,7 @@ mod tests {
     use super::PropertiesService;
     use crate::{
         db::{
-            IItemID, IUserID,
+            IAppID, IItemID, IPropertyID, IUserID,
             model::{Class, Property},
         },
         domain::properties::{
@@ -131,6 +139,14 @@ mod tests {
             Ok(())
         }
 
+        async fn get_hidden_system_props(
+            &self,
+            _: IPropertyID,
+            _: IAppID,
+        ) -> Result<(Vec<IPropertyID>, usize), PropertiesError> {
+            unimplemented!()
+        }
+
         async fn vote(&self, _: InternalVoteData, _: IUserID) -> Result<(), PropertiesError> {
             self.vote_calls.fetch_add(1, Ordering::SeqCst);
             Ok(())
@@ -152,7 +168,7 @@ mod tests {
             _: usize,
             _: usize,
         ) -> Result<Vec<Property>, PropertiesError> {
-            todo!()
+            unimplemented!()
         }
     }
 

@@ -8,7 +8,7 @@ use serde_content::{Value, ValueVisitor};
 use serde_hack::ValueRefDeserializer;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use surrealdb_types::{Number, Object, RecordIdKey, SurrealValue};
-use tracing::{error, warn};
+use tracing::error;
 
 use crate::{
     db::{AppID, IAppID, IItemID, ITagID, IUserID, IUsernameID, ItemID, TagID, UserID, UsernameID},
@@ -393,24 +393,6 @@ fn to_internal_props(
 ) -> Vec<InternalWorkshopItemProperties> {
     external.into_iter().map(From::from).collect()
 }
-
-/// Crowdsourced relationships for an item, used for "soft" dependencies not
-/// supplied by steam, private version
-// #[expect(unused, reason = "To be used soon")]
-// #[derive(Serialize, Deserialize, Clone, Debug, ToSchema, SurrealValue)]
-// pub struct Companion<R, S> {
-//     /// Snowflake generated ID
-//     pub id: String,
-//     pub r#in: R,
-//     pub out: R,
-//     /// Reasoning or justification for an inclusion
-//     pub note: Option<String>,
-//     pub status: Status,
-//     pub upvote_count: u64,
-//     pub vote_count: u64,
-//     pub source: Source<S>,
-// }
-
 /// A voting record
 #[dual_struct(derive(Serialize, Deserialize, Clone, Debug))]
 pub struct Vote {
@@ -471,20 +453,34 @@ impl From<ExternalSource> for InternalSource {
 }
 
 impl SurrealValue for InternalSource {
-    fn into_value(self) -> ::surrealdb::types::Value {
-        // The schema declares `'system' | record<users>`, so `System` must go
-        // out as the bare string, not as an enum-shaped object.
-        match self {
-            Self::System => ::surrealdb::types::Value::String("system".to_string()),
-            Self::User(field_0) => ::surrealdb::types::Value::RecordId(field_0.into()),
+    fn kind_of() -> surrealdb::types::Kind {
+        surrealdb::types::Kind::Either(vec![
+            surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::String(
+                "system".to_string(),
+            )),
+            <IUserID as SurrealValue>::kind_of(),
+        ])
+    }
+
+    fn is_value(value: &surrealdb::types::Value) -> bool {
+        match value {
+            surrealdb::types::Value::String(string) => string == "system",
+            other => <IUserID as SurrealValue>::is_value(other),
         }
     }
 
-    fn from_value(
-        value: ::surrealdb::types::Value,
-    ) -> std::result::Result<Self, ::surrealdb::types::Error> {
+    fn into_value(self) -> surrealdb::types::Value {
+        // The schema declares `'system' | record<users>`, so `System` must go
+        // out as the bare string, not as an enum-shaped object.
+        match self {
+            Self::System => surrealdb::types::Value::String("system".to_string()),
+            Self::User(field_0) => surrealdb::types::Value::RecordId(field_0.into()),
+        }
+    }
+
+    fn from_value(value: surrealdb::types::Value) -> Result<Self, surrealdb::types::Error> {
         match value {
-            ::surrealdb::types::Value::Object(mut map) => {
+            surrealdb::types::Value::Object(mut map) => {
                 {
                     if map.get("System").is_some() {
                         return Ok(Self::System);
@@ -499,7 +495,7 @@ impl SurrealValue for InternalSource {
                     }
                 }
             }
-            ::surrealdb::types::Value::String(string) => {
+            surrealdb::types::Value::String(string) => {
                 if string == "system" {
                     return Ok(Self::System);
                 }
@@ -511,26 +507,10 @@ impl SurrealValue for InternalSource {
             }
         }
 
-        Err(::surrealdb::types::Error::internal(format!(
+        Err(surrealdb::types::Error::internal(format!(
             "Failed to decode {}, no variants matched",
             "InternalSource"
         )))
-    }
-
-    fn is_value(value: &::surrealdb::types::Value) -> bool {
-        match value {
-            ::surrealdb::types::Value::String(string) => string == "system",
-            other => <IUserID as SurrealValue>::is_value(other),
-        }
-    }
-
-    fn kind_of() -> ::surrealdb::types::Kind {
-        ::surrealdb::types::Kind::Either(vec![
-            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
-                "system".to_string(),
-            )),
-            <IUserID as SurrealValue>::kind_of(),
-        ])
     }
 }
 
@@ -566,21 +546,44 @@ pub enum Class {
 }
 
 impl SurrealValue for Class {
-    fn into_value(self) -> ::surrealdb::types::Value {
+    fn kind_of() -> surrealdb::types::Kind {
+        surrealdb::types::Kind::Either(vec![
+            surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::String(
+                "Type".to_string(),
+            )),
+            surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::String(
+                "Theme".to_string(),
+            )),
+            surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::String(
+                "Genre".to_string(),
+            )),
+            surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::String(
+                "Feature".to_string(),
+            )),
+        ])
+    }
+
+    fn is_value(value: &surrealdb::types::Value) -> bool {
+        matches!(
+            value,
+            surrealdb::types::Value::String(s)
+                if matches!(s.as_str(), "Type" | "Theme" | "Genre" | "Feature")
+        )
+    }
+
+    fn into_value(self) -> surrealdb::types::Value {
         let variant = match self {
             Self::Type => "Type",
             Self::Theme => "Theme",
             Self::Genre => "Genre",
             Self::Feature => "Feature",
         };
-        ::surrealdb::types::Value::String(variant.to_string())
+        surrealdb::types::Value::String(variant.to_string())
     }
 
-    fn from_value(
-        value: ::surrealdb::types::Value,
-    ) -> std::result::Result<Self, ::surrealdb::types::Error> {
+    fn from_value(value: surrealdb::types::Value) -> Result<Self, surrealdb::types::Error> {
         match value {
-            ::surrealdb::types::Value::Object(map) => {
+            surrealdb::types::Value::Object(map) => {
                 {
                     if map.get("Type").is_some() {
                         return Ok(Self::Type);
@@ -602,7 +605,7 @@ impl SurrealValue for Class {
                     }
                 }
             }
-            ::surrealdb::types::Value::String(value) => match value.as_str() {
+            surrealdb::types::Value::String(value) => match value.as_str() {
                 "Type" => return Ok(Self::Type),
                 "Theme" => return Ok(Self::Theme),
                 "Genre" => return Ok(Self::Genre),
@@ -611,35 +614,10 @@ impl SurrealValue for Class {
             },
             _ => {}
         }
-        Err(::surrealdb::types::Error::internal(format!(
+        Err(surrealdb::types::Error::internal(format!(
             "Failed to decode {}, no variants matched",
             "Class"
         )))
-    }
-
-    fn is_value(value: &::surrealdb::types::Value) -> bool {
-        matches!(
-            value,
-            ::surrealdb::types::Value::String(s)
-                if matches!(s.as_str(), "Type" | "Theme" | "Genre" | "Feature")
-        )
-    }
-
-    fn kind_of() -> ::surrealdb::types::Kind {
-        ::surrealdb::types::Kind::Either(vec![
-            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
-                "Type".to_string(),
-            )),
-            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
-                "Theme".to_string(),
-            )),
-            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
-                "Genre".to_string(),
-            )),
-            ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::String(
-                "Feature".to_string(),
-            )),
-        ])
     }
 }
 
@@ -670,6 +648,7 @@ impl Display for Class {
 )]
 #[repr(i8)]
 pub enum Status {
+    Hidden = -2,
     Rejected = -1,
     #[default]
     Pending = 0,
@@ -677,54 +656,61 @@ pub enum Status {
 }
 // Horrendous manual hack thanks to _another_ surreal bug
 impl SurrealValue for Status {
-    fn into_value(self) -> ::surrealdb::types::Value {
-        ::surrealdb::types::Value::Number(Number::Int(self as i64))
+    fn kind_of() -> surrealdb::types::Kind {
+        surrealdb::types::Kind::Either(vec![
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Hidden".to_string(),
+                    surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Rejected".to_string(),
+                    surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Pending".to_string(),
+                    surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(obj))
+            },
+            {
+                let mut obj = std::collections::BTreeMap::new();
+                obj.insert(
+                    "Accepted".to_string(),
+                    surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(
+                        std::collections::BTreeMap::new(),
+                    )),
+                );
+                surrealdb::types::Kind::Literal(surrealdb::types::KindLiteral::Object(obj))
+            },
+        ])
     }
 
-    fn from_value(
-        value: ::surrealdb::types::Value,
-    ) -> std::result::Result<Self, ::surrealdb::types::Error> {
-        match value {
-            ::surrealdb::types::Value::Object(map) => {
+    fn is_value(value: &surrealdb::types::Value) -> bool {
+        if let surrealdb::types::Value::Object(map) = value {
+            {
+                if map
+                    .get("Hidden")
+                    .is_some_and(|v| v.is_object_and(|o| o.is_empty()))
                 {
-                    if map.get("Rejected").is_some() {
-                        return Ok(Self::Rejected);
-                    }
-                }
-                {
-                    if map.get("Pending").is_some() {
-                        return Ok(Self::Pending);
-                    }
-                }
-                {
-                    if map.get("Accepted").is_some() {
-                        return Ok(Self::Accepted);
-                    }
+                    return true;
                 }
             }
-            ::surrealdb::types::Value::Number(number) => match number {
-                Number::Int(-1) => {
-                    return Ok(Self::Rejected);
-                }
-                Number::Int(0) => {
-                    return Ok(Self::Pending);
-                }
-                Number::Int(1) => {
-                    return Ok(Self::Accepted);
-                }
-                _ => {}
-            },
-            _ => {}
-        }
-        Err(::surrealdb::types::Error::internal(format!(
-            "Failed to decode {}, no variants matched",
-            "Status"
-        )))
-    }
-
-    fn is_value(value: &::surrealdb::types::Value) -> bool {
-        warn!("{:?}", value);
-        if let ::surrealdb::types::Value::Object(map) = value {
             {
                 if map
                     .get("Rejected")
@@ -753,39 +739,56 @@ impl SurrealValue for Status {
         false
     }
 
-    fn kind_of() -> ::surrealdb::types::Kind {
-        ::surrealdb::types::Kind::Either(vec![
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Rejected".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
+    fn into_value(self) -> surrealdb::types::Value {
+        surrealdb::types::Value::Number(Number::Int(self as i64))
+    }
+
+    fn from_value(value: surrealdb::types::Value) -> Result<Self, surrealdb::types::Error> {
+        match value {
+            surrealdb::types::Value::Object(map) => {
+                {
+                    if map.get("Hidden").is_some() {
+                        return Ok(Self::Hidden);
+                    }
+                }
+
+                {
+                    if map.get("Rejected").is_some() {
+                        return Ok(Self::Rejected);
+                    }
+                }
+                {
+                    if map.get("Pending").is_some() {
+                        return Ok(Self::Pending);
+                    }
+                }
+                {
+                    if map.get("Accepted").is_some() {
+                        return Ok(Self::Accepted);
+                    }
+                }
+            }
+            surrealdb::types::Value::Number(number) => match number {
+                Number::Int(-2) => {
+                    return Ok(Self::Hidden);
+                }
+                Number::Int(-1) => {
+                    return Ok(Self::Rejected);
+                }
+                Number::Int(0) => {
+                    return Ok(Self::Pending);
+                }
+                Number::Int(1) => {
+                    return Ok(Self::Accepted);
+                }
+                _ => {}
             },
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Pending".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
-            {
-                let mut obj = std::collections::BTreeMap::new();
-                obj.insert(
-                    "Accepted".to_string(),
-                    ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(
-                        std::collections::BTreeMap::new(),
-                    )),
-                );
-                ::surrealdb::types::Kind::Literal(::surrealdb::types::KindLiteral::Object(obj))
-            },
-        ])
+            _ => {}
+        }
+        Err(surrealdb::types::Error::internal(format!(
+            "Failed to decode {}, no variants matched",
+            "Status"
+        )))
     }
 }
 

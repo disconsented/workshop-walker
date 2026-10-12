@@ -3,9 +3,10 @@ use tracing::trace;
 
 use crate::{
     db::{
-        IItemID, IUserID,
+        IAppID, IItemID, IPropertyID, IUserID,
         model::{
             HistoryPair, InsertableWorkshopItem, InternalFullWorkshopItem, InternalWorkshopItem,
+            Status,
         },
     },
     domain::items::{History, ItemsError, ItemsPort},
@@ -136,6 +137,18 @@ impl<R: ItemsPort> ItemsService<R> {
 
     pub async fn set_hidden(&self, id: IItemID, hidden: bool) -> Result<(), ItemsError> {
         self.repo.set_hidden(id, hidden).await
+    }
+
+    pub async fn set_property_status(
+        &self,
+        app: IAppID,
+        properties: Vec<IPropertyID>,
+        new_status: Status,
+        test_status: Option<Status>,
+    ) -> Result<(), ItemsError> {
+        self.repo
+            .set_property_status(app, properties, new_status, test_status)
+            .await
     }
 }
 
