@@ -13,7 +13,9 @@ when the rest is most of the text:
 - links to the author's other mods, "please rate and favourite"
 - jokes, and text written in character
 
-Something that appears only in an ignored section is not a type and not a feature.
+Something that appears only in an ignored section is not a type and not a feature. The one
+exception is a credit that says the mod continues the work of a different author. That credit
+decides the "continuation" type.
 
 OUTPUT
 
@@ -21,7 +23,7 @@ Give this JSON and nothing else:
 
 {"types": ["array", "of", "types"], "features": ["array", "of", "features"]}
 
-TYPES, AT MOST 2
+TYPES, AT MOST 3
 
 - overhaul: changes gameplay or a game system
 - expansion: adds a large amount of new content
@@ -36,9 +38,15 @@ TYPES, AT MOST 2
   its own strings in several languages is not a translation, and translation credits in the
   description do not make it one.
 - ai generated: AI made a part of the mod: code, art, textures, voices, music or text
+- continuation: a re-upload that keeps a different author's abandoned mod working, usually on a
+  newer game version. Signs are "(Continued)", "Continued" or "Unofficial update" in the title, or
+  "original mod by" in the description. An update by the original author is not a continuation,
+  and a mod that only takes ideas from another mod is not one.
 
 Choose the one type that fits best. Add a second type only when the mod clearly does two jobs.
 "utility" together with "overhaul" is almost always wrong, so pick the one that a user notices.
+"continuation" is the exception to this rule: put the type of the content first and "continuation"
+second.
 
 FEATURES, AT MOST 5, MOST IMPORTANT FIRST
 
@@ -116,6 +124,13 @@ extension. 9/27 update: full localization into Chinese and English"
 Output: {"types": ["overhaul"], "features": ["prisoner recruitment"]}
 Reason: mood, traits, pain and progress are inputs to the one feature. The button and the settings
 page are not features. The localization is change history.
+
+Input: "[1.5] Dubs Mint Menus (Continued) - The original mod by Dubwise is no longer updated, so
+this version keeps it working on 1.5. Adds a meal planner and food restrictions per colonist.
+Credit to Dubwise for the original."
+Output: {"types": ["QOL", "continuation"], "features": ["meal planning", "food restrictions"]}
+Reason: the credit line is the evidence for "continuation". The features come from what the mod
+does, the same as for any other mod.
 
 Input: "EdB Prepare Carefully - Customize your starting colonists, their gear and their pets, and
 save the result as a preset. Now with better error checking"
