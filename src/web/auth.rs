@@ -199,7 +199,7 @@ pub async fn verify_token_from_steam(req: &mut Request, response: &mut Response)
 /// Instructs the client to clear the cookies for the site, functioning as
 /// logout. Done here because JS can't access the tokens we use.
 #[endpoint]
-pub async fn invalidate(req: &mut Request, response: &mut Response) -> Result<()> {
+pub fn invalidate(req: &mut Request, response: &mut Response) -> Result<()> {
     response
         .headers
         .insert("Clear-Site-Data", HeaderValue::from_static("\"cookies\""));

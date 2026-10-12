@@ -144,7 +144,7 @@ impl TagsActor {
         let app = AppID::try_from(app).whatever_context("AppID from IAppID")?;
         let request = GetTagCount {
             tag_id: tag.clone().into(),
-            app_id: i64::from(app) as u32,
+            app_id: u32::try_from(i64::from(app)).whatever_context("converting to i64")?,
         }
         .into_request(&state.client, &state.steam_token)
         .whatever_context("into_request")?;

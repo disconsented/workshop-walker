@@ -1,7 +1,6 @@
 mod admin;
 mod apps;
 pub mod auth;
-mod companions;
 pub mod item;
 pub mod properties;
 mod query;
