@@ -479,27 +479,18 @@ fn is_blocked(value: &str, list: &[&str]) -> bool {
 pub struct ChatCompletion {
     // Technically a vec but its broken if we get more than one response really
     pub choices: [Choice; 1],
-    #[serde(default)]
-    pub model: String,
-    pub usage: Option<Usage>,
-    /// A llama.cpp extension, absent from the `OpenAI` response.
-    pub timings: Option<Timings>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Choice {
-    pub index: u32,
     pub message: ChatMessage,
     pub finish_reason: Option<FinishReason>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ChatMessage {
-    pub role: String,
     /// Null when the generation stopped before it produced an answer.
     pub content: Option<String>,
-    /// Only present when the server runs with reasoning enabled.
-    pub reasoning_content: Option<String>,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
@@ -509,27 +500,6 @@ pub enum FinishReason {
     Length,
     #[serde(other)]
     Other,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Usage {
-    #[serde(rename = "prompt_tokens")]
-    pub prompt: u32,
-    #[serde(rename = "completion_tokens")]
-    pub completion: u32,
-    #[serde(rename = "total_tokens")]
-    pub total: u32,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Timings {
-    pub prompt_n: u32,
-    pub prompt_ms: f64,
-    /// Null when a cached prompt makes `prompt_n` zero.
-    pub prompt_per_second: Option<f64>,
-    pub predicted_n: u32,
-    pub predicted_ms: f64,
-    pub predicted_per_second: Option<f64>,
 }
 
 #[cfg(test)]

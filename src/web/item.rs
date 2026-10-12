@@ -27,14 +27,12 @@ pub type Error = StatusError;
 
 #[derive(Debug)]
 enum InnerError {
-    NotFound,
     InternalError,
 }
 
 impl InnerError {
     fn status_code(&self) -> StatusCode {
         match self {
-            InnerError::NotFound => StatusCode::NOT_FOUND,
             InnerError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
