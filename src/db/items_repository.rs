@@ -552,6 +552,7 @@ pub(crate) mod test {
 
             DEFINE TABLE workshop_items TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
             DEFINE FIELD id ON workshop_items TYPE int PERMISSIONS FULL;
+            DEFINE FIELD hidden ON workshop_items TYPE bool DEFAULT false PERMISSIONS FULL;
             DEFINE FIELD app ON workshop_items TYPE record<apps> PERMISSIONS FULL;
             DEFINE FIELD author ON workshop_items TYPE record<usernames> PERMISSIONS FULL;
             DEFINE FIELD description ON workshop_items TYPE string PERMISSIONS FULL;
