@@ -110,18 +110,20 @@ impl Actor for ItemUpdateActor {
                     .steam_user_actor
                     .send_message(SteamUserMsg::Fetch(item.author.id.clone()));
 
-                if let Some(ml_queue) = &state.ml_queue
+                if let Err(error) = state
+                    .items_service
+                    .insert_data(item.clone(), children)
+                    .await
+                {
+                    error!(?error, title, ?item_id, "upserting item");
+                } else if let Some(ml_queue) = &state.ml_queue
                     && let Ok(true) = state.items_service.should_queue_ml(&item, false).await
                 {
                     let _ = ml_queue.send_message(MLQueueMsg::Queue(
-                        item.id.clone(),
-                        item.title.clone(),
-                        item.description.clone(),
+                        item.id,
+                        item.title,
+                        item.description,
                     ));
-                }
-
-                if let Err(error) = state.items_service.insert_data(item, children).await {
-                    error!(?error, title, ?item_id, "upserting item");
                 }
             }
             ItemUpdateMsg::MaybeQueue(id) => {
