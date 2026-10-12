@@ -1,6 +1,6 @@
 use ractor::{Actor, ActorProcessingErr, ActorRef, async_trait};
 use surrealdb::{Surreal, engine::local::Db};
-use tracing::{error, warn};
+use tracing::{error, trace};
 
 use crate::{
     application::items_service::ItemsService,
@@ -154,7 +154,7 @@ impl Actor for ItemUpdateActor {
             ItemUpdateMsg::Hide(file) => {
                 match file.publishedfileid.parse::<i64>().map(IItemID::from) {
                     Ok(id) => {
-                        warn!(?id, reason = ?file.result,  "Hiding item");
+                        trace!(?id, reason = ?file.result,  "Hiding item");
                         if let Err(error) = state.items_service.set_hidden(id.clone(), true).await {
                             error!(?error, ?id, "setting hidden item");
                         }
