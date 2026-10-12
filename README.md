@@ -125,6 +125,7 @@ npm run dev
 ```
 
 Open http://localhost:5173. The dev server sends `/api` to the backend.
+
 --- 
 
 This project is not associated with Valve, Steam, etc. I just got annoyed one day I couldn't see dependants and wanted an
