@@ -83,7 +83,7 @@ a new `{@html}` on a value that does not pass through `BBActor`.
 
 ## Commit messages
 
-Conventional Commits, as `contributing.md` describes. release-plz reads them to
+Conventional Commits, as `README.md` describes. release-plz reads them to
 build the changelog, so the type decides the version bump.
 
 ## Review notes
