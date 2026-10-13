@@ -776,15 +776,21 @@
 			<!--Presets-->
 			<div class="flex flex-col gap-2">
 				Preset
-				<div class="flex flex-row flex-wrap gap-2 lg:flex-nowrap">
-					<ToggleGroup value={presetValue} onValueChange={onPresetValueChange}>
-						<ToggleGroup.Item value="popular">Most Popular</ToggleGroup.Item>
-						<ToggleGroup.Item value="subscribed">Most Subscribed</ToggleGroup.Item>
-						<ToggleGroup.Item value="trending">Trending</ToggleGroup.Item>
-						<ToggleGroup.Item value="updated">Last Updated</ToggleGroup.Item>
-						<ToggleGroup.Item value="new">New</ToggleGroup.Item>
-						<ToggleGroup.Item value="week">Best This Week</ToggleGroup.Item>
-						<ToggleGroup.Item value="dependedOn">Most Depended On This Year</ToggleGroup.Item>
+				<div>
+					<ToggleGroup
+						value={presetValue}
+						onValueChange={onPresetValueChange}
+						class="flex-col 2xl:flex-row"
+					>
+						<ToggleGroup.Item class="shrink-0" value="popular">Most Popular</ToggleGroup.Item>
+						<ToggleGroup.Item class="shrink-0" value="subscribed">Most Subscribed</ToggleGroup.Item>
+						<ToggleGroup.Item class="shrink-0" value="trending">Trending</ToggleGroup.Item>
+						<ToggleGroup.Item class="shrink-0" value="updated">Last Updated</ToggleGroup.Item>
+						<ToggleGroup.Item class="shrink-0" value="new">New</ToggleGroup.Item>
+						<ToggleGroup.Item class="shrink-0" value="week">Best This Week</ToggleGroup.Item>
+						<ToggleGroup.Item class="shrink-0" value="dependedOn"
+							>Most Depended On This Year</ToggleGroup.Item
+						>
 					</ToggleGroup>
 				</div>
 			</div>

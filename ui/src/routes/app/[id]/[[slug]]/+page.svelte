@@ -167,7 +167,6 @@
 	<div class="card bg-surface-100-900 table-wrap border-surface-300-700 border-1">
 		<div class="flex flex-row items-center justify-between p-2">
 			<div><span class="font-bold text-white">{data.length}</span> results</div>
-
 			<Switch
 				name="showImages"
 				checked={showTableImages}
@@ -219,7 +218,7 @@
 					</div>
 					<div role="cell" class="flex min-w-0 flex-col">
 						<span class="font-bold">{item.title}</span>
-						<div class="flex flex-row gap-1 text-ellipsis">
+						<div class="flex flex-row gap-1 truncate">
 							{#each item.tags as tag (tag.id)}
 								<span class="badge preset-outlined">{tag.display_name}</span>
 							{:else}
