@@ -511,7 +511,7 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub mod test {
     use surrealdb::{Surreal, engine::local::Mem};
 
     use super::{Db, InternalFullWorkshopItem, ItemsSilo, ToSql, build_full_item_statement};
@@ -528,7 +528,11 @@ pub(crate) mod test {
     ///   - 100 -> item_dependencies -> 200   (100 depends on 200)
     ///   - 300 -> item_dependencies -> 100   (300 depends on 100)
     /// So from item 100's perspective: 200 is a dependency, 300 is a dependant.
-    pub(crate) async fn seed_db() -> Surreal<Db> {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Will deal with eventually, needs tidying up"
+    )]
+    pub async fn seed_db() -> Surreal<Db> {
         let db = Surreal::new::<Mem>(()).await.unwrap();
         db.use_ns("test").use_db("test").await.unwrap();
 
