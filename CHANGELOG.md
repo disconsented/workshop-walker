@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0](https://github.com/disconsented/workshop-walker/compare/v0.7.0...v0.8.0) - 2026-10-13
+
+### Added
+
+- *(properties)* hide system properties that only one item has
+- *(classification)* tag continued mods with a continuation type
+- *(items)* make the whole item card a link
+- *(items)* hide items that Steam reports as unavailable
+- *(search)* add a created filter, presets and two sort orders
+
+### Fixed
+
+- *(items)* add right padding to the item body
+- *(items)* insert the item before the classifier queues it
+- *(search)* rename the depended-on preset
+- *(migrations)* split the property clear into three migrations
+
+### Other
+
+- *(tags)* expect the mutable key type lint
+- *(db)* split the model module into one file per type
+- *(search)* spell out the date filter parameter names
+- fix clippy pedantic findings
+- *(items)* log hidden items at trace level
+- *(items)* add the hidden field to the test schemas
+- *(ui)* sort the author link classes
+- *(search)* pass the new query_inner arguments
+- remove dead code and fix clippy findings
+- *(web)* share one compression hoop across routes
+- format the search form and order enum
+- *(properties)* use the field shorthand in a trace call
+- *(readme)* Fix a formatting error
+- *(readme)* add the stack badges
+- *(readme)* add the setup steps
+- *(readme)* move the contribution rules into the readme
+- *(readme)* rewrite the readme and add screenshots
+- set the workspace license to MPL-2.0
+
 ## [0.7.0](https://github.com/disconsented/workshop-walker/compare/v0.6.0...v0.7.0) - 2026-10-07
 
 ### Added
