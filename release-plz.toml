@@ -12,8 +12,7 @@ release = false                   # every member inherits one `workspace.package
 release_always = false # tag and make the release when the release PR merges.
 # Without this the release job tags every push whose version has no tag yet,
 # which would tag master before the release PR that prepares it can merge.
-release_commits = "^feat(\\(.+\\))?!?:" # prepare a release only when a feature
-semver_check = false                    # disable API breaking changes checks
+semver_check = true
 # lands. The scope group matters: every feature commit in this repo is scoped,
 # such as `feat(search):`, so a plain `^feat:` matches none of them.
 
