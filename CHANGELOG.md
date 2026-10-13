@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2](https://github.com/disconsented/workshop-walker/compare/v0.8.1...v0.8.2) - 2026-10-13
+
+### Fixed
+
+- *(ui)* fit the preset toggles and tag row on mobile
+
+### Other
+
+- *(db)* remove the item_hidden index on workshop_items
+
 ## [0.8.1](https://github.com/disconsented/workshop-walker/compare/v0.8.0...v0.8.1) - 2026-10-13
 
 ### Fixed
