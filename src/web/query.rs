@@ -551,10 +551,10 @@ async fn query_inner(
 mod test {
     use surrealdb::{Surreal, engine::local::Mem};
 
-    use super::{Db, OrderBy, Property, ToSql, build_query, query_inner};
+    use super::{Db, OrderBy, ToSql, build_query, query_inner};
     use crate::db::{
         IUserID,
-        model::{Class, ExternalSource, Status},
+        model::{Class, ExternalSource, Property, Status},
     };
 
     /// In-memory database with one app, one item, and three property edges on
