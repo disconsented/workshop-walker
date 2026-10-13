@@ -46,6 +46,7 @@ static AUTH_ACTOR: OnceLock<ActorRef<AuthMessage>> = OnceLock::new();
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub type Error = StatusError;
 const STEAM_DISCOVERY: &str = "https://steamcommunity.com/openid/";
+const STEAM_LOGIN: &str = "https://steamcommunity.com/openid/login";
 
 const TOKEN_LIFETIME: Duration = Duration::days(30);
 
@@ -448,31 +449,107 @@ impl AuthActor {
         map: MultiMap<String, String>,
         state: &mut AuthState,
     ) -> Result<String> {
-        {
-            if (map.get("openid.ns").map(String::as_str))
-                != (Some(
-                    &state.open_id_info.r#type[0..state
-                        .open_id_info
-                        .r#type
-                        .len()
-                        .saturating_sub(b"/server".len())],
-                ))
-            {
-                Err(InnerError::SelfValidationFailed)?;
-            }
+        Self::self_validate_assertion(&map, state)?;
 
-            if (map.get("openid.op_endpoint")) != (Some(&state.open_id_info.uri)) {
-                Err(InnerError::SelfValidationFailed)?;
-            }
-            validate_nonce(
-                map.get("openid.response_nonce")
-                    .ok_or(InnerError::SelfValidationFailed)?,
-                Utc::now().naive_utc(),
-            )?;
+        let mut url = Url::from_str(STEAM_LOGIN).expect("invalid URL");
+
+        Self::build_steam_login_url(&map, &mut url)?;
+
+        let resp = reqwest::get(url)
+            .await
+            .map_err(|_| InnerError::PeerValidationFailed)?;
+        let text = resp
+            .text()
+            .await
+            .map_err(|_| InnerError::PeerValidationFailed)?;
+
+        let user_id = Self::validate_steam_response(&map, &text)?;
+
+        let keypair = &KeyPair::from(&state.biscuit.private_key);
+        let Ok(user_id) = user_id.parse::<i64>() else {
+            return Err(InnerError::PeerValidationFailed)?;
+        };
+
+        let based = Self::build_base64_token(state, keypair, user_id)?;
+
+        Self::upsert_login(state, user_id).await?;
+
+        Ok(based)
+    }
+
+    fn build_base64_token(
+        state: &mut AuthState,
+        keypair: &KeyPair,
+        user_id: i64,
+    ) -> Result<String, Error> {
+        let biscuit: Biscuit = biscuit!(
+            r#"
+          user({user_id});
+          check if time($time), $time <= {expires};
+    "#,
+            expires = SystemTime::now() + TOKEN_LIFETIME
+        )
+        .build(keypair)
+        .map_err(|_| InnerError::PeerValidationFailed)?;
+
+        let _ = state
+            .steam_user_actor_ref
+            .send_message(SteamUserMsg::Fetch(user_id.into()));
+
+        let based = biscuit
+            .to_base64()
+            .map_err(|_| InnerError::PeerValidationFailed)?;
+        Ok(based)
+    }
+
+    async fn upsert_login(state: &mut AuthState, user_id: i64) -> Result<(), Error> {
+        let user = InternalUser {
+            id: UserID::from(user_id).into(),
+            username: None,
+            admin: false,
+            banned: false,
+            last_logged_in: Utc::now(),
+        };
+        let stmt = InsertStatement {
+            into: Some(Expr::Table("users".into())),
+            data: Data::SingleExpression(Expr::from_public_value(user.clone().into_value())),
+            update: Some(Data::UpdateExpression(vec![Assignment {
+                place: Idiom(vec![Part::Field("last_logged_in".into())]),
+                operator: AssignOperator::Assign,
+                value: Expr::from_public_value(Value::Datetime(Utc::now().into())),
+            }])),
+            ..Default::default()
+        };
+        for (i, error) in state
+            .database
+            .query(stmt)
+            .await
+            .map_err(|_| InnerError::PeerValidationFailed)?
+            .take_errors()
+        {
+            error!(i, ?error, "verification failed");
+        }
+        Ok(())
+    }
+
+    fn validate_steam_response<'a>(
+        map: &'a MultiMap<String, String>,
+        text: &str,
+    ) -> Result<&'a str, Error> {
+        if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
+            Err(InnerError::PeerValidationFailed)?;
         }
 
-        let mut url = Url::from_str("https://steamcommunity.com/openid/login").unwrap();
+        let user_id = map
+            .get("openid.identity")
+            .ok_or(InnerError::PeerValidationFailed)?
+            .rsplit('/')
+            .next()
+            .ok_or(InnerError::PeerValidationFailed)?;
+        Ok(user_id)
+    }
 
+    fn build_steam_login_url(map: &MultiMap<String, String>, url: &mut Url) -> Result<(), Error> {
         for item in map
             .get("openid.signed")
             .ok_or(InnerError::SelfValidationFailed)?
@@ -495,87 +572,46 @@ impl AuthActor {
             )
             .append_pair("openid.mode", "check_authentication")
             .finish();
+        Ok(())
+    }
 
-        let resp = reqwest::get(url)
-            .await
-            .map_err(|_| InnerError::PeerValidationFailed)?;
-        let text = resp
-            .text()
-            .await
-            .map_err(|_| InnerError::PeerValidationFailed)?;
-
-        if text != "ns:http://specs.openid.net/auth/2.0\nis_valid:true\n" {
-            Err(InnerError::PeerValidationFailed)?;
-        }
-
-        let user_id = map
-            .get("openid.identity")
-            .ok_or(InnerError::PeerValidationFailed)?
-            .rsplit('/')
-            .next()
-            .ok_or(InnerError::PeerValidationFailed)?;
-
-        let keypair = &KeyPair::from(&state.biscuit.private_key);
-        let Ok(user_id) = user_id.parse::<i64>() else {
-            return Err(InnerError::PeerValidationFailed)?;
-        };
-
-        let biscuit: Biscuit = biscuit!(
-            r#"
-          user({user_id});
-          check if time($time), $time <= {expires};
-    "#,
-            expires = SystemTime::now() + TOKEN_LIFETIME
-        )
-        .build(keypair)
-        .map_err(|_| InnerError::PeerValidationFailed)?;
-
-        let _ = state
-            .steam_user_actor_ref
-            .send_message(SteamUserMsg::Fetch(user_id.into()));
-
-        let based = biscuit
-            .to_base64()
-            .map_err(|_| InnerError::PeerValidationFailed)?;
-
+    fn self_validate_assertion(
+        map: &MultiMap<String, String>,
+        state: &mut AuthState,
+    ) -> Result<(), Error> {
+        if (map.get("openid.ns").map(String::as_str))
+            != (Some(
+                &state.open_id_info.r#type[0..state
+                    .open_id_info
+                    .r#type
+                    .len()
+                    .saturating_sub(b"/server".len())],
+            ))
         {
-            let user = InternalUser {
-                id: UserID::from(user_id).into(),
-                username: None,
-                admin: false,
-                banned: false,
-                last_logged_in: Utc::now(),
-            };
-            let stmt = InsertStatement {
-                into: Some(Expr::Table("users".into())),
-                data: Data::SingleExpression(Expr::from_public_value(user.clone().into_value())),
-                update: Some(Data::UpdateExpression(vec![Assignment {
-                    place: Idiom(vec![Part::Field("last_logged_in".into())]),
-                    operator: AssignOperator::Assign,
-                    value: Expr::from_public_value(Value::Datetime(Utc::now().into())),
-                }])),
-                ..Default::default()
-            };
-            for (i, error) in state
-                .database
-                .query(stmt)
-                .await
-                .map_err(|_| InnerError::PeerValidationFailed)?
-                .take_errors()
-            {
-                error!(i, ?error, "verification failed");
-            }
+            Err(InnerError::SelfValidationFailed)?;
         }
-        Ok(based)
+
+        if (map.get("openid.op_endpoint")) != (Some(&state.open_id_info.uri)) {
+            Err(InnerError::SelfValidationFailed)?;
+        }
+        validate_nonce(
+            map.get("openid.response_nonce")
+                .ok_or(InnerError::SelfValidationFailed)?,
+            Utc::now().naive_utc(),
+        )?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use core::str::FromStr;
+
     use chrono::{NaiveDate, NaiveDateTime};
+    use reqwest::Url;
     use salvo::http::StatusCode;
 
-    use super::{validate_location, validate_nonce};
+    use super::{STEAM_LOGIN, validate_location, validate_nonce};
 
     fn now() -> NaiveDateTime {
         NaiveDate::from_ymd_opt(2026, 9, 3)
@@ -590,12 +626,12 @@ mod tests {
     }
 
     #[test]
-    fn accepts_a_current_nonce() {
+    fn test_accepts_a_current_nonce() {
         assert!(validate_nonce(&nonce("2026-09-03T12:00:00"), now()).is_ok());
     }
 
     #[test]
-    fn accepts_a_nonce_inside_the_window() {
+    fn test_accepts_a_nonce_inside_the_window() {
         assert!(validate_nonce(&nonce("2026-09-03T11:55:00"), now()).is_ok());
         assert!(validate_nonce(&nonce("2026-09-03T12:05:00"), now()).is_ok());
     }
@@ -603,7 +639,7 @@ mod tests {
     /// The check used to compare `timestamp - now`, so it only caught nonces
     /// from the future and a captured response replayed for ever.
     #[test]
-    fn rejects_an_old_nonce() {
+    fn test_rejects_an_old_nonce() {
         let error = validate_nonce(&nonce("2026-09-03T11:54:59"), now()).unwrap_err();
         assert_eq!(error.code, StatusCode::FORBIDDEN);
 
@@ -612,13 +648,13 @@ mod tests {
     }
 
     #[test]
-    fn rejects_a_nonce_from_the_future() {
+    fn test_rejects_a_nonce_from_the_future() {
         assert!(validate_nonce(&nonce("2026-09-03T12:05:01"), now()).is_err());
         assert!(validate_nonce(&nonce("2027-09-03T12:00:00"), now()).is_err());
     }
 
     #[test]
-    fn rejects_a_malformed_nonce() {
+    fn test_rejects_a_malformed_nonce() {
         // No `Z` separator.
         assert!(validate_nonce("2026-09-03T12:00:00", now()).is_err());
         // Not a timestamp.
@@ -627,14 +663,14 @@ mod tests {
     }
 
     #[test]
-    fn accepts_a_relative_location() {
+    fn test_accepts_a_relative_location() {
         for location in ["/", "/app/294100", "/item/1?tag=a&tag=b", "/a#b"] {
             assert!(validate_location(location).is_ok(), "{location}");
         }
     }
 
     #[test]
-    fn rejects_a_location_that_leaves_the_site() {
+    fn test_rejects_a_location_that_leaves_the_site() {
         for location in [
             "https://evil.example",
             "//evil.example",
@@ -649,8 +685,13 @@ mod tests {
     }
 
     #[test]
-    fn rejects_a_location_with_control_characters() {
+    fn test_rejects_a_location_with_control_characters() {
         assert!(validate_location("/a\r\nSet-Cookie: token=x").is_err());
         assert!(validate_location("/a\0b").is_err());
+    }
+
+    #[test]
+    fn test_build_login_url() {
+        Url::from_str(STEAM_LOGIN).unwrap();
     }
 }

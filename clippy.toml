@@ -2,3 +2,8 @@ allow-dbg-in-tests = true
 allow-unwrap-in-tests = true
 allow-unwrap-types = ["std::sync::LockResult"]
 disallowed-methods = ["surrealdb_types::value::record_id::RecordId::new"]
+ignore-interior-mutability = [
+  "workshop_walker::db::IAppID",
+  "workshop_walker::db::IUsernameID",
+  "workshop_walker::db::model::InternalTag",
+]

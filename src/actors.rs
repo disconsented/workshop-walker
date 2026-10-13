@@ -31,6 +31,10 @@ use crate::{
 };
 
 #[instrument(skip_all)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Simple function, mostly boiler plate, little value in refactoring this."
+)]
 pub async fn spawn(config: &Config, db: &Surreal<Db>) -> Result<(), Whatever> {
     let reqwest_client = Client::new();
 
