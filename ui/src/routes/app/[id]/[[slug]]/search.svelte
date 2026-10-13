@@ -95,17 +95,23 @@
 
 	$effect(() => {
 		if (lastUpdatedGte.v) {
-			params.set('last_updated_gte', Math.trunc(lastUpdatedGte.v.getTime() / 1000).toString());
+			params.set(
+				'last_updated_greater_than_equals',
+				Math.trunc(lastUpdatedGte.v.getTime() / 1000).toString()
+			);
 		} else {
-			params.delete('last_updated_gte');
+			params.delete('last_updated_greater_than_equals');
 		}
 	});
 
 	$effect(() => {
 		if (lastUpdatedLte.v) {
-			params.set('last_updated_lte', Math.trunc(lastUpdatedLte.v.getTime() / 1000).toString());
+			params.set(
+				'last_updated_less_than_equals',
+				Math.trunc(lastUpdatedLte.v.getTime() / 1000).toString()
+			);
 		} else {
-			params.delete('last_updated_lte');
+			params.delete('last_updated_less_than_equals');
 		}
 	});
 
@@ -119,17 +125,20 @@
 
 	$effect(() => {
 		if (createdGte.v) {
-			params.set('created_gte', Math.trunc(createdGte.v.getTime() / 1000).toString());
+			params.set(
+				'created_greater_than_equals',
+				Math.trunc(createdGte.v.getTime() / 1000).toString()
+			);
 		} else {
-			params.delete('created_gte');
+			params.delete('created_greater_than_equals');
 		}
 	});
 
 	$effect(() => {
 		if (createdLte.v) {
-			params.set('created_lte', Math.trunc(createdLte.v.getTime() / 1000).toString());
+			params.set('created_less_than_equals', Math.trunc(createdLte.v.getTime() / 1000).toString());
 		} else {
-			params.delete('created_lte');
+			params.delete('created_less_than_equals');
 		}
 	});
 
