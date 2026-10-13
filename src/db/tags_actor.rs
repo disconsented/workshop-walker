@@ -106,6 +106,10 @@ impl Actor for TagsActor {
     ) -> Result<(), ActorProcessingErr> {
         match message {
             TagsMsg::AddTagToApp(appid, tags) => {
+                #[expect(
+                    clippy::mutable_key_type,
+                    reason = "Technically but not practically accurate"
+                )]
                 let entry = state.tags_cache.entry(appid.clone()).or_default();
                 let new_tags = tags.into_iter().fold(vec![], |mut acc, tag| {
                     if entry.insert(tag.clone()) {
