@@ -473,6 +473,17 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
                     })),
                     ..Default::default()
                 })),
+                Part::Method(
+                    "filter".into(),
+                    vec![Expr::Closure(Box::new(Closure {
+                        args: vec![(Param::new("out".to_string()), Kind::Any)],
+                        returns: None,
+                        body: Expr::Idiom(Idiom(vec![
+                            Part::Start(Expr::Param(Param::new("out".to_string()))),
+                            Part::Method("exists".into(), vec![]),
+                        ])),
+                    }))],
+                ),
                 Part::All,
                 Part::Field("out".into()),
                 Part::All,
@@ -498,6 +509,17 @@ fn build_full_item_statement(id: &IItemID, user: Option<IUserID>) -> SelectState
                     })),
                     ..Default::default()
                 })),
+                Part::Method(
+                    "filter".into(),
+                    vec![Expr::Closure(Box::new(Closure {
+                        args: vec![(Param::new("in".to_string()), Kind::Any)],
+                        returns: None,
+                        body: Expr::Idiom(Idiom(vec![
+                            Part::Start(Expr::Param(Param::new("in".to_string()))),
+                            Part::Method("exists".into(), vec![]),
+                        ])),
+                    }))],
+                ),
                 Part::All,
                 Part::Field("in".into()),
                 Part::All,
