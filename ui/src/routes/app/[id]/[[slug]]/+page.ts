@@ -14,7 +14,7 @@ import {
 	createdPeriod,
 	lastUpdatedPeriod
 } from './store.svelte';
-import type { PageLoad } from '../../../../.svelte-kit/types/src/routes/app/[id]/$types';
+import type { PageLoad } from './$types';
 import { parseSafeJSON } from '$lib/parser';
 
 export const prerender = false;
@@ -48,19 +48,19 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
 	}
 
 	if (lastUpdatedGte.v) {
-		paramList.push(['last_updated_gte', BigInt(lastUpdatedGte.v) / BigInt(1000)]);
+		paramList.push(['last_updated_greater_than_equals', BigInt(lastUpdatedGte.v) / BigInt(1000)]);
 	}
 
 	if (lastUpdatedLte.v) {
-		paramList.push(['last_updated_lte', BigInt(lastUpdatedLte.v) / BigInt(1000)]);
+		paramList.push(['last_updated_less_than_equals', BigInt(lastUpdatedLte.v) / BigInt(1000)]);
 	}
 
 	if (createdGte.v) {
-		paramList.push(['created_gte', BigInt(createdGte.v) / BigInt(1000)]);
+		paramList.push(['created_greater_than_equals', BigInt(createdGte.v) / BigInt(1000)]);
 	}
 
 	if (createdLte.v) {
-		paramList.push(['created_lte', BigInt(createdLte.v) / BigInt(1000)]);
+		paramList.push(['created_less_than_equals', BigInt(createdLte.v) / BigInt(1000)]);
 	}
 
 	if (searchProps.v) {
@@ -155,14 +155,14 @@ function loadParams(params: URLSearchParams) {
 		lastUpdatedPeriod.v = paramLastUpdatedPeriod;
 	} else {
 		lastUpdatedPeriod.v = undefined;
-		const paramUpdatedBefore = params.get('last_updated_gte');
+		const paramUpdatedBefore = params.get('last_updated_greater_than_equals');
 		if (paramUpdatedBefore) {
 			lastUpdatedGte.v = new Date(Number(paramUpdatedBefore) * 1000);
 		} else {
 			lastUpdatedGte.v = undefined;
 		}
 
-		const paramUpdatedAfter = params.get('last_updated_lte');
+		const paramUpdatedAfter = params.get('last_updated_less_than_equals');
 		if (paramUpdatedAfter) {
 			lastUpdatedLte.v = new Date(Number(paramUpdatedAfter) * 1000);
 		} else {
@@ -175,14 +175,14 @@ function loadParams(params: URLSearchParams) {
 		createdPeriod.v = paramCreatedPeriod;
 	} else {
 		createdPeriod.v = undefined;
-		const paramCreatedBefore = params.get('created_gte');
+		const paramCreatedBefore = params.get('created_greater_than_equals');
 		if (paramCreatedBefore) {
 			createdGte.v = new Date(Number(paramCreatedBefore) * 1000);
 		} else {
 			createdGte.v = undefined;
 		}
 
-		const paramCreatedAfter = params.get('created_lte');
+		const paramCreatedAfter = params.get('created_less_than_equals');
 		if (paramCreatedAfter) {
 			createdLte.v = new Date(Number(paramCreatedAfter) * 1000);
 		} else {

@@ -65,10 +65,10 @@ struct Parameters {
     language: Option<DetectedLanguage>,
     tags: Option<Vec<String>>,
     title: Option<String>,
-    last_updated_gte: Option<i64>,
-    last_updated_lte: Option<i64>,
-    created_gte: Option<i64>,
-    created_lte: Option<i64>,
+    last_updated_greater_than_equals: Option<i64>,
+    last_updated_less_than_equals: Option<i64>,
+    created_greater_than_equals: Option<i64>,
+    created_less_than_equals: Option<i64>,
     order_by: Option<OrderBy>,
     include_props: Option<Vec<PropertyParam>>,
     exclude_props: Option<Vec<PropertyParam>>,
@@ -89,12 +89,12 @@ pub async fn list(
         limit,
         language,
         mut tags,
-        mut title,
-        last_updated_gte,
-        last_updated_lte,
-        created_gte,
-        created_lte,
-        mut order_by,
+        title,
+        last_updated_greater_than_equals,
+        last_updated_less_than_equals,
+        created_greater_than_equals,
+        created_less_than_equals,
+        order_by,
         include_props,
         exclude_props,
     } = parameters;
@@ -123,12 +123,12 @@ pub async fn list(
         limit,
         language,
         tags.take().unwrap_or_default(),
-        title.take(),
-        last_updated_gte,
-        last_updated_lte,
-        created_gte,
-        created_lte,
-        order_by.take(),
+        title,
+        last_updated_greater_than_equals,
+        last_updated_less_than_equals,
+        created_greater_than_equals,
+        created_less_than_equals,
+        order_by,
         include_props,
         exclude_props,
         db,
@@ -150,10 +150,10 @@ fn build_query(
     language: Option<DetectedLanguage>,
     tags: Vec<String>,
     title: Option<String>,
-    last_updated_gte: Option<i64>,
-    last_updated_lte: Option<i64>,
-    created_gte: Option<i64>,
-    created_lte: Option<i64>,
+    last_updated_greater_than_equals: Option<i64>,
+    last_updated_less_than_equals: Option<i64>,
+    created_greater_than_equals: Option<i64>,
+    created_less_than_equals: Option<i64>,
     order_by: Option<OrderBy>,
     include_props: Vec<Property>,
     exclude_props: Vec<Property>,
@@ -429,35 +429,39 @@ fn build_query(
             });
         }
 
-        if let Some(last_updated_gte) = last_updated_gte {
+        if let Some(last_updated_greater_than_equals) = last_updated_greater_than_equals {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
                 op: BinaryOperator::MoreThanEqual,
-                right: Box::new(Expr::Literal(Literal::Integer(last_updated_gte))),
+                right: Box::new(Expr::Literal(Literal::Integer(
+                    last_updated_greater_than_equals,
+                ))),
             });
         }
 
-        if let Some(last_updated_lte) = last_updated_lte {
+        if let Some(last_updated_less_than_equals) = last_updated_less_than_equals {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("last_updated".to_string()))),
                 op: BinaryOperator::LessThanEqual,
-                right: Box::new(Expr::Literal(Literal::Integer(last_updated_lte))),
+                right: Box::new(Expr::Literal(Literal::Integer(
+                    last_updated_less_than_equals,
+                ))),
             });
         }
 
-        if let Some(created_gte) = created_gte {
+        if let Some(created_greater_than_equals) = created_greater_than_equals {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("created".to_string()))),
                 op: BinaryOperator::MoreThanEqual,
-                right: Box::new(Expr::Literal(Literal::Integer(created_gte))),
+                right: Box::new(Expr::Literal(Literal::Integer(created_greater_than_equals))),
             });
         }
 
-        if let Some(created_lte) = created_lte {
+        if let Some(created_less_than_equals) = created_less_than_equals {
             conditions.push(Expr::Binary {
                 left: Box::new(Expr::Idiom(Idiom::field("created".to_string()))),
                 op: BinaryOperator::LessThanEqual,
-                right: Box::new(Expr::Literal(Literal::Integer(created_lte))),
+                right: Box::new(Expr::Literal(Literal::Integer(created_less_than_equals))),
             });
         }
 
@@ -493,10 +497,10 @@ async fn query_inner(
     language: Option<DetectedLanguage>,
     tags: Vec<String>,
     title: Option<String>,
-    last_updated_gte: Option<i64>,
-    last_updated_lte: Option<i64>,
-    created_gte: Option<i64>,
-    created_lte: Option<i64>,
+    last_updated_greater_than_equals: Option<i64>,
+    last_updated_less_than_equals: Option<i64>,
+    created_greater_than_equals: Option<i64>,
+    created_less_than_equals: Option<i64>,
     order_by: Option<OrderBy>,
     include_props: Vec<Property>,
     exclude_props: Vec<Property>,
@@ -510,10 +514,10 @@ async fn query_inner(
         language,
         tags,
         title,
-        last_updated_gte,
-        last_updated_lte,
-        created_gte,
-        created_lte,
+        last_updated_greater_than_equals,
+        last_updated_less_than_equals,
+        created_greater_than_equals,
+        created_less_than_equals,
         order_by,
         include_props,
         exclude_props,
@@ -766,8 +770,8 @@ mod test {
     /// bounds, in ascending order.
     async fn list_last_updated(
         db: &Surreal<Db>,
-        last_updated_gte: Option<i64>,
-        last_updated_lte: Option<i64>,
+        last_updated_greater_than_equals: Option<i64>,
+        last_updated_less_than_equals: Option<i64>,
     ) -> Vec<u64> {
         let items = query_inner(
             1,
@@ -776,8 +780,8 @@ mod test {
             None,
             vec![],
             None,
-            last_updated_gte,
-            last_updated_lte,
+            last_updated_greater_than_equals,
+            last_updated_less_than_equals,
             None,
             None,
             None,
@@ -793,9 +797,10 @@ mod test {
         stamps
     }
 
-    /// `last_updated_gte` and `last_updated_lte` must bound `last_updated` on
-    /// the side their names say: `gte` keeps the newer items, `lte` keeps the
-    /// older ones.
+    /// `last_updated_greater_than_equals` and `last_updated_less_than_equals`
+    /// must bound `last_updated` on the side their names say:
+    /// `greater_than_equals` keeps the newer items, `less_than_equals`
+    /// keeps the older ones.
     #[tokio::test]
     async fn updated_bounds_filter_on_the_correct_side() {
         let db = seed_db().await;
@@ -810,13 +815,13 @@ mod test {
         assert_eq!(
             list_last_updated(&db, None, Some(150)).await,
             vec![0, 100],
-            "last_updated_lte=150 keeps only the items updated at or before 150"
+            "last_updated_less_than_equals=150 keeps only the items updated at or before 150"
         );
 
         assert_eq!(
             list_last_updated(&db, Some(150), None).await,
             vec![200],
-            "last_updated_gte=150 keeps only the items updated at or after 150"
+            "last_updated_greater_than_equals=150 keeps only the items updated at or after 150"
         );
 
         assert_eq!(
