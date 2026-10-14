@@ -3,7 +3,7 @@ extern crate core;
 
 use std::{env, sync::Arc};
 
-use migrations_tool::{Migrator, Outcome};
+use surreal_cairn::{Migrator, Outcome};
 use snafu::{Whatever, prelude::*};
 use surrealdb::{
     Surreal,

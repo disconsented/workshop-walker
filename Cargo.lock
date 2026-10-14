@@ -3954,16 +3954,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "macros"
-version = "0.8.2"
-dependencies = [
- "paste",
- "proc-macros",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4028,25 +4018,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "migrations-tool"
-version = "0.8.2"
-dependencies = [
- "async-stream",
- "blake2 0.11.0",
- "chrono",
- "clap",
- "futures",
- "serde",
- "serde_json",
- "snafu",
- "surrealdb",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -4519,12 +4490,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "paste"
-version = "1.0.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
-
-[[package]]
 name = "path-clean"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4878,18 +4843,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proc-macros"
-version = "0.8.2"
-dependencies = [
- "quote",
- "salvo",
- "serde",
- "serde_json",
- "surrealdb-types",
- "syn 3.0.9",
 ]
 
 [[package]]
@@ -6619,6 +6572,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
+name = "surreal-cairn"
+version = "0.1.0"
+source = "git+https://github.com/disconsented/surreal-cairn.git#d37d681e44fb8b9e3253e814cab6f7712f1eee1f"
+dependencies = [
+ "async-stream",
+ "blake2 0.11.0",
+ "chrono",
+ "clap",
+ "futures",
+ "snafu",
+ "surrealdb",
+ "tracing",
+]
+
+[[package]]
 name = "surrealdb"
 version = "3.3.0"
 source = "git+https://github.com/disconsented/surrealdb.git?rev=ec412dd36b64a9228151cbcca392c58b519e90c5#ec412dd36b64a9228151cbcca392c58b519e90c5"
@@ -7947,6 +7915,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "twinned"
+version = "0.1.0"
+source = "git+https://github.com/disconsented/twinned.git#c68f741c6ba55c91c5325264348038d73f1fae8d"
+dependencies = [
+ "twinned-macros",
+]
+
+[[package]]
+name = "twinned-macros"
+version = "0.1.0"
+source = "git+https://github.com/disconsented/twinned.git#c68f741c6ba55c91c5325264348038d73f1fae8d"
+dependencies = [
+ "quote",
+ "syn 3.0.9",
+]
+
+[[package]]
 name = "typeid"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8645,8 +8630,6 @@ dependencies = [
  "itertools 0.15.0",
  "lingua",
  "lru",
- "macros",
- "migrations-tool",
  "multimap",
  "ractor",
  "reqwest 0.13.5",
@@ -8658,6 +8641,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "snafu",
+ "surreal-cairn",
  "surrealdb",
  "surrealdb-core",
  "surrealdb-types",
@@ -8665,6 +8649,7 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "tracing-subscriber",
+ "twinned",
  "veil",
 ]
 
