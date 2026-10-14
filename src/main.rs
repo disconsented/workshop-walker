@@ -3,8 +3,8 @@ extern crate core;
 
 use std::{env, sync::Arc};
 
-use surreal_cairn::{Migrator, Outcome};
 use snafu::{Whatever, prelude::*};
+use surreal_cairn::{Migrator, Outcome};
 use surrealdb::{
     Surreal,
     engine::local::{Db, RocksDb},

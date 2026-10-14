@@ -11,8 +11,8 @@ pub mod tags_actor;
 pub mod tags_repository;
 pub mod user_names_repository;
 
-use macros::define_id;
 use surrealdb_types::SurrealValue;
+use twinned::define_id;
 
 use crate::db::model::Property;
 

@@ -1,7 +1,7 @@
-use macros::dual_struct;
 use serde::{Deserialize, Serialize};
 use snafu::prelude::*;
 use surrealdb_types::SurrealValue;
+use twinned::dual_struct;
 
 use crate::db::{
     AppID, IAppID, IItemID, IPropertyID, IUserID, ItemID,

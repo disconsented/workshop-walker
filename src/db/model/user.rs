@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
-use macros::dual_struct;
 use serde::{Deserialize, Serialize, Serializer};
 use surrealdb_types::SurrealValue;
+use twinned::dual_struct;
 
 use crate::db::{
     IUserID, UserID,

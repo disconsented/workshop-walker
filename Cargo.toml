@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros", "proc-macros", "serde-hack"]
+members = ["serde-hack"]
 
 [workspace.package]
 edition = "2024"
@@ -10,8 +10,6 @@ version = "0.8.2"
 
 # The members inherit these. Without them `dep.workspace = true` in a member
 # manifest has nothing to resolve against.
-macros = { path = "./macros" }
-proc-macros = { path = "./proc-macros" }
 serde-hack = { path = "./serde-hack" }
 
 bbscope = "0.2"
@@ -33,8 +31,6 @@ lingua = { features = [
 ], version = "1.7" }
 lru = "0.18"
 multimap = "0.10"
-paste = "1.0"
-quote = "1.0"
 ractor = { features = ["async-trait", "monitors"], version = "0.16" }
 reqwest = { features = ["json"], version = "0.13" }
 salvo = { features = [
@@ -60,11 +56,11 @@ surreal-cairn = { git = "https://github.com/disconsented/surreal-cairn.git" }
 surrealdb = { version = "3.3" }
 surrealdb-core = { version = "3.3" }
 surrealdb-types = { version = "3.3" }
-syn = "3.0"
 tokio = { features = ["full"], version = "1.48" }
 tokio-stream = { features = ["fs"], version = "0.1" }
 tracing = "0.1"
 tracing-subscriber = { features = ["env-filter"], version = "0.3.19" }
+twinned = { git = "https://github.com/disconsented/twinned.git" }
 veil = "0.3"
 
 # Patched versions because SurrealDB makes silly design decisions sometimes
@@ -102,7 +98,6 @@ lingua = { features = [
   "spanish",
 ], workspace = true }
 lru.workspace = true
-macros.workspace = true
 multimap.workspace = true
 ractor = { features = ["async-trait", "monitors"], workspace = true }
 reqwest = { features = ["json", "query"], version = "0.13", workspace = true }
@@ -142,6 +137,7 @@ tokio = { features = [
 tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber = { features = ["env-filter"], workspace = true }
+twinned = { features = ["salvo"], workspace = true }
 veil.workspace = true
 
 

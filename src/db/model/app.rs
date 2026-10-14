@@ -1,7 +1,7 @@
-use macros::dual_struct;
 use serde::{Deserialize, Serialize};
 use surrealdb_types::SurrealValue;
 use tracing::error;
+use twinned::dual_struct;
 
 use crate::db::{AppID, IAppID, ITagID, TagID};
 /// A steam workshop app
