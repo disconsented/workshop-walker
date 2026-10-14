@@ -161,13 +161,13 @@ async fn process_one(
                     reply
                 )) {
                     Ok(Ok(..)) => {
-                        debug!(?workshop_item_id, %class, %value, "Inserted new property");
+                        debug!(?workshop_item_id, %class, %value, "Inserted new system property");
                     }
                     Ok(Err(PropertiesError::Conflict)) => {
                         debug!(?workshop_item_id, %class, %value, "Property conflict");
                     }
                     Ok(Err(error)) => {
-                        error!(?error, ?workshop_item_id,  %class, %value, "Inserting new property");
+                        error!(?error, ?workshop_item_id,  %class, %value, "Inserting new system property");
                     }
                     Err(_) => (),
                 }

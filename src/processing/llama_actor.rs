@@ -236,6 +236,7 @@ async fn run_process(
     }
 
     properties.remove_blocked();
+    properties.remove_bad_entries();
     Ok(properties)
 }
 
@@ -463,6 +464,30 @@ impl MLProperties {
         ] {
             field.retain(not_placeholder);
         }
+    }
+
+    /// Removes properties that are too long, short, or not ascii saves grief on
+    /// logs later
+    fn remove_bad_entries(&mut self) {
+        let test = |value: &String| {
+            // Some short/valid entries include UI and art
+            if !(2..=32).contains(&value.len()) {
+                return false;
+            }
+
+            if !value
+                .chars()
+                .all(|c| c.is_alphabetic() || c.is_ascii_whitespace() || c.is_ascii_punctuation())
+            {
+                return false;
+            }
+            true
+        };
+
+        self.themes.retain(test);
+        self.types.retain(test);
+        self.genres.retain(test);
+        self.features.retain(test);
     }
 }
 
