@@ -1,4 +1,4 @@
-use std::{error::Error, num::ParseIntError};
+use std::{error::Error, num::ParseIntError, time::Duration};
 
 use chrono::Utc;
 use snafu::ResultExt;
@@ -11,7 +11,7 @@ use surrealdb_core::sql::{
     lookup::{LookupKind, LookupSubject},
     part::DestructurePart,
 };
-use surrealdb_types::{Duration, RecordId, SurrealValue, ToSql, Value};
+use surrealdb_types::{RecordId, SurrealValue, ToSql, Value};
 use tracing::{debug, error, trace};
 
 use crate::{

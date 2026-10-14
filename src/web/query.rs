@@ -1,4 +1,4 @@
-use std::ops::Not;
+use std::{ops::Not, time::Duration};
 
 use salvo::{
     Depot, Request, Writer,
@@ -22,7 +22,7 @@ use surrealdb_core::sql::{
     part::DestructurePart,
     statements::SelectStatement,
 };
-use surrealdb_types::{Duration, RecordId, SurrealValue, ToSql};
+use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{Instrument, debug, info_span, instrument, trace};
 
 use crate::{

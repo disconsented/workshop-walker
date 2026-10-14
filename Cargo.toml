@@ -61,13 +61,9 @@ serde-xml-rs = "0.8.1"
 serde_json = "1.0"
 serde_repr = "0.1"
 snafu = "0.9"
-surrealdb = { features = [
-  "allocator",
-  "kv-mem",
-  "kv-rocksdb",
-], version = "3.1" }
-surrealdb-core = { version = "3.1" }
-surrealdb-types = { version = "3.1" }
+surrealdb = { version = "3.3" }
+surrealdb-core = { version = "3.3" }
+surrealdb-types = { version = "3.3" }
 syn = "3.0"
 tempfile = "3.27.0"
 tokio = { features = ["full"], version = "1.48" }
@@ -78,9 +74,9 @@ veil = "0.3"
 
 # Patched versions because SurrealDB makes silly design decisions sometimes
 [patch.crates-io]
-surrealdb = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
-surrealdb-core = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
-surrealdb-types = { git = "https://github.com/disconsented/surrealdb.git", rev = "3475af9429c9ddcdf054c2be02c225abde0e7b3e" }
+surrealdb = { git = "https://github.com/disconsented/surrealdb.git", rev = "ec412dd36b64a9228151cbcca392c58b519e90c5" }
+surrealdb-core = { git = "https://github.com/disconsented/surrealdb.git", rev = "ec412dd36b64a9228151cbcca392c58b519e90c5" }
+surrealdb-types = { git = "https://github.com/disconsented/surrealdb.git", rev = "ec412dd36b64a9228151cbcca392c58b519e90c5" }
 
 
 [package]

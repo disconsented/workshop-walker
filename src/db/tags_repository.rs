@@ -1,8 +1,5 @@
 use surrealdb::{IndexedResults, Surreal, engine::local::Db};
-use surrealdb_core::{
-    sql::{Data, Expr, InsertStatement},
-    val::TableName,
-};
+use surrealdb_core::sql::{Data, Expr, InsertStatement, TableName};
 use surrealdb_types::{SurrealValue, Value};
 use tracing::{debug, error, trace};
 
